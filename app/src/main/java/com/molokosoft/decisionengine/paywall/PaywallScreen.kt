@@ -1,0 +1,93 @@
+package com.molokosoft.decisionengine.paywall
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+
+import com.molokosoft.decisionengine.commonuielements.ErrorDialog
+import com.molokosoft.decisionengine.commonclasses.EMail
+
+import com.molokosoft.decisionengine.paywall.one.FeaturesScreen
+import com.molokosoft.decisionengine.paywall.one.EnforceConversionScreen
+import com.molokosoft.decisionengine.paywall.one.FreeTrialScreen
+import com.molokosoft.decisionengine.paywall.one.OfferTilesScreen
+
+sealed class Paywall {
+    data object Features : Paywall()
+    data object EnforceConversion: Paywall()
+    data object OfferTiles : Paywall()
+    data object FreeTrial : Paywall()
+}
+
+fun Paywall.next(): Paywall =
+    when (this) {
+        Paywall.Features -> Paywall.EnforceConversion
+        Paywall.EnforceConversion -> Paywall.OfferTiles
+        Paywall.OfferTiles -> Paywall.FreeTrial
+        Paywall.FreeTrial -> Paywall.Features
+    }
+
+@Composable
+fun PaywallScreen(
+    modifier: Modifier = Modifier,
+    onContinueClicked: (eMail: EMail?) -> Unit
+){
+    var currentScreen by remember {
+        mutableStateOf<Paywall>(Paywall.Features)
+    }
+
+    var hasError by remember { mutableStateOf(false) }
+
+    if (hasError) {
+        ErrorDialog(
+            errorTitle = "Incorrect E-Mail Format",
+            errorMessage = "Please enter a valid e-mail address.",
+            onDismissRequest = {
+                hasError = false
+            }
+        )
+    }
+
+    when (currentScreen) {
+        Paywall.Features -> FeaturesScreen(
+            modifier = modifier,
+            onContinueClicked = {
+                currentScreen = currentScreen.next()
+            }
+        )
+
+        Paywall.EnforceConversion -> EnforceConversionScreen(
+            modifier = modifier,
+            onContinueClicked = {
+                currentScreen = currentScreen.next()
+            }
+        )
+
+        Paywall.OfferTiles -> OfferTilesScreen(
+            modifier = modifier,
+            onContinueClicked = {
+                currentScreen = currentScreen.next()
+            }
+        )
+
+        Paywall.FreeTrial -> FreeTrialScreen(
+            modifier = modifier,
+            onBackClicked = {
+
+            },
+            onContinueClicked = { eMailAddress ->
+                if (!eMailAddress.isBlank()) {
+                    if (EMail.tryCreate(eMailAddress) == null) {
+                        hasError = true
+                        return@FreeTrialScreen
+                    }
+                }
+
+                onContinueClicked(EMail.tryCreate(eMailAddress))
+            }
+        )
+    }
+}

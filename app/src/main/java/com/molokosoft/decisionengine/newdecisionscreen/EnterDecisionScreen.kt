@@ -1,0 +1,261 @@
+package com.molokosoft.decisionengine.newdecisionscreen
+
+
+import androidx.compose.ui.Modifier
+
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+
+import com.molokosoft.decisionengine.newdecisionscreen.dialogs.EnterOptionDialog
+import com.molokosoft.decisionengine.newdecisionscreen.dialogs.EnterCriterionDialog
+import com.molokosoft.decisionengine.newdecisionscreen.screens.EnterComparisonCriteriaScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.EnterDecisionNameScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.EnterDecisionOptionsScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.RateComparisonCriteriaScreen
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.NewDecisionViewModel
+import com.molokosoft.decisionengine.newdecisionscreen.screens.ChooseComparisonCriteriaScreen
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Criterion
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Option
+import com.molokosoft.decisionengine.commonuielements.ErrorDialog
+
+sealed class DecisionScreen {
+    data object EnterDecisionName : DecisionScreen()
+    data object EnterDecisionOptions : DecisionScreen()
+    data object EnterDecisionCriteria : DecisionScreen()
+
+    data object ChooseDecisionCriteria : DecisionScreen()
+    data object RateComparisonCriteria : DecisionScreen()
+}
+
+fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
+    when (this) {
+        DecisionScreen.EnterDecisionName -> {
+            if (yesOrNoDecision)
+                DecisionScreen.EnterDecisionCriteria
+            else
+                DecisionScreen.EnterDecisionOptions
+        }
+
+        DecisionScreen.EnterDecisionOptions -> DecisionScreen.ChooseDecisionCriteria
+        DecisionScreen.ChooseDecisionCriteria -> DecisionScreen.EnterDecisionCriteria
+        DecisionScreen.EnterDecisionCriteria -> DecisionScreen.RateComparisonCriteria
+        DecisionScreen.RateComparisonCriteria -> DecisionScreen.EnterDecisionName
+    }
+
+fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
+    when (this) {
+        DecisionScreen.EnterDecisionOptions -> DecisionScreen.EnterDecisionName
+
+        DecisionScreen.EnterDecisionCriteria -> {
+            if (yesOrNoDecision)
+                DecisionScreen.EnterDecisionName
+            else
+                DecisionScreen.EnterDecisionOptions
+        }
+
+        DecisionScreen.RateComparisonCriteria -> DecisionScreen.EnterDecisionName
+        DecisionScreen.EnterDecisionName -> DecisionScreen.EnterDecisionName
+        DecisionScreen.ChooseDecisionCriteria -> DecisionScreen.EnterDecisionName
+    }
+
+@Composable
+fun EnterDecisionScreen(
+    viewModel: NewDecisionViewModel,
+    modifier: Modifier = Modifier,
+    onBackClicked: () -> Unit,
+    onContinueClicked: () -> Unit
+){
+    var currentScreen by remember {
+        mutableStateOf<DecisionScreen>(DecisionScreen.EnterDecisionName)
+    }
+
+    var enterOptionDialogOpen by remember { mutableStateOf(false) }
+    var enterCriterionDialogOpen by remember { mutableStateOf(false) }
+    var errorMessageDialogOpen by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("" to "") }
+
+    val draft by viewModel.draft.collectAsState()
+
+    val optionNames = remember(draft.options) {
+        draft.options.map {
+            it.name
+        }
+    }
+
+    val criteriaNames = remember(draft.criteria) {
+        draft.criteria.map {
+            it.name
+        }
+    }
+
+    val yesOrNoDecision = draft.yesOrNoDecision
+    val nextOptionName = viewModel.getNextOption()
+
+    when (currentScreen) {
+        DecisionScreen.EnterDecisionName -> EnterDecisionNameScreen(
+            modifier = modifier,
+            currentDecisionText = draft.title,
+            yesOrNoDecision = yesOrNoDecision,
+            onBackClicked = {
+                onBackClicked()
+            },
+            onNextClicked = { name, yesOrNoDecision ->
+                if (name.isBlank()) {
+                    errorMessage = "A bit more please..." to "Please enter a decision name."
+                    errorMessageDialogOpen = true
+                    return@EnterDecisionNameScreen
+                }
+
+                viewModel.setTitle(name)
+                viewModel.setDecisionType(yesOrNoDecision)
+                currentScreen = currentScreen.next(yesOrNoDecision)
+            }
+        )
+
+        DecisionScreen.EnterDecisionOptions -> EnterDecisionOptionsScreen(
+            modifier = modifier,
+            options = optionNames,
+            onEnterOptionClicked = {
+                enterOptionDialogOpen = true
+            },
+            onDeleteOption = {
+                viewModel.deleteOption(it)
+            },
+            onBackClicked = {
+                currentScreen = currentScreen.previous(yesOrNoDecision)
+            },
+            onNextClicked = {
+                if (optionNames.isEmpty() || optionNames.size == 1) {
+                    errorMessage = "A bit more please..." to "Please enter at least two options."
+                    errorMessageDialogOpen = true
+                    return@EnterDecisionOptionsScreen
+                }
+
+                currentScreen = currentScreen.next()
+            }
+        )
+
+        DecisionScreen.EnterDecisionCriteria -> EnterComparisonCriteriaScreen(
+            modifier = modifier,
+            criteria = criteriaNames,
+            onEnterCriteriaClicked = {
+                enterCriterionDialogOpen = true
+            },
+            onDeleteCriteria = {
+                viewModel.deleteCriterion(it)
+            },
+            onBackClicked = {
+                currentScreen = currentScreen.previous(yesOrNoDecision)
+            },
+            onNextClicked = {
+                if (criteriaNames.isEmpty()) {
+                    errorMessage = "A bit more please..." to "Please enter at least one comparison criterion."
+                    errorMessageDialogOpen = true
+                    return@EnterComparisonCriteriaScreen
+                }
+
+                currentScreen = currentScreen.next()
+            }
+        )
+
+        DecisionScreen.RateComparisonCriteria -> {
+            if (nextOptionName == null) {
+                LaunchedEffect(Unit) {
+                    viewModel.startAnalysis()
+                    onContinueClicked()
+                }
+
+                return
+            }
+
+            RateComparisonCriteriaScreen(
+                modifier = modifier,
+                option = nextOptionName,
+                criteria = criteriaNames,
+                onBackClicked = {
+
+                },
+                onNextClicked = { list ->
+                    val listOfCriteria = list.map { (name, rating) ->
+                        val originalCriterion = draft.criteria.first {
+                            it.name == name
+                        }
+
+                        originalCriterion.copy(
+                            score = rating.toInt()
+                        )
+                    }
+
+                    viewModel.setRatedCriteriaToOption(
+                        optionName = nextOptionName,
+                        criteria = listOfCriteria
+                    )
+                }
+            )
+        }
+
+        DecisionScreen.ChooseDecisionCriteria -> {
+            ChooseComparisonCriteriaScreen(
+                modifier = modifier,
+                criterionAndDescription = draft.criteriaSuggestions.map {
+                    it.name to it.description
+                },
+                onCriterionClicked = { name, importance ->
+                    viewModel.setCriteria(Criterion(name, importance))
+                },
+                onBackClicked = {
+
+                },
+                onNextClicked = {
+                    currentScreen = currentScreen.next()
+                }
+            )
+        }
+    }
+
+    if (enterOptionDialogOpen)
+        EnterOptionDialog(
+            onOptionEntered = { name, reversibility ->
+                viewModel.setOption(
+                    Option(
+                        name = name,
+                        reversibility = reversibility
+                    )
+                )
+
+                enterOptionDialogOpen = false
+            },
+            onDismissRequest = {
+                enterOptionDialogOpen = false
+            }
+        )
+    else if (enterCriterionDialogOpen)
+        EnterCriterionDialog(
+            onCriterionEntered = { name, importance ->
+                viewModel.setCriteria(
+                    Criterion(
+                        name = name,
+                        importance = importance
+                    )
+                )
+
+                enterCriterionDialogOpen = false
+            },
+            onDismissRequest = {
+                enterCriterionDialogOpen = false
+            }
+        )
+    else if (errorMessageDialogOpen)
+        ErrorDialog(
+            errorTitle = errorMessage.first,
+            errorMessage = errorMessage.second,
+            onDismissRequest = {
+                errorMessageDialogOpen = false
+            }
+        )
+}
