@@ -208,6 +208,9 @@ fun EnterDecisionScreen(
                 onCriterionClicked = { name, importance ->
                     viewModel.setCriteria(Criterion(name, importance))
                 },
+                onCriterionDeleted = { name ->
+                    viewModel.deleteCriterion(name)
+                },
                 onBackClicked = {
 
                 },

@@ -141,7 +141,7 @@ class NewDecisionViewModel(
         viewModelScope.launch {
           //"Save the E-Mail in case the sendEmail-Method fails.")
             val success = userDataRepository.sendEmail(eMail.toString())
-            //"If the sendEMail-Method fails, try it again, untils it doesn't fail anymore")
+            //"If the sendEMail-Method fails, try it again, until it doesn't fail anymore")
         }
     }
 

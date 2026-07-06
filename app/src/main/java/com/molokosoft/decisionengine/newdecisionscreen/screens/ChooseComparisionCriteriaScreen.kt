@@ -43,6 +43,7 @@ import com.molokosoft.decisionengine.newdecisionscreen.dialogs.EnterCriterionImp
 fun ChooseComparisonCriteriaScreen(
     criterionAndDescription: List<Pair<String, String>>,
     onCriterionClicked: (name: String, importance: Int) -> Unit,
+    onCriterionDeleted: (name: String) -> Unit,
     onBackClicked: () -> Unit,
     onNextClicked: () -> Unit,
     modifier: Modifier = Modifier
@@ -53,6 +54,10 @@ fun ChooseComparisonCriteriaScreen(
     var showEnterCriterionDialog by remember { mutableStateOf(false) }
     var infoTextAndDescription by remember { mutableStateOf("" to "") }
     var criterionToImportance by remember { mutableStateOf("" to 5) }
+
+    var selectedCriteria by remember {
+        mutableStateOf(setOf<String>())
+    }
 
     if (showErrorDialog)
         ErrorDialog(
@@ -73,6 +78,8 @@ fun ChooseComparisonCriteriaScreen(
             },
             onDismissRequest = {
                 showEnterCriterionDialog = false
+                selectedCriteria = selectedCriteria - criterionToImportance.first
+                onCriterionDeleted(criterionToImportance.first)
             }
         )
 
@@ -146,9 +153,10 @@ fun ChooseComparisonCriteriaScreen(
         ) {
             items(criterionAndDescription){ criterion ->
 
-                var backGroundColor by remember { mutableStateOf(DecisionBlueLight) }
-                var textColor by remember { mutableStateOf(Color.Black) }
-                var isSelected by remember { mutableStateOf(false) }
+                var isSelected = criterion.first in selectedCriteria
+                val backGroundColor = if (isSelected) DecisionBlue else DecisionBlueLight
+                val textColor = if (isSelected) Color.White else Color.Black
+
 
                 Box(
                     modifier = Modifier
@@ -170,16 +178,12 @@ fun ChooseComparisonCriteriaScreen(
                         .combinedClickable(
                             onClick = {
                                 if (isSelected) {
-                                    backGroundColor = DecisionBlueLight
-                                    textColor = Color.Black
+                                    selectedCriteria = selectedCriteria - criterion.first
                                 } else {
-                                    backGroundColor = DecisionBlue
-                                    textColor = Color.White
+                                    selectedCriteria = selectedCriteria + criterion.first
                                     criterionToImportance = criterion.first to 5
                                     showEnterCriterionDialog = true
                                 }
-
-                                isSelected = !isSelected
                             },
                             onDoubleClick = {
                                 infoTextAndDescription = criterion.first to criterion.second

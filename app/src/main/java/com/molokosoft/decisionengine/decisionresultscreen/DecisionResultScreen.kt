@@ -1,19 +1,17 @@
 package com.molokosoft.decisionengine.decisionresultscreen
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import kotlinx.coroutines.delay
 import com.molokosoft.decisionengine.commonuielements.WaitingScreen
 
 import com.molokosoft.decisionengine.decisionresultscreen.screens.RecommendedChoiceScreen
 import com.molokosoft.decisionengine.decisionresultscreen.DecisionResultScreen.*
 import com.molokosoft.decisionengine.decisionresultscreen.screens.FullDecisionOverviewScreen
-import com.molokosoft.decisionengine.decisionresultscreen.screens.ReversabilityAnalysisScreen
+import com.molokosoft.decisionengine.decisionresultscreen.screens.ReversibilityAnalysisScreen
 import com.molokosoft.decisionengine.decisionresultscreen.screens.ScoreBreakdownScreen
 import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
 import com.molokosoft.decisionengine.network.backend.model.dto.DecisionAnalysisResult
@@ -81,12 +79,14 @@ fun DecisionResultScreen(
             modifier = modifier,
             optionAnalyses = optionAnalyses,
             onContinueClicked = {
-
+                currentScreen = currentScreen.next()
+            },
+            onBackClicked = {
             },
             onContinueButtonText = "See Reversibility"
         )
 
-        ReversibilityAnalysis -> ReversabilityAnalysisScreen(
+        ReversibilityAnalysis -> ReversibilityAnalysisScreen(
             modifier = modifier,
             optionAnalyses = optionAnalyses,
             onContinueClicked = {

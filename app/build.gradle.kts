@@ -65,4 +65,5 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.0.0")
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.google.android.gms:play-services-appset:16.1.0")
+    implementation("com.android.billingclient:billing:9.1.0")
 }

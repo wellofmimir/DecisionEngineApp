@@ -362,7 +362,8 @@ fun OptionComparisonScreen(
     modifier: Modifier = Modifier,
     optionAnalyses: List<OptionAnalysis>,
     onContinueButtonText: String,
-    onContinueClicked: () -> Unit
+    onContinueClicked: () -> Unit,
+    onBackClicked: () -> Unit
 ){
     val typography = LocalAppTypography.current
     val verticalScroll = rememberScrollState()
