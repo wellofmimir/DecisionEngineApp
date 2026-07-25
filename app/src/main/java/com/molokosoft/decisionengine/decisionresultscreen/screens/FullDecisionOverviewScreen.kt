@@ -36,7 +36,7 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.shape.CircleShape
 
 import com.molokosoft.decisionengine.R
-import com.molokosoft.decisionengine.network.backend.model.dto.DecisionAnalysisResult
+import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
 import com.molokosoft.decisionengine.theme.*
 
 import androidx.compose.material3.ExperimentalMaterial3Api

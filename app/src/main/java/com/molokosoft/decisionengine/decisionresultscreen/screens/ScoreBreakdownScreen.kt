@@ -37,7 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.molokosoft.decisionengine.R
-import com.molokosoft.decisionengine.network.backend.model.dto.DecisionAnalysisResult
+import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
 
 import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
 import com.molokosoft.decisionengine.theme.DecisionBlue

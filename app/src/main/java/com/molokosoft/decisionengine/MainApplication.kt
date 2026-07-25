@@ -22,16 +22,28 @@ import com.molokosoft.decisionengine.homescreen.navigation.NavigationItem
 import com.molokosoft.decisionengine.newdecisionscreen.EnterDecisionScreen
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.NewDecisionViewModel
 import androidx.compose.runtime.collectAsState
+import com.molokosoft.decisionengine.decisionhistoryscreen.DecisionHistoryScreen
+import com.molokosoft.decisionengine.decisionhistoryscreen.viewmodel.DecisionHistoryViewModel
+import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
+import com.molokosoft.decisionengine.settingsscreen.SettingsScreen
 
 @Composable
 fun MainApplication(
     newDecisionViewModel: NewDecisionViewModel,
+    decisionHistoryViewModel: DecisionHistoryViewModel,
+    homeScreenViewModel: HomeScreenViewModel
 ){
     val decisionDraft by newDecisionViewModel.draft.collectAsState()
     val showNavigationBar by newDecisionViewModel.showBottomBar.collectAsState()
 
     var navigationItem by remember {
-        mutableStateOf(if (decisionDraft.optionAnalyses.isEmpty()) NavigationItem.HOME else NavigationItem.SEE_DECISION )
+        mutableStateOf(
+            value =
+                if (decisionDraft.optionAnalyses.isEmpty())
+                    NavigationItem.HOME
+                else
+                    NavigationItem.SEE_DECISION
+        )
     }
 
     Scaffold(
@@ -54,15 +66,22 @@ fun MainApplication(
 
         when (navigationItem) {
             NavigationItem.HOME -> Home(
-                name = "Patryk",
                 modifier = Modifier
                     .fillMaxHeight()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                onClicked = {
+                    navigationItem = NavigationItem.NEW_DECISION
+                },
+                onViewHistoryRequested = {
+                    navigationItem = NavigationItem.HISTORY
+                },
+                onSettingsHistoryClicked = {
+                    navigationItem = NavigationItem.SETTINGS
+                },
+                homeScreenViewModel = homeScreenViewModel
             )
 
             NavigationItem.NEW_DECISION -> {
-                newDecisionViewModel.resetDraft()
-
                 EnterDecisionScreen(
                     newDecisionViewModel,
                     modifier = Modifier
@@ -77,11 +96,14 @@ fun MainApplication(
                 )
             }
 
-            NavigationItem.HISTORY -> Home(
-                name = "Patryk",
+            NavigationItem.HISTORY -> DecisionHistoryScreen(
+                decisionHistoryViewModel = decisionHistoryViewModel,
                 modifier = Modifier
                     .fillMaxHeight()
-                    .padding(innerPadding)
+                    .padding(innerPadding),
+                onSettingsHistoryClicked = {
+                    navigationItem = NavigationItem.SETTINGS
+                }
             )
 
             NavigationItem.SEE_DECISION -> {
@@ -94,7 +116,17 @@ fun MainApplication(
                     onContinueClicked = {
                         newDecisionViewModel.showBottomBar()
                         navigationItem = NavigationItem.HOME
+                        newDecisionViewModel.resetDraft()
                     }
+                )
+            }
+
+            NavigationItem.SETTINGS -> {
+                SettingsScreen(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(innerPadding),
+                    homeScreenViewModel = homeScreenViewModel
                 )
             }
         }

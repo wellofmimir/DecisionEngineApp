@@ -14,7 +14,7 @@ import com.molokosoft.decisionengine.decisionresultscreen.screens.FullDecisionOv
 import com.molokosoft.decisionengine.decisionresultscreen.screens.ReversibilityAnalysisScreen
 import com.molokosoft.decisionengine.decisionresultscreen.screens.ScoreBreakdownScreen
 import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
-import com.molokosoft.decisionengine.network.backend.model.dto.DecisionAnalysisResult
+import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
 import com.molokosoft.decisionengine.decisionresultscreen.screens.OptionComparisonScreen
 
 sealed class DecisionResultScreen {

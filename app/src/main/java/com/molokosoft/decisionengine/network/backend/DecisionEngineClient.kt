@@ -1,7 +1,8 @@
 package com.molokosoft.decisionengine.network.backend
 
+import com.molokosoft.decisionengine.BuildConfig
 import com.molokosoft.decisionengine.network.backend.model.requests.DecisionAnalysisRequest
-import com.molokosoft.decisionengine.network.backend.model.responses.DecisionAnalysisResponse
+import com.molokosoft.decisionengine.network.backend.model.responses.decision.DecisionAnalysisResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -11,12 +12,42 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.serialization.encodeToString
 import android.util.Log
-import com.molokosoft.decisionengine.network.backend.model.dto.CriterionSuggestion
 import com.molokosoft.decisionengine.network.backend.model.responses.ApiResponse
-import com.molokosoft.decisionengine.network.backend.model.responses.CriteriaSuggestionResponse
+import com.molokosoft.decisionengine.network.backend.model.responses.dailyarticle.DailyArticleResponse
+import com.molokosoft.decisionengine.network.backend.model.responses.decision.CriteriaSuggestionResponse
+import okio.IOException
 import org.json.JSONObject
 
-class DecisionEngineClient(private val client: OkHttpClient) {
+val baseUrl = if (BuildConfig.DEBUG)
+    "http://192.168.188.21:45003"
+else
+    "http://192.168.188.21:45003"
+
+class DecisionEngineClient(
+    private val client: OkHttpClient,
+    private val apiKey: String
+) {
+    suspend fun dailyArticle(): DailyArticleResponse? =
+        withContext(Dispatchers.IO) {
+            val request = Request.Builder()
+                .addHeader("Authorization", "Bearer $apiKey")
+                .get()
+                .url("$baseUrl/api/v1/articles/daily")
+                .build()
+
+            try {
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string() ?: ""
+                    val apiResponse = Json.decodeFromString<ApiResponse<DailyArticleResponse>>(responseBody)
+                    return@withContext apiResponse.data
+                }
+            } catch (e: Exception) {
+                Log.e("DecisionEngine", "Network error", e)
+                Log.d("DecisionEngine", Json.encodeToString(DailyArticleResponse))
+                e.printStackTrace()
+                null
+            }
+        }
 
     suspend fun analyze(decisionAnalysisRequest: DecisionAnalysisRequest): DecisionAnalysisResponse? =
         withContext(Dispatchers.IO) {
@@ -25,12 +56,17 @@ class DecisionEngineClient(private val client: OkHttpClient) {
             val requestBody = json.toRequestBody(mediaType)
 
             val request = Request.Builder()
+                .addHeader("Authorization", "Bearer $apiKey")
                 .post(requestBody)
-                .url("http://192.168.188.21:45003/api/v1/decision/analyze")
+                .url("$baseUrl/api/v1/decision/analyze")
                 .build()
 
             try {
                 client.newCall(request).execute().use { response ->
+
+                    if (!response.isSuccessful)
+                        throw IOException("HTTP ${response.code}: ${response.message}")
+
                     val responseBody = response.body?.string() ?: ""
                     val apiResponse = Json.decodeFromString<ApiResponse<DecisionAnalysisResponse>>(responseBody)
                     return@withContext apiResponse.data
@@ -52,8 +88,9 @@ class DecisionEngineClient(private val client: OkHttpClient) {
             val requestBody = json.toString().toRequestBody(mediaType)
 
             val request = Request.Builder()
+                .addHeader("Authorization", "Bearer $apiKey")
                 .post(requestBody)
-                .url("http://192.168.188.21:45003/api/v1/email")
+                .url("$baseUrl/api/v1/email")
                 .build()
 
             try {
@@ -78,8 +115,9 @@ class DecisionEngineClient(private val client: OkHttpClient) {
             val requestBody = json.toString().toRequestBody(mediaType)
 
             val request = Request.Builder()
+                .addHeader("Authorization", "Bearer $apiKey")
                 .post(requestBody)
-                .url("http://192.168.188.21:45003/api/v1/criteria/suggest")
+                .url("$baseUrl/api/v1/criteria/suggest")
                 .build()
 
             try {

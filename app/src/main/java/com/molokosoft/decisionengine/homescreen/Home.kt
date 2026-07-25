@@ -1,137 +1,265 @@
 package com.molokosoft.decisionengine.homescreen
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
 import androidx.compose.foundation.layout.Column
-import androidx.compose.ui.Alignment
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.graphics.Color
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import kotlinx.coroutines.delay
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.painterResource
+import com.molokosoft.decisionengine.R
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.text.style.TextAlign
+
 
 import com.molokosoft.decisionengine.theme.LocalAppTypography
-import com.molokosoft.decisionengine.homescreen.buttons.DecisionButton
-import com.molokosoft.decisionengine.homescreen.buttons.DecisionButtonLogo
+import com.molokosoft.decisionengine.homescreen.buttons.NewDecisionButton
+import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
+import com.molokosoft.decisionengine.theme.DecisionBlueLight
+
 @Composable
 fun Home(
-    name: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClicked: () -> Unit,
+    onViewHistoryRequested: () -> Unit,
+    onSettingsHistoryClicked: () -> Unit,
+    homeScreenViewModel: HomeScreenViewModel
 ){
     val typography = LocalAppTypography.current
+    val article by homeScreenViewModel.article.collectAsState()
+    val decisionHistory by homeScreenViewModel.historyItems.collectAsState()
+    val verticalScroll = rememberScrollState()
+    var readArticleBoxExpanded by remember { mutableStateOf(false) }
+    val username by homeScreenViewModel.username.collectAsState()
+    var showUsernameEntryBox by remember { mutableStateOf(false) }
+
+    val listOfGreetings = listOf(
+        "Hey there,\n$username.",
+        "It's great to have you back!",
+        "Welcome back,\n$username!",
+        "Hello, $username!",
+        "Hi there!",
+        "Good to see you again!",
+        "Glad you're here!",
+        "Ready to get started?",
+        "Let's get started!",
+        "Let's make today count.",
+        "Time to get things done.",
+        "Hope you're having a great day!",
+        "Everything is ready for you.",
+        "Great to see you,\n$username!",
+        "Let's do this!",
+        "You've got this!",
+        "One step at a time.",
+        "Every day is a fresh start.",
+        "Ready when you are.",
+        "Let's keep the momentum going!",
+        "Welcome back.\nLet's continue.",
+        "Nice to see you again,\n$username!",
+        "Hope you're doing well,\n$username!",
+        "Let's achieve something great today.",
+        "Your next step starts here.",
+        "Another day,\nanother opportunity.",
+        "Success starts with a single step.",
+        "Let's make some progress!",
+        "Happy to see you back,\n$username!"
+    )
+
+    LaunchedEffect(Unit) {
+        homeScreenViewModel.getDailyArticle()
+
+        if (username.isBlank()) {
+            delay(1000)
+            showUsernameEntryBox = true
+        }
+    }
+
+    if (showUsernameEntryBox) {
+        EnterUsernameBox(
+            onDismissRequest = {
+                showUsernameEntryBox = false
+            },
+            onAdd = { newUsername ->
+                showUsernameEntryBox = false
+                homeScreenViewModel.setUsername(newUsername)
+            }
+        )
+    }
+
+    if (readArticleBoxExpanded) {
+        ReadArticleBox(
+            article.title,
+            article.content,
+            modifier = modifier,
+            onCloseArticleClicked = {
+                readArticleBoxExpanded = false
+            }
+        )
+
+        return
+    }
 
     Column(
         modifier = modifier
+            .verticalScroll(verticalScroll)
             .background(
                 color = Color.White
             )
             .fillMaxHeight()
-            .padding(all = 8.dp),
+            .padding(horizontal = 16.dp),
         horizontalAlignment = Alignment.Start,
         verticalArrangement = Arrangement.Top
     ) {
-        Text(
-            text = "Hello $name",
-            fontSize = typography.titleLarge.fontSize,
-            fontWeight = FontWeight.SemiBold,
-            color = Color.Black
-        )
-
-        Text(
-            text = "What decision are you\nworking on today?",
-            fontSize = typography.titleMedium.fontSize,
-            fontWeight = FontWeight.Light,
-            color = Color.Black
-        )
-
         Spacer(
             modifier = Modifier
-                .height(8.dp)
-        )
-
-        DecisionButton(
-            mainText = "New Decision",
-            subText = "Start a new analysis",
-            decisionButtonLogo = DecisionButtonLogo.Plus
-        )
-
-        Spacer(
-            modifier = Modifier
-                .height(8.dp)
-        )
-
-        Text(
-            text = "Recent Decisions",
-            fontSize = typography.titleMedium.fontSize,
-            textDecoration = TextDecoration.Underline,
-            fontStyle = FontStyle.Italic,
-            color = Color.Black
-        )
-
-        Spacer(
-            modifier = Modifier
-                .height(8.dp)
-        )
-
-        repeat(3){
-            DecisionButton(
-                mainText = "Job offer in Ireland",
-                decisionButtonLogo = DecisionButtonLogo.Diagnosis
-            )
-
-            Spacer(
-                modifier = Modifier
-                    .height(4.dp)
-            )
-        }
-
-        Spacer(
-            modifier = Modifier
-                .height(4.dp)
-        )
-
-        Text(
-            text = "Decision Insights",
-            fontSize = typography.titleMedium.fontSize,
-            textDecoration = TextDecoration.Underline,
-            fontStyle = FontStyle.Italic,
-            color = Color.Black
-        )
-
-        Spacer(
-            modifier = Modifier
-                .height(8.dp)
+                .height(16.dp)
         )
 
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-        ){
-            DecisionsAnalyzedSection(
+                .heightIn(80.dp)
+                .padding(vertical = 16.dp),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Column(
                 modifier = Modifier
-                    .weight(1f),
-                decisionsAnalyzed = 12
-            )
+                    .weight(3f)
+            ) {
+                Text(
+                    text = if (username.isBlank()) "Welcome, Stranger!" else listOfGreetings.random(),
+                    fontSize = typography.titleLarge.fontSize,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Black,
+                    textAlign = TextAlign.Start,
+                    softWrap = true,
+                    maxLines = 2,
+                    modifier = Modifier
+                        .padding(bottom = 2.dp)
+                )
+
+                Text(
+                    text = "What decision are you working on today?",
+                    fontSize = typography.titleMedium.fontSize * 0.75f,
+                    fontWeight = FontWeight.Light,
+                    color = Color.Black
+                )
+            }
 
             Spacer(
                 modifier = Modifier
-                    .width(4.dp)
+                    .width(16.dp)
             )
 
-            UpdateToProSection(
+            Box(
                 modifier = Modifier
-                    .weight(1f)
+                    .padding(top = 16.dp)
+                    .shadow(
+                        elevation = 8.dp,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .background(
+                        DecisionBlueLight,
+                        RoundedCornerShape(12.dp)
+                    )
+                    .border(
+                        1.dp,
+                        Color.Transparent,
+                        RoundedCornerShape(12.dp)
+                    )
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(DecisionBlueLight)
+                    .clickable(){
+                        onSettingsHistoryClicked()
+                    },
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.settings_foreground),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(26.dp)
+                )
+            }
+        }
+
+        Spacer(
+            modifier = Modifier
+                .weight(1f)
+        )
+
+        NewDecisionButton(
+            onClicked = {
+                onClicked()
+            }
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(8.dp)
+        )
+
+        if (decisionHistory.isNotEmpty()) {
+            RecentDecisionsSection(
+                decisions = decisionHistory.first().decisions,
+                onViewAllClicked = {
+                    onViewHistoryRequested()
+                }
             )
         }
+
+        Spacer(
+            modifier = Modifier
+                .height(8.dp)
+        )
+
+        LearnMoreAboutSection(
+            title = article.title.ifBlank { "Loading A New Topic" },
+            shortText = article.summary,
+            onReadArticleClicked = {
+                readArticleBoxExpanded = true
+            }
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(8.dp)
+        )
+
+        YourDecisionJourneySection()
+        
+        Spacer(
+            modifier = Modifier
+                .height(8.dp)
+        )
     }
 }

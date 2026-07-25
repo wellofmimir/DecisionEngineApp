@@ -11,12 +11,14 @@ val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 
 val DecisionBlue = Color(0xFF517BBC)
-val DecisionBlueLight = Color(0xFFFAFCFE)
+val DecisionBlueLight = Color(0xFFEFF6FF)
 val DecisionGreen = Color(0xFFBFFF71)
 val MostChosenGreen = Color(0xFF7CF571)
 val FreeTrialPink = Color(0xFFFFC0CB)
 
 val Orange = Color(0xFFFFA500)
+
+
 
 
 val ImpossibleReverseRed = Color(0xFFA80000)

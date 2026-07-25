@@ -279,11 +279,11 @@ fun OptionBreakdownSection(
                     shape = RoundedCornerShape(12.dp)
                 )
                 .padding(top = 8.dp)
-        ){
+        ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Start
-            ){
+            ) {
                 Spacer(
                     modifier = Modifier
                         .width(16.dp)

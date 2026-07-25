@@ -99,7 +99,7 @@ fun NavigationBar(
                 label = {
                     Text(
                         text = "New Decision",
-                        fontSize = typography.titleSmall.fontSize,
+                        fontSize = typography.titleSmall.fontSize * 1.25f,
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black

@@ -1,14 +1,19 @@
 package com.molokosoft.decisionengine.repositories
 
-import com.molokosoft.decisionengine.network.backend.model.dto.DecisionAnalysisResult
+import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Option
 import com.molokosoft.decisionengine.repositories.model.CriterionAnalysis
 import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
 import com.molokosoft.decisionengine.network.backend.DecisionEngineClient
-import com.molokosoft.decisionengine.network.backend.model.dto.DecisionOption
+import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionOption
 import com.molokosoft.decisionengine.network.backend.model.requests.DecisionAnalysisRequest
-import com.molokosoft.decisionengine.network.backend.model.dto.DecisionCriterion
-import com.molokosoft.decisionengine.network.backend.model.dto.CriterionSuggestion
+import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionCriterion
+import com.molokosoft.decisionengine.network.backend.model.dto.decision.CriterionSuggestion
+import android.util.Log
+import kotlinx.coroutines.delay
+import io.ktor.client.features.ClientRequestException
+import io.ktor.client.features.ServerResponseException
+import java.io.IOException
 
 fun Option.calculateWeightedScore(): Double {
     val totalImportance = criteria.sumOf { it.importance }
@@ -80,12 +85,43 @@ class FactoryAnalysisRepository(private val decisionEngineClient: DecisionEngine
             options = optionList
         )
 
-        val decisionAnalysisResponse = decisionEngineClient.analyze(decisionAnalysisRequest)
-        return decisionAnalysisResponse?.result
+        repeat(3) { attempt ->
+            try {
+                val response = decisionEngineClient.analyze(decisionAnalysisRequest)
+                return response?.result
+
+            } catch (e: ClientRequestException) {
+                val status = e.response.status.value
+
+                Log.e("DecisionEngine", "Client error $status (Attempt ${attempt + 1})", e)
+
+                if (status != 400 || attempt == 2) {
+                    return null
+                }
+
+            } catch (e: ServerResponseException) {
+                Log.e("DecisionEngine", "Server error ${e.response.status.value}", e)
+                return null
+
+            } catch (e: IOException) {
+                Log.e("DecisionEngine", "Network error", e)
+
+                if (attempt == 2) {
+                    return null
+                }
+
+            } catch (e: Exception) {
+                Log.e("DecisionEngine", "Unexpected error", e)
+                return null
+            }
+
+            delay(1500)
+        }
+
+        return null
     }
 
     suspend fun getCriteriaSuggestions(decisionTitle: String): List<CriterionSuggestion> {
-
         val response = decisionEngineClient.getCriteriaSuggestions(decisionTitle)
         return response?.criteria ?: emptyList()
     }

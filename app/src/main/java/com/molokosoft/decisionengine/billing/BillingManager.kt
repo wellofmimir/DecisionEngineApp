@@ -11,6 +11,7 @@ import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.*
+import android.util.Log
 
 class BillingManager(context: Context) {
     interface Listener {
@@ -18,6 +19,8 @@ class BillingManager(context: Context) {
         fun onProductsLoaded()
         fun onPurchaseAcknowledged(purchase: Purchase)
         fun onPurchaseFailure(billingResult: BillingResult)
+
+        fun onActivePurchasesLoaded(purchases: List<Purchase>)
         fun onError(billingResult: BillingResult)
     }
 
@@ -36,6 +39,29 @@ class BillingManager(context: Context) {
 
     private val productDetails = mutableMapOf<String, ProductDetails>()
 
+    fun queryActiveSubscriptions() {
+        if (!isReady)
+            return
+
+        val params = QueryPurchasesParams.newBuilder()
+            .setProductType(BillingClient.ProductType.SUBS)
+            .build()
+
+        billingClient.queryPurchasesAsync(params) { billingResult, purchases ->
+
+            if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                listener?.onError(billingResult)
+                return@queryPurchasesAsync
+            }
+
+            listener?.onActivePurchasesLoaded(
+                purchases.filter {
+                    it.purchaseState == Purchase.PurchaseState.PURCHASED
+                }
+            )
+        }
+    }
+
     private fun acknowledgePurchase(purchase: Purchase) {
         val params =
             AcknowledgePurchaseParams
@@ -46,27 +72,31 @@ class BillingManager(context: Context) {
                 .build()
 
         billingClient.acknowledgePurchase(params) { billingResult ->
+            Log.d("Billing", "acknowledge result = ${billingResult.responseCode}")
 
             if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
                 listener?.onPurchaseFailure(billingResult)
                 return@acknowledgePurchase
             }
-        }
 
-        listener?.onPurchaseAcknowledged(purchase)
+            Log.d("Billing", "Calling listener onPurchaseAcknowledged")
+            listener?.onPurchaseAcknowledged(purchase)
+        }
     }
 
-    private fun handlePurchase(
-        purchase: Purchase
-    ) {
+    private fun handlePurchase(purchase: Purchase) {
+        Log.d("Billing", "handlePurchase")
+
         if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED)
             return
 
         if (purchase.isAcknowledged) {
+            Log.d("Billing", "Already acknowledged")
             listener?.onPurchaseAcknowledged(purchase)
             return
         }
 
+        Log.d("Billing", "Calling acknowledgePurchase")
         acknowledgePurchase(purchase)
     }
 
@@ -83,7 +113,6 @@ class BillingManager(context: Context) {
     }
 
     fun loadProducts(productIDs: List<String>) {
-
         if (!isReady)
             return
 

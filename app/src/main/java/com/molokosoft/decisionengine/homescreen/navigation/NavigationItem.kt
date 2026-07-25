@@ -4,5 +4,6 @@ enum class NavigationItem {
     HOME,
     NEW_DECISION,
     SEE_DECISION,
-    HISTORY
+    HISTORY,
+    SETTINGS
 }

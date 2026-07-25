@@ -14,6 +14,7 @@ import com.molokosoft.decisionengine.paywall.one.FeaturesScreen
 import com.molokosoft.decisionengine.paywall.one.EnforceConversionScreen
 import com.molokosoft.decisionengine.paywall.one.FreeTrialScreen
 import com.molokosoft.decisionengine.paywall.one.OfferTilesScreen
+import com.molokosoft.decisionengine.commonclasses.SubscriptionTypes
 
 sealed class Paywall {
     data object Features : Paywall()
@@ -30,10 +31,11 @@ fun Paywall.next(): Paywall =
         Paywall.FreeTrial -> Paywall.Features
     }
 
+
 @Composable
 fun PaywallScreen(
     modifier: Modifier = Modifier,
-    onContinueClicked: (eMail: EMail?) -> Unit
+    onContinueClicked: (subscriptionType: SubscriptionTypes, eMail: EMail?) -> Unit
 ){
     var currentScreen by remember {
         mutableStateOf<Paywall>(Paywall.Features)
@@ -69,7 +71,7 @@ fun PaywallScreen(
         Paywall.OfferTiles -> OfferTilesScreen(
             modifier = modifier,
             onContinueClicked = {
-                currentScreen = currentScreen.next()
+                onContinueClicked(it, null)
             }
         )
 
@@ -86,7 +88,7 @@ fun PaywallScreen(
                     }
                 }
 
-                onContinueClicked(EMail.tryCreate(eMailAddress))
+                onContinueClicked(SubscriptionTypes.FreeTrial, EMail.tryCreate(eMailAddress))
             }
         )
     }

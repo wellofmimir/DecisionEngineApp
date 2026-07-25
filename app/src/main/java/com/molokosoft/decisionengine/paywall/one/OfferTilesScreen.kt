@@ -39,11 +39,12 @@ import com.molokosoft.decisionengine.theme.DecisionGreen
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 import com.molokosoft.decisionengine.theme.FreeTrialPink
 import com.molokosoft.decisionengine.theme.MostChosenGreen
+import com.molokosoft.decisionengine.commonclasses.SubscriptionTypes
 
 @Composable
 fun OfferTilesScreen(
     modifier: Modifier = Modifier,
-    onContinueClicked: () -> Unit
+    onContinueClicked: (offerType: SubscriptionTypes) -> Unit
 ){
     val typography = LocalAppTypography.current
 
@@ -131,7 +132,10 @@ fun OfferTilesScreen(
                     shape = RoundedCornerShape(12.dp)
                 )
                 .height(128.dp)
-                .fillMaxWidth(0.9f),
+                .fillMaxWidth(0.9f)
+                .clickable(){
+                    onContinueClicked(SubscriptionTypes.Weekly)
+                },
             contentAlignment = Alignment.CenterStart
         ){
             Row(
@@ -384,7 +388,7 @@ fun OfferTilesScreen(
                 .height(128.dp)
                 .fillMaxWidth(0.9f)
                 .clickable {
-                    onContinueClicked()
+                    onContinueClicked(SubscriptionTypes.FreeTrial)
                 },
             contentAlignment = Alignment.CenterStart
         ){

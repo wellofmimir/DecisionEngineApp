@@ -19,9 +19,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.molokosoft.decisionengine.R
-import com.molokosoft.decisionengine.homescreen.buttons.getLogo
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 

@@ -4,8 +4,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -175,21 +176,23 @@ fun ChooseComparisonCriteriaScreen(
                             color = DecisionBlueLight,
                             shape = RoundedCornerShape(4.dp)
                         )
-                        .combinedClickable(
-                            onClick = {
-                                if (isSelected) {
-                                    selectedCriteria = selectedCriteria - criterion.first
-                                } else {
-                                    selectedCriteria = selectedCriteria + criterion.first
-                                    criterionToImportance = criterion.first to 5
-                                    showEnterCriterionDialog = true
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onTap = {
+                                    if (isSelected) {
+                                        selectedCriteria = selectedCriteria - criterion.first
+                                    } else {
+                                        selectedCriteria = selectedCriteria + criterion.first
+                                        criterionToImportance = criterion.first to 5
+                                        showEnterCriterionDialog = true
+                                    }
+                                },
+                                onDoubleTap = {
+                                    infoTextAndDescription = criterion.first to criterion.second
+                                    showErrorDialog = true
                                 }
-                            },
-                            onDoubleClick = {
-                                infoTextAndDescription = criterion.first to criterion.second
-                                showErrorDialog = true
-                            }
-                        ),
+                            )
+                        },
                     contentAlignment = Alignment.Center
                 ){
                     Text(

@@ -1,5 +1,6 @@
 package com.molokosoft.decisionengine.newdecisionscreen.viewmodel
 
+import android.app.Activity
 import androidx.lifecycle.ViewModel
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.*
 
@@ -11,18 +12,33 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewModelScope
+import android.util.Log
+
+import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.Purchase
+import com.molokosoft.decisionengine.BuildConfig
 import com.molokosoft.decisionengine.commonclasses.EMail
+import com.molokosoft.decisionengine.commonclasses.SubscriptionTypes
+import com.molokosoft.decisionengine.billing.BillingManager
+import com.molokosoft.decisionengine.repositories.DecisionRepository
 
 class NewDecisionViewModel(
     private val factorAnalysisRepository: FactoryAnalysisRepository,
-    private val userDataRepository: UserDataRepository
+    private val userDataRepository: UserDataRepository,
+    private val decisionRepository: DecisionRepository,
+    private val billingManager: BillingManager
 ) : ViewModel() {
 
-    private val _draft = MutableStateFlow(DecisionDraft())
-    val draft = _draft.asStateFlow()
+    private val _draft =
+        MutableStateFlow(DecisionDraft())
 
-    private val _showBottomBar = MutableStateFlow(true)
-    val showBottomBar = _showBottomBar.asStateFlow()
+    val draft =
+        _draft.asStateFlow()
+
+    private val _showBottomBar =
+        MutableStateFlow(true)
+    val showBottomBar =
+        _showBottomBar.asStateFlow()
 
     fun showBottomBar() {
         _showBottomBar.value = true
@@ -33,17 +49,24 @@ class NewDecisionViewModel(
     }
 
     fun resetDraft() {
-        _draft.value = DecisionDraft()
+        viewModelScope.launch {
+            _draft.value = DecisionDraft()
+        }
     }
 
     fun setTitle(title: String) {
+        _draft.value.title.ifBlank {
+            getCriteriaSuggestions(title)
+        }
+
+        if (title != _draft.value.title && _draft.value.title.isNotBlank())
+            getCriteriaSuggestions(title)
+
         _draft.update {
             it.copy(
                 title = title
             )
         }
-
-        getCriteriaSuggestions(title)
     }
 
     fun setDecisionType(yesOrNoDecision: Boolean) {
@@ -122,7 +145,7 @@ class NewDecisionViewModel(
     fun startAnalysis() {
         _draft.update {
             it.copy(
-                optionAnalyses = factorAnalysisRepository.analyzeOptions(draft.value.options)
+                optionAnalyses = factorAnalysisRepository.analyzeOptions(it.options)
             )
         }
 
@@ -131,9 +154,11 @@ class NewDecisionViewModel(
         viewModelScope.launch {
             _draft.update {
                 it.copy(
-                    decisionAnalysisResult = factorAnalysisRepository.getAiAnalysis(draft.value.optionAnalyses)
+                    decisionAnalysisResult = factorAnalysisRepository.getAiAnalysis(it.optionAnalyses)
                 )
             }
+
+            saveDecision()
         }
     }
 
@@ -155,5 +180,111 @@ class NewDecisionViewModel(
                 )
             }
         }
+    }
+
+    private fun saveDecision() {
+        val fullDraft = _draft.value
+
+        viewModelScope.launch {
+            decisionRepository.insertDecision(fullDraft)
+        }
+    }
+
+    fun checkSubscription(
+        onSuccess: () -> Unit,
+        onFailure: () -> Unit
+    ) {
+        billingManager.clearListener()
+
+        billingManager.setListener(object : BillingManager.Listener {
+            override fun onBillingReady() {
+                billingManager.queryActiveSubscriptions()
+            }
+
+            override fun onActivePurchasesLoaded(purchases: List<Purchase>) {
+                Log.d("Billing", "Found ${purchases.size} purchases")
+
+                purchases.forEach {
+                    Log.d("Billing", "Products = ${it.products}")
+                    Log.d("Billing", "State = ${it.purchaseState}")
+                }
+
+                val hasSubscription = purchases.any {
+                    it.purchaseState == Purchase.PurchaseState.PURCHASED && "test_weekly_subscription" in it.products
+                }
+
+                Log.d("Billing", "Has subscription = $hasSubscription")
+
+                if (hasSubscription)
+                    onSuccess()
+                else
+                    onFailure()
+            }
+
+            override fun onProductsLoaded() {
+            }
+
+            override fun onPurchaseAcknowledged(purchase: Purchase) {
+            }
+
+            override fun onPurchaseFailure(billingResult: BillingResult) {
+                onFailure()
+            }
+
+            override fun onError(billingResult: BillingResult) {
+                onFailure()
+            }
+        })
+
+        billingManager.connect()
+    }
+
+    fun startBillingProcess(
+        subscriptionType: SubscriptionTypes,
+        activity: Activity,
+        onSuccess: () -> Unit,
+        onFailure: () -> Unit
+    ) {
+        billingManager.clearListener()
+
+        billingManager.setListener(object: BillingManager.Listener {
+            override fun onBillingReady() {
+                billingManager.queryActiveSubscriptions()
+            }
+
+            override fun onProductsLoaded() {
+                billingManager.buySubscription(activity, "test_weekly_subscription")
+
+                //TODO: raus damit
+                onSuccess()
+            }
+
+            override fun onPurchaseAcknowledged(purchase: Purchase) {
+                onSuccess()
+            }
+
+            override fun onPurchaseFailure(billingResult: BillingResult) {
+                onFailure()
+            }
+
+            override fun onError(billingResult: BillingResult) {
+                onFailure()
+            }
+
+            override fun onActivePurchasesLoaded(purchases: List<Purchase>) {
+                val hasSubscription = purchases.any {
+                    "test_weekly_subscription" in it.products
+                }
+
+                if (hasSubscription) {
+                    onSuccess()
+                }
+                else {
+                    billingManager.loadProducts(listOf("test_weekly_subscription"))
+                }
+            }
+        })
+
+        billingManager.connect()
     }
 }

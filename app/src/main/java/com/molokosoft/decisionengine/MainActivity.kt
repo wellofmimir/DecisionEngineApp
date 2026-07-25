@@ -6,7 +6,6 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.runtime.LaunchedEffect
 
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -15,9 +14,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 
 import com.molokosoft.decisionengine.theme.DecisionEngineTheme
 import com.molokosoft.decisionengine.welcomescreen.WelcomeScreen
@@ -28,8 +24,13 @@ import com.molokosoft.decisionengine.paywall.PaywallScreen
 import com.molokosoft.decisionengine.repositories.FactoryAnalysisRepository
 import com.molokosoft.decisionengine.network.backend.DecisionEngineClient
 import com.molokosoft.decisionengine.repositories.UserDataRepository
-import com.molokosoft.decisionengine.smartphone.AppSetIdProvider
-import kotlinx.coroutines.launch
+import com.molokosoft.decisionengine.billing.BillingManager
+import com.molokosoft.decisionengine.decisionhistoryscreen.viewmodel.DecisionHistoryViewModel
+import com.molokosoft.decisionengine.preferences.SecurePreferences
+import com.molokosoft.decisionengine.repositories.DecisionRepository
+import androidx.compose.runtime.LaunchedEffect
+import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
+import com.molokosoft.decisionengine.repositories.ArticlesRepository
 
 
 sealed class AppState {
@@ -53,15 +54,49 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
 
+            val securePreferences = SecurePreferences(applicationContext)
+            val decisionRepository = DecisionRepository(applicationContext)
+            val decisionEngineClient = DecisionEngineClient(SharedHttpClient.sharedClient, securePreferences.apiKey())
+            val userDataRepository = UserDataRepository(decisionEngineClient, securePreferences)
+
+            @Suppress("UNCHECKED_CAST")
             val newDecisionViewModel: NewDecisionViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
 
-                        val decisionEngineClient = DecisionEngineClient(SharedHttpClient.sharedClient)
-
                         return NewDecisionViewModel(
                             factorAnalysisRepository = FactoryAnalysisRepository(decisionEngineClient),
-                            userDataRepository = UserDataRepository(decisionEngineClient)
+                            userDataRepository = UserDataRepository(decisionEngineClient, securePreferences),
+                            decisionRepository = decisionRepository,
+                            billingManager = BillingManager(applicationContext)
+                        ) as T
+                    }
+                }
+            )
+
+            @Suppress("UNCHECKED_CAST")
+            val decisionHistoryViewModel: DecisionHistoryViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+
+                        return DecisionHistoryViewModel(
+                            decisionRepository = decisionRepository
+                        ) as T
+                    }
+                }
+            )
+
+            @Suppress("UNCHECKED_CAST")
+            val homeScreenViewModel: HomeScreenViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+
+                        val articlesRepository = ArticlesRepository(decisionEngineClient)
+
+                        return HomeScreenViewModel(
+                            articlesRepository = articlesRepository,
+                            decisionRepository = decisionRepository,
+                            userDataRepository = userDataRepository
                         ) as T
                     }
                 }
@@ -69,6 +104,17 @@ class MainActivity : ComponentActivity() {
 
             var appState by remember {
                 mutableStateOf<AppState>(Welcome)
+            }
+
+            LaunchedEffect(Unit) {
+                newDecisionViewModel.checkSubscription(
+                    onSuccess = {
+                        appState = MainApp
+                    },
+                    onFailure = {
+                        appState = Welcome
+                    }
+                )
             }
 
             DecisionEngineTheme {
@@ -90,17 +136,32 @@ class MainActivity : ComponentActivity() {
                     )
 
                     Paywall -> PaywallScreen(
-                        onContinueClicked = { eMail ->
-                            appState = appState.next()
+                        onContinueClicked = { subscriptionType, eMail ->
 
-                            if (eMail != null)
-                                newDecisionViewModel.saveEMail(eMail)
+                            appState = appState.next()
+                            return@PaywallScreen
+
+                            newDecisionViewModel.startBillingProcess(
+                                subscriptionType = subscriptionType,
+                                activity = this,
+                                onSuccess = {
+                                    appState = appState.next()
+
+                                    if (eMail != null)
+                                        newDecisionViewModel.saveEMail(eMail)
+                                },
+                                onFailure = {
+
+                                }
+                            )
                         }
                     )
 
                     MainApp -> {
                         MainApplication(
-                            newDecisionViewModel = newDecisionViewModel
+                            newDecisionViewModel = newDecisionViewModel,
+                            decisionHistoryViewModel = decisionHistoryViewModel,
+                            homeScreenViewModel = homeScreenViewModel
                         )
                     }
                 }

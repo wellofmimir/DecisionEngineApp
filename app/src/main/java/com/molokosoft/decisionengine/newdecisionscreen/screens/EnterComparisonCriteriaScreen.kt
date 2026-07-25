@@ -11,11 +11,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.gestures.detectTapGestures
 
 import androidx.compose.foundation.shape.RoundedCornerShape
 
@@ -133,12 +134,13 @@ fun EnterComparisonCriteriaScreen(
                             color = DecisionBlueLight,
                             shape = RoundedCornerShape(4.dp)
                         )
-                        .combinedClickable(
-                            onClick = {},
-                            onLongClick = {
-                                onDeleteCriteria(criterion)
-                            }
-                        ),
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onLongPress = {
+                                    onDeleteCriteria(criterion)
+                                }
+                            )
+                        },
                     contentAlignment = Alignment.Center
                 ){
                     Text(
