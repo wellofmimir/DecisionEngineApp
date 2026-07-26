@@ -1,6 +1,6 @@
 package com.molokosoft.decisionengine.settingsscreen
 
-import android.content.Context
+import android.content.ActivityNotFoundException
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -26,14 +26,37 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalContext
-
+import android.content.Context
+import android.content.Intent
 import com.molokosoft.decisionengine.settingsscreen.model.SettingsScreenViewModel
 import com.molokosoft.decisionengine.theme.LocalAppTypography
+import androidx.core.net.toUri
+
+fun openPlayStoreRating(context: Context) {
+    val packageName = context.packageName
+
+    try {
+        val intent = Intent(
+            Intent.ACTION_VIEW,
+            "market://details?.id=$packageName".toUri()
+        )
+
+        context.startActivity(intent)
+
+    } catch (e: ActivityNotFoundException) {
+        val intent = Intent(
+            Intent.ACTION_VIEW,
+            "https://play.google.com/store/apps/details?id=$packageName".toUri()
+        )
+
+        context.startActivity(intent)
+    }
+}
 
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
-    settingsScreenViewModel: SettingsScreenViewModel
+    settingsScreenViewModel: SettingsScreenViewModel,
 ) {
     val context = LocalContext.current
     val typography = LocalAppTypography.current
@@ -120,6 +143,9 @@ fun SettingsScreen(
             },
             onSeeVersionInformation = {
                 showVersionInformationBox = true
+            },
+            onRateMyAppRequested = {
+                openPlayStoreRating(context)
             }
         )
 

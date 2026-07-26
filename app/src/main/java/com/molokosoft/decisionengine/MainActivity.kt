@@ -31,7 +31,6 @@ import com.molokosoft.decisionengine.repositories.DecisionRepository
 import androidx.compose.runtime.LaunchedEffect
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
 import com.molokosoft.decisionengine.repositories.ArticlesRepository
-import com.molokosoft.decisionengine.settingsscreen.SettingsScreen
 import com.molokosoft.decisionengine.settingsscreen.model.SettingsScreenViewModel
 
 
@@ -68,7 +67,7 @@ class MainActivity : ComponentActivity() {
 
                         return NewDecisionViewModel(
                             factorAnalysisRepository = FactoryAnalysisRepository(decisionEngineClient),
-                            userDataRepository = UserDataRepository(decisionEngineClient, securePreferences),
+                            userDataRepository = userDataRepository,
                             decisionRepository = decisionRepository,
                             billingManager = BillingManager(applicationContext)
                         ) as T
@@ -125,7 +124,7 @@ class MainActivity : ComponentActivity() {
                         appState = MainApp
                     },
                     onFailure = {
-                        appState = MainApp
+                        appState = Welcome
                     }
                 )
             }

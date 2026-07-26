@@ -70,27 +70,41 @@ fun LearnMoreAboutSection(
             color = Color.LightGray
         )
 
-        Text(
-            text = shortText,
-            fontSize = typography.titleSmall.fontSize,
-            color = Color.Black,
-            fontWeight = FontWeight.Light,
-            textAlign = TextAlign.Center,
+        Column(
             modifier = Modifier
-                .padding(horizontal = 8.dp, vertical = 4.dp)
-        )
+                .fillMaxWidth()
+                .background(
+                    Color.White,
+                RoundedCornerShape(
+                        bottomEnd = 12.dp,
+                        bottomStart = 12.dp
+                    )
+                ),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = shortText,
+                fontSize = typography.titleSmall.fontSize,
+                color = Color.Black,
+                fontWeight = FontWeight.Light,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
 
-        Text(
-            text = "Read Full Article",
-            fontSize = typography.titleSmall.fontSize,
-            color = Color.Black,
-            fontWeight = FontWeight.SemiBold,
-            textDecoration = TextDecoration.Underline,
-            modifier = Modifier
-                .padding(horizontal = 8.dp)
-                .clickable() {
-                    onReadArticleClicked()
-                }
-        )
+            Text(
+                text = "Read Full Article",
+                fontSize = typography.titleSmall.fontSize,
+                color = Color.Black,
+                fontWeight = FontWeight.SemiBold,
+                textDecoration = TextDecoration.Underline,
+                modifier = Modifier
+                    .padding(horizontal = 8.dp)
+                    .clickable() {
+                        onReadArticleClicked()
+                    }
+            )
+        }
     }
 }

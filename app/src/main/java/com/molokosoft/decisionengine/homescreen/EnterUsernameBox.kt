@@ -160,7 +160,7 @@ fun EnterUsernameBox(
                     contentAlignment = Alignment.Center
                 ){
                     Text(
-                        text = "Add",
+                        text = "Save",
                         textAlign = TextAlign.Center,
                         color = Color.White
                     )

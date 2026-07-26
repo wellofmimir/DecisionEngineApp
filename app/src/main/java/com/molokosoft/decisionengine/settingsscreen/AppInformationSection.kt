@@ -36,7 +36,8 @@ fun Context.getAppVersionName(): String {
 fun AppInformationSection(
     modifier: Modifier = Modifier,
     onSendFeedbackRequested: () -> Unit,
-    onSeeVersionInformation: () -> Unit
+    onSeeVersionInformation: () -> Unit,
+    onRateMyAppRequested: () -> Unit
 ) {
     val context = LocalContext.current
     val typography = LocalAppTypography.current
@@ -61,7 +62,7 @@ fun AppInformationSection(
         horizontalAlignment = Alignment.Start
     ) {
         Text(
-            text = "About DecisionEngine",
+            text = "App Information",
             fontSize = typography.titleMedium.fontSize * 0.75f,
             color = Color.Black,
             modifier = Modifier
@@ -98,7 +99,7 @@ fun AppInformationSection(
                 logo = R.drawable.star_foreground,
                 color = Orange,
                 onClicked = {
-
+                    onRateMyAppRequested()
                 }
             )
 

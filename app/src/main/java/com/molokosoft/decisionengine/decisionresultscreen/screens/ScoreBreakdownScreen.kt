@@ -532,10 +532,6 @@ fun ScoreBreakdownScreen(
                     color = DecisionBlue,
                     shape = RoundedCornerShape(64.dp)
                 )
-                .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(64.dp)
-                )
                 .background(
                     color = DecisionBlue,
                     shape = RoundedCornerShape(64.dp)
@@ -549,10 +545,6 @@ fun ScoreBreakdownScreen(
                     .border(
                         width = 1.dp,
                         color = DecisionBlue,
-                        shape = RoundedCornerShape(64.dp)
-                    )
-                    .shadow(
-                        elevation = 8.dp,
                         shape = RoundedCornerShape(64.dp)
                     )
                     .background(

@@ -429,11 +429,6 @@ fun OptionComparisonScreen(
 
             Spacer(
                 modifier = Modifier
-                    .height(4.dp)
-            )
-
-            Spacer(
-                modifier = Modifier
                     .height(16.dp)
             )
         }
@@ -446,10 +441,6 @@ fun OptionComparisonScreen(
                 .border(
                     width = 1.dp,
                     color = DecisionBlue,
-                    shape = RoundedCornerShape(64.dp)
-                )
-                .shadow(
-                    elevation = 8.dp,
                     shape = RoundedCornerShape(64.dp)
                 )
                 .background(
@@ -465,10 +456,6 @@ fun OptionComparisonScreen(
                     .border(
                         width = 1.dp,
                         color = DecisionBlue,
-                        shape = RoundedCornerShape(64.dp)
-                    )
-                    .shadow(
-                        elevation = 8.dp,
                         shape = RoundedCornerShape(64.dp)
                     )
                     .background(

@@ -70,8 +70,12 @@ fun PaywallScreen(
 
         Paywall.OfferTiles -> OfferTilesScreen(
             modifier = modifier,
-            onContinueClicked = {
-                onContinueClicked(it, null)
+            onContinueClicked = { subscriptionType ->
+                if (subscriptionType == SubscriptionTypes.FreeTrial) {
+                    currentScreen = currentScreen.next()
+                } else {
+                    onContinueClicked(subscriptionType, null)
+                }
             }
         )
 

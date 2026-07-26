@@ -32,6 +32,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.painterResource
 import com.molokosoft.decisionengine.R
 import androidx.compose.ui.draw.clip
@@ -91,6 +92,8 @@ fun Home(
         "Let's make some progress!",
         "Happy to see you back,\n$username!"
     )
+
+    val greetingText by rememberSaveable { mutableStateOf(if (username.isBlank()) "Welcome, Stranger!" else listOfGreetings.random()) }
 
     LaunchedEffect(Unit) {
         homeScreenViewModel.getDailyArticle()
@@ -155,7 +158,7 @@ fun Home(
                     .weight(3f)
             ) {
                 Text(
-                    text = if (username.isBlank()) "Welcome, Stranger!" else listOfGreetings.random(),
+                    text = greetingText,
                     fontSize = typography.titleLarge.fontSize,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.Black,

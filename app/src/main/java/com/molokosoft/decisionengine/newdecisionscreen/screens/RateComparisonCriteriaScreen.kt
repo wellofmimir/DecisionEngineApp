@@ -298,10 +298,6 @@ fun RateComparisonCriteriaScreen(
                     color = DecisionBlue,
                     shape = RoundedCornerShape(64.dp)
                 )
-                .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(64.dp)
-                )
                 .background(
                     color = DecisionBlue,
                     shape = RoundedCornerShape(64.dp)
