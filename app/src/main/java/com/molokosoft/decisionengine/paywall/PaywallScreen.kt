@@ -1,5 +1,8 @@
 package com.molokosoft.decisionengine.paywall
 
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,6 +40,10 @@ fun PaywallScreen(
     modifier: Modifier = Modifier,
     onContinueClicked: (subscriptionType: SubscriptionTypes, eMail: EMail?) -> Unit
 ){
+    val notificationPermissionLauncher = rememberLauncherForActivityResult (
+        contract = ActivityResultContracts.RequestPermission()
+    ) {}
+
     var currentScreen by remember {
         mutableStateOf<Paywall>(Paywall.Features)
     }
@@ -74,6 +81,10 @@ fun PaywallScreen(
                 if (subscriptionType == SubscriptionTypes.FreeTrial) {
                     currentScreen = currentScreen.next()
                 } else {
+                    if (Build.VERSION.SDK_INT >= 33) {
+                        notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    }
+
                     onContinueClicked(subscriptionType, null)
                 }
             }
@@ -90,6 +101,10 @@ fun PaywallScreen(
                         hasError = true
                         return@FreeTrialScreen
                     }
+                }
+
+                if (Build.VERSION.SDK_INT >= 33) {
+                    notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                 }
 
                 onContinueClicked(SubscriptionTypes.FreeTrial, EMail.tryCreate(eMailAddress))

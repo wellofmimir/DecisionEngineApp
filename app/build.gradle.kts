@@ -100,6 +100,9 @@ dependencies {
     // EncryptedSharedPreferences / MasterKey
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
 
+    //Notifications & Work
+    implementation("androidx.work:work-runtime-ktx:2.11.0")
+
     // Tests
     testImplementation(libs.junit)
 

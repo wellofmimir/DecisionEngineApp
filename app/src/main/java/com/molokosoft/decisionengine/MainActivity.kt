@@ -6,6 +6,8 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import android.app.NotificationChannel
+import android.app.NotificationManager
 
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -114,6 +116,9 @@ class MainActivity : ComponentActivity() {
                 }
             )
 
+            val manager = getSystemService(NotificationManager::class.java)
+            manager.createNotificationChannel(NotificationChannel("motivational_quote", "motivational_quote", NotificationManager.IMPORTANCE_HIGH))
+
             var appState by remember {
                 mutableStateOf<AppState>(Welcome)
             }
@@ -124,7 +129,7 @@ class MainActivity : ComponentActivity() {
                         appState = MainApp
                     },
                     onFailure = {
-                        appState = Welcome
+                        appState = MainApp
                     }
                 )
             }

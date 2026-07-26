@@ -1,5 +1,8 @@
 package com.molokosoft.decisionengine.homescreen
 
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.runtime.Composable
@@ -95,6 +98,10 @@ fun Home(
 
     val greetingText by rememberSaveable { mutableStateOf(if (username.isBlank()) "Welcome, Stranger!" else listOfGreetings.random()) }
 
+    val notificationPermissionLauncher = rememberLauncherForActivityResult (
+        contract = ActivityResultContracts.RequestPermission()
+    ) {}
+
     LaunchedEffect(Unit) {
         homeScreenViewModel.getDailyArticle()
 
@@ -112,6 +119,10 @@ fun Home(
             onAdd = { newUsername ->
                 showUsernameEntryBox = false
                 homeScreenViewModel.setUsername(newUsername)
+
+                if (Build.VERSION.SDK_INT >= 33) {
+                    notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
             }
         )
     }
