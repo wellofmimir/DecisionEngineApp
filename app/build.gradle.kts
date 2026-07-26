@@ -60,34 +60,54 @@ android {
 }
 
 dependencies {
-
+    // AndroidX
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
+
+    // Compose
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+
+    // Lifecycle / ViewModel
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+
+    // Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
+
+    // Ktor
+    implementation("io.ktor:ktor-client-core:3.0.0")
+    implementation("io.ktor:ktor-serialization-kotlinx-json:3.0.0")
+
+    // OkHttp
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // Google Play
+    implementation("com.google.android.gms:play-services-appset:16.1.0")
+
+    // Billing
+    implementation("com.android.billingclient:billing:9.1.0")
+
+    // Room
+    implementation("androidx.room:room-runtime:2.8.0")
+    implementation("androidx.room:room-ktx:2.8.0")
+    ksp("androidx.room:room-compiler:2.8.0")
+
+    // EncryptedSharedPreferences / MasterKey
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
+
+    // Tests
     testImplementation(libs.junit)
+
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    implementation("io.ktor:ktor-client-core:1.6.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.0.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
-    implementation("io.ktor:ktor-serialization-kotlinx-json-jvm:3.0.0")
-    implementation("com.squareup.okhttp3:okhttp:4.12.0")
-    implementation("com.google.android.gms:play-services-appset:16.1.0")
-    implementation("com.android.billingclient:billing:9.1.0")
-    implementation("androidx.room:room-runtime:2.8.0")
-    implementation("androidx.room:room-ktx:2.8.0")
-    implementation("androidx.security:security-crypto:1.1.0-alpha03")
-    ksp("androidx.room:room-compiler:2.8.0")
 }

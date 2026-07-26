@@ -31,6 +31,8 @@ import com.molokosoft.decisionengine.repositories.DecisionRepository
 import androidx.compose.runtime.LaunchedEffect
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
 import com.molokosoft.decisionengine.repositories.ArticlesRepository
+import com.molokosoft.decisionengine.settingsscreen.SettingsScreen
+import com.molokosoft.decisionengine.settingsscreen.model.SettingsScreenViewModel
 
 
 sealed class AppState {
@@ -56,7 +58,7 @@ class MainActivity : ComponentActivity() {
 
             val securePreferences = SecurePreferences(applicationContext)
             val decisionRepository = DecisionRepository(applicationContext)
-            val decisionEngineClient = DecisionEngineClient(SharedHttpClient.sharedClient, securePreferences.apiKey())
+            val decisionEngineClient = DecisionEngineClient(SharedHttpClient.sharedClient, "")
             val userDataRepository = UserDataRepository(decisionEngineClient, securePreferences)
 
             @Suppress("UNCHECKED_CAST")
@@ -91,11 +93,22 @@ class MainActivity : ComponentActivity() {
                 factory = object : ViewModelProvider.Factory {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
 
-                        val articlesRepository = ArticlesRepository(decisionEngineClient)
+                        val articlesRepository = ArticlesRepository(applicationContext, securePreferences, decisionEngineClient)
 
                         return HomeScreenViewModel(
                             articlesRepository = articlesRepository,
                             decisionRepository = decisionRepository,
+                            userDataRepository = userDataRepository
+                        ) as T
+                    }
+                }
+            )
+
+            @Suppress("UNCHECKED_CAST")
+            val settingsScreenViewModel: SettingsScreenViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        return SettingsScreenViewModel(
                             userDataRepository = userDataRepository
                         ) as T
                     }
@@ -112,7 +125,7 @@ class MainActivity : ComponentActivity() {
                         appState = MainApp
                     },
                     onFailure = {
-                        appState = Welcome
+                        appState = MainApp
                     }
                 )
             }
@@ -161,7 +174,8 @@ class MainActivity : ComponentActivity() {
                         MainApplication(
                             newDecisionViewModel = newDecisionViewModel,
                             decisionHistoryViewModel = decisionHistoryViewModel,
-                            homeScreenViewModel = homeScreenViewModel
+                            homeScreenViewModel = homeScreenViewModel,
+                            settingsScreenViewModel = settingsScreenViewModel
                         )
                     }
                 }

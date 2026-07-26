@@ -87,6 +87,8 @@ class HomeScreenViewModel(
                     takeAwayPoints = dailyArticle.takeAwayPoints
                 )
             }
+
+            articlesRepository.setDailyArticleObtained()
         }
     }
 }

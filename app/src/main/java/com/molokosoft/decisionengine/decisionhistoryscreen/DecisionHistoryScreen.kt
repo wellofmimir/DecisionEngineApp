@@ -87,7 +87,7 @@ fun DecisionHistoryScreen(
                 )
 
                 Text(
-                    text = "What decision are you working on today?",
+                    text = "Review your past decisions and revisit what mattered.",
                     fontSize = typography.titleMedium.fontSize * 0.75f,
                     fontWeight = FontWeight.Light,
                     color = Color.Black

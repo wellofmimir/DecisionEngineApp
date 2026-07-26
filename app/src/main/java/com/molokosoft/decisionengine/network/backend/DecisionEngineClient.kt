@@ -106,6 +106,33 @@ class DecisionEngineClient(
             }
         }
 
+    suspend fun sendFeedback(feedback: String): Boolean =
+        withContext(Dispatchers.IO) {
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val json = JSONObject()
+                .put("feedback", feedback)
+
+            val requestBody = json.toString().toRequestBody(mediaType)
+
+            val request = Request.Builder()
+                .addHeader("Authorization", "Bearer $apiKey")
+                .post(requestBody)
+                .url("$baseUrl/api/v1/feedback/send")
+                .build()
+
+            try {
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string() ?: ""
+                    val apiResponse = Json.decodeFromString<ApiResponse<Unit>>(responseBody)
+                    return@withContext apiResponse.success
+                }
+            } catch (e: Exception) {
+                Log.e("DecisionEngine", "Network error", e)
+                e.printStackTrace()
+                false
+            }
+        }
+
     suspend fun getCriteriaSuggestions(decisionTitle: String): CriteriaSuggestionResponse? =
         withContext(Dispatchers.IO) {
             val mediaType = "application/json; charset=utf-8".toMediaType()

@@ -10,16 +10,12 @@ import androidx.core.content.edit
 class SecurePreferences(
     private val context: Context
 ) {
-    private val sharedPreferences =
-        context.getSharedPreferences("SecurePreferences", Context.MODE_PRIVATE)
-
-    private val masterKey by lazy {
+    val masterKey =
         MasterKey.Builder(context)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-    }
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
 
-    private val securePreferences by lazy {
+    private val securePreferences =
         EncryptedSharedPreferences.create(
             context,
             "SecurePreferences",
@@ -27,22 +23,22 @@ class SecurePreferences(
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
-    }
 
-    fun setFirstDecisionDone() {
+
+    fun setFeedbackLimitReached() {
         securePreferences.edit {
-            putBoolean("firstDecisionDone", true)
+            putBoolean("feedbackLimitReached", true)
         }
     }
 
-    fun firstDecisionDone(): Boolean {
-        return securePreferences.getBoolean("firstDecisionDone", false)
+    fun resetFeedbackLimitReached() {
+        securePreferences.edit {
+            putBoolean("feedbackLimitReached", false)
+        }
     }
 
-    fun setAPIKey(apiKey: String) {
-        securePreferences.edit {
-            putString("APIKey", apiKey)
-        }
+    fun feedbackLimitReached(): Boolean {
+        return securePreferences.getBoolean("feedbackLimitReached", false)
     }
 
     fun setUsername(username: String) {
@@ -55,7 +51,13 @@ class SecurePreferences(
         return securePreferences.getString("username", "") ?: ""
     }
 
-    fun apiKey(): String {
-        return securePreferences.getString("APIKey", "") ?: ""
+    fun setDailyArticleObtained() {
+        securePreferences.edit {
+            putBoolean("dailyArticle", true)
+        }
+    }
+
+    fun dailyArticleObtained(): Boolean {
+        return securePreferences.getBoolean("dailyArticle", false)
     }
 }

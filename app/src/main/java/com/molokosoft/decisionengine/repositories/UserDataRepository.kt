@@ -11,12 +11,20 @@ class UserDataRepository(
         return decisionEngineClient.sendEmail(eMail)
     }
 
-    fun firstDecisionDone(): Boolean {
-        return securePreferences.firstDecisionDone()
+    suspend fun sendFeedback(feedback: String): Boolean {
+        return decisionEngineClient.sendFeedback(feedback)
     }
 
-    fun setFirstDecisionDone() {
-        securePreferences.setFirstDecisionDone()
+    fun feedbackLimitReached(): Boolean {
+        return securePreferences.feedbackLimitReached()
+    }
+
+    fun setFeedbackLimitReached() {
+        securePreferences.setFeedbackLimitReached()
+    }
+
+    fun resetFeedbackLimitReached() {
+        securePreferences.resetFeedbackLimitReached()
     }
 
     fun setUsername(username: String) {

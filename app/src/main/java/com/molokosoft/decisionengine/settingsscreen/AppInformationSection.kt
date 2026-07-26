@@ -34,7 +34,9 @@ fun Context.getAppVersionName(): String {
 
 @Composable
 fun AppInformationSection(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSendFeedbackRequested: () -> Unit,
+    onSeeVersionInformation: () -> Unit
 ) {
     val context = LocalContext.current
     val typography = LocalAppTypography.current
@@ -86,7 +88,7 @@ fun AppInformationSection(
                 logo = R.drawable.layers_foreground,
                 color = DecisionBlueLight,
                 onClicked = {
-
+                    onSeeVersionInformation()
                 }
             )
 
@@ -106,7 +108,7 @@ fun AppInformationSection(
                 logo = R.drawable.messagecircle_foreground,
                 color = Purple40,
                 onClicked = {
-
+                    onSendFeedbackRequested()
                 }
             )
         }

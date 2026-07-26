@@ -1,5 +1,6 @@
 package com.molokosoft.decisionengine.settingsscreen
 
+import android.content.Context
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -20,19 +21,28 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.platform.LocalContext
 
-import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
+import com.molokosoft.decisionengine.settingsscreen.model.SettingsScreenViewModel
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 
 @Composable
 fun SettingsScreen(
     modifier: Modifier = Modifier,
-    homeScreenViewModel: HomeScreenViewModel
+    settingsScreenViewModel: SettingsScreenViewModel
 ) {
+    val context = LocalContext.current
     val typography = LocalAppTypography.current
     val verticalScroll = rememberScrollState()
-    val username by homeScreenViewModel.username.collectAsState()
+    val username by settingsScreenViewModel.username.collectAsState()
+    val feedbackLimitReached = settingsScreenViewModel.feedbackLimitReached()
+
+    var showFeedbackBox by remember { mutableStateOf(false) }
+    var showVersionInformationBox by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -88,7 +98,7 @@ fun SettingsScreen(
         UsernameSection(
             username = username,
             onNewUsernameEntered = {
-                homeScreenViewModel.setUsername(it)
+                settingsScreenViewModel.setUsername(it)
             }
         )
 
@@ -104,7 +114,14 @@ fun SettingsScreen(
                 .height(8.dp)
         )
 
-        AppInformationSection()
+        AppInformationSection(
+            onSendFeedbackRequested = {
+                showFeedbackBox = true
+            },
+            onSeeVersionInformation = {
+                showVersionInformationBox = true
+            }
+        )
 
         Spacer(
             modifier = Modifier
@@ -115,5 +132,31 @@ fun SettingsScreen(
             modifier = Modifier
                 .height(8.dp)
         )
+    }
+
+    if (showFeedbackBox) {
+        EnterFeedbackBox(
+            feedbackLimitReached = feedbackLimitReached,
+            onDismissRequest = {
+                showFeedbackBox = false
+            },
+            onSend = { feedback ->
+                showFeedbackBox = false
+                settingsScreenViewModel.saveFeedback(feedback)
+            }
+        )
+
+        return
+    }
+
+    if (showVersionInformationBox) {
+        VersionBox(
+            onDismissRequest = {
+                showVersionInformationBox = false
+            },
+            version = context.getAppVersionName()
+        )
+
+        return
     }
 }

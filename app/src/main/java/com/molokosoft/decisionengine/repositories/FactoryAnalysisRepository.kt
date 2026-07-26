@@ -11,8 +11,8 @@ import com.molokosoft.decisionengine.network.backend.model.dto.decision.Decision
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.CriterionSuggestion
 import android.util.Log
 import kotlinx.coroutines.delay
-import io.ktor.client.features.ClientRequestException
-import io.ktor.client.features.ServerResponseException
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.plugins.ServerResponseException
 import java.io.IOException
 
 fun Option.calculateWeightedScore(): Double {

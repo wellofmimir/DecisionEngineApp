@@ -26,12 +26,14 @@ import com.molokosoft.decisionengine.decisionhistoryscreen.DecisionHistoryScreen
 import com.molokosoft.decisionengine.decisionhistoryscreen.viewmodel.DecisionHistoryViewModel
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
 import com.molokosoft.decisionengine.settingsscreen.SettingsScreen
+import com.molokosoft.decisionengine.settingsscreen.model.SettingsScreenViewModel
 
 @Composable
 fun MainApplication(
     newDecisionViewModel: NewDecisionViewModel,
     decisionHistoryViewModel: DecisionHistoryViewModel,
-    homeScreenViewModel: HomeScreenViewModel
+    homeScreenViewModel: HomeScreenViewModel,
+    settingsScreenViewModel: SettingsScreenViewModel
 ){
     val decisionDraft by newDecisionViewModel.draft.collectAsState()
     val showNavigationBar by newDecisionViewModel.showBottomBar.collectAsState()
@@ -126,7 +128,7 @@ fun MainApplication(
                     modifier = Modifier
                         .fillMaxHeight()
                         .padding(innerPadding),
-                    homeScreenViewModel = homeScreenViewModel
+                    settingsScreenViewModel = settingsScreenViewModel
                 )
             }
         }
