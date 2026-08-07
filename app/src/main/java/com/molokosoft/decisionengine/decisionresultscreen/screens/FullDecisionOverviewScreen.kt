@@ -107,12 +107,12 @@ fun AnalysisPager(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = modifier
-            .fillMaxHeight()
+            .fillMaxSize()
     ){
         HorizontalPager(
             state = pagerState,
             modifier = Modifier
-                .fillMaxHeight()
+                .weight(1f)
                 .fillMaxWidth()
         ){ page ->
             AnalysisPage(
@@ -125,14 +125,16 @@ fun AnalysisPager(
             )
         }
 
+        PagerIndicator(
+            pageCount = pages.size,
+            currentPage = pagerState.currentPage,
+            modifier = Modifier
+                .padding(4.dp)
+        )
+
         Spacer(
             Modifier
                 .height(4.dp)
-        )
-
-        PagerIndicator(
-            pageCount = pages.size,
-            currentPage = pagerState.currentPage
         )
     }
 }
@@ -207,15 +209,13 @@ fun AnalysisPage(
 
         Box(
             modifier = Modifier
-                .fillMaxHeight()
+                .weight(1f)
                 .fillMaxWidth()
         ) {
             val scrollState = rememberScrollState()
 
             Column(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .fillMaxWidth()
                     .verticalScroll(scrollState)
             ) {
                 Text(
@@ -243,6 +243,9 @@ fun FullDecisionOverviewScreen(
         verticalArrangement = Arrangement.Center,
         modifier = modifier
             .fillMaxSize()
+            .background(
+                color = DecisionBlueLight
+            )
     ) {
         Spacer(
             modifier = Modifier
@@ -268,7 +271,7 @@ fun FullDecisionOverviewScreen(
 
         Spacer(
             modifier = Modifier
-                .height(32.dp)
+                .height(8.dp)
         )
 
         AnalysisPager(
@@ -279,7 +282,7 @@ fun FullDecisionOverviewScreen(
 
         Spacer(
             modifier = Modifier
-                .height(8.dp)
+                .height(16.dp)
         )
 
         Box(

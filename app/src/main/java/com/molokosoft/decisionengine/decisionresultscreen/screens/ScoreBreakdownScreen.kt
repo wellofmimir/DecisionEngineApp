@@ -436,6 +436,150 @@ fun FactorBreakdownSection(
 }
 
 @Composable
+fun OptionsBreakdownSection(
+    modifier: Modifier = Modifier,
+    optionAnalyses: List<OptionAnalysis>
+){
+    val typography = LocalAppTypography.current
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ){
+        Column(
+            modifier = Modifier
+                .shadow(
+                    elevation = 8.dp,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .background(
+                    color = DecisionBlueLight,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .padding(top = 8.dp)
+        ){
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Start
+            ){
+                Spacer(
+                    modifier = Modifier
+                        .width(16.dp)
+                )
+
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .background(
+                            color = VeryEasyReverseGreen,
+                            shape = CircleShape
+                        )
+                )
+
+                Spacer(
+                    modifier = Modifier
+                        .width(16.dp)
+                )
+
+                Text(
+                    text = "High Impact",
+                    fontSize = typography.titleSmall.fontSize * 0.8f,
+                    color = Color.Black
+                )
+
+                Spacer(
+                    modifier = Modifier
+                        .width(32.dp)
+                )
+
+                Box(
+                    modifier = Modifier
+                        .size(12.dp)
+                        .background(
+                            color = ImpossibleReverseRed,
+                            shape = CircleShape
+                        )
+                )
+
+                Spacer(
+                    modifier = Modifier
+                        .width(16.dp)
+                )
+
+                Text(
+                    text = "Low Impact",
+                    fontSize = typography.titleSmall.fontSize * 0.8f,
+                    color = Color.Black
+                )
+            }
+
+            HorizontalDivider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                thickness = 1.dp,
+                color = Color.LightGray
+            )
+
+            optionAnalyses.forEachIndexed { index, optionAnalysis ->
+
+                Spacer(
+                    modifier = Modifier
+                        .height(8.dp)
+                )
+
+                Text(
+                    text = optionAnalysis.name,
+                    fontSize = typography.titleSmall.fontSize,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Black,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                )
+
+                Text(
+                    text = "Confidence: ${optionAnalysis.weightedScoreAsPercentage()}%" ,
+                    fontSize = typography.titleSmall.fontSize,
+                    fontWeight = FontWeight.Light,
+                    color = Color.Black,
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                )
+
+                HorizontalDivider(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    thickness = 1.dp,
+                    color = Color.LightGray
+                )
+
+                optionAnalysis.analyses.forEach { criterion ->
+                    FactorBreakdownCard(
+                        iconResource = R.drawable.star_blue_foreground,
+                        factorName = criterion.name,
+                        factorImpact = criterion.percentage.toInt(),
+                        factorWeight = criterion.importance
+                    )
+                }
+
+                if (index != optionAnalyses.lastIndex) {
+                    HorizontalDivider(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        thickness = 1.dp,
+                        color = Color.LightGray
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun ScoreBreakdownScreen(
     modifier: Modifier = Modifier,
     decisionAnalysisResult: DecisionAnalysisResult?,
@@ -460,7 +604,7 @@ fun ScoreBreakdownScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .padding(horizontal = 8.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(verticalScroll)
                 .padding(bottom = 96.dp)
 
@@ -501,7 +645,7 @@ fun ScoreBreakdownScreen(
                     .height(4.dp)
             )
 
-            OptionBreakdownSection(
+            FactorBreakdownSection(
                 optionAnalyses = optionAnalyses
             )
 

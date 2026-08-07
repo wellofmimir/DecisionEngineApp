@@ -2,7 +2,6 @@ package com.molokosoft.decisionengine.database.entities
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Criterion
 
 @Entity(tableName = "Criteria")
 data class CriterionEntity(
@@ -11,12 +10,7 @@ data class CriterionEntity(
     val optionId: Long,
     val name: String,
     val importance: Int,
-    val score: Int
+    val score: Int,
+    val contribution: Double,
+    val percentage: Double
 )
-
-fun CriterionEntity.toDomain() =
-    Criterion(
-        name = name,
-        importance = importance,
-        score = score
-    )

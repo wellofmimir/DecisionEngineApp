@@ -26,17 +26,18 @@ class Notifier(
         }
 
         val intent = Intent(context, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra("showMotivationalQuote", true)
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
 
-        val pendingIntent = PendingIntent.getActivity (
+        val pendingIntent = PendingIntent.getActivity(
             context,
             0,
             intent,
-            PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(context, "motivational_quote")
+        val notification = NotificationCompat.Builder(context, "motivationalQuote")
             .setSmallIcon(R.drawable.decisionenginelogonew)
             .setColor(ContextCompat.getColor(context, R.color.white))
             .setContentTitle("A quote for you:")

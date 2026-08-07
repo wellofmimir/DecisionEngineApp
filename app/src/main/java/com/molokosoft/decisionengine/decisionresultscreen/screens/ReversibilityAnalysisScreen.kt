@@ -33,6 +33,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.foundation.rememberScrollState
 
 import com.molokosoft.decisionengine.R
+import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
 import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.*
@@ -42,26 +43,17 @@ import com.molokosoft.decisionengine.theme.LocalAppTypography
 fun ReversibilityExplanationCard(
     modifier: Modifier = Modifier,
     optionAnalyses: List<OptionAnalysis>,
-    onSeeFullAnalysisClicked: () -> Unit,
+    reversibilityAnalysisText: String
 ){
     val typography = LocalAppTypography.current
     val verticalScroll = rememberScrollState()
 
-    val imageResource = when (optionAnalyses.first().reversibility){
-        1 -> R.drawable.impossible_reverse_hook_foreground
-        2 -> R.drawable.hard_reverse_hook_foreground
-        3 -> R.drawable.medium_reverse_hook_foreground
-        4 -> R.drawable.easy_reverse_hook_foreground
-        5 -> R.drawable.very_easy_reverse_hook_foreground
-        else -> R.drawable.medium_reverse_hook_foreground
-    }
-
     val title = when (optionAnalyses.first().reversibility){
-        1 -> "impossible"
-        2 -> "hard"
-        3 -> "medium"
-        4 -> "easy"
-        5 -> "very Easy"
+        in 1 .. 2  -> "Impossible"
+        in 3 .. 4 -> "Hard"
+        in 5 .. 6 -> "Medium"
+        in 7 .. 8 -> "Easy"
+        in 9 .. 10 -> "Very Easy"
         else -> "Medium"
     }
 
@@ -87,8 +79,7 @@ fun ReversibilityExplanationCard(
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.Start,
             modifier = Modifier
-                .fillMaxHeight(0.75f)
-                .verticalScroll(verticalScroll)
+                .padding(start = 16.dp, end = 16.dp)
         ){
             Text(
                 text = "Why is reversibility $title?",
@@ -103,64 +94,22 @@ fun ReversibilityExplanationCard(
                     .height(16.dp)
             )
 
-//            optionAnalysis.first().reversibility.forEachIndexed { index, string ->
-//                Row(
-//                    modifier = Modifier
-//                        .padding(start = 16.dp),
-//                    verticalAlignment = Alignment.CenterVertically,
-//                    horizontalArrangement = Arrangement.Center
-//                ){
-//                    Image(
-//                        painter = painterResource(id = imageResource),
-//                        contentDescription = null,
-//                        modifier = Modifier
-//                            .size(32.dp, 32.dp)
-//                    )
-//
-//                    Spacer(
-//                        modifier = Modifier
-//                            .width(16.dp)
-//                    )
-//
-//                    Text(
-//                        text = string,
-//                        textAlign = TextAlign.Left,
-//                        fontSize = typography.titleSmall.fontSize,
-//                        color = Color.Black,
-//                        lineHeight = 16.sp
-//                    )
-//                }
-//
-//                Spacer(
-//                    modifier = Modifier
-//                        .height(8.dp)
-//                )
-//            }
+            Text(
+                text = reversibilityAnalysisText,
+                textAlign = TextAlign.Left,
+                fontSize = typography.titleSmall.fontSize,
+                fontWeight = FontWeight.Normal,
+                color = Color.Black,
+                lineHeight = 16.sp,
+                modifier = Modifier
+                    .verticalScroll(verticalScroll)
+            )
+
+            Spacer(
+                modifier = Modifier
+                    .height(8.dp)
+            )
         }
-
-        Spacer(
-            modifier = Modifier
-                .weight(1f)
-        )
-
-        Text(
-            text = "Tap here\nto see full reversibility analysis",
-            textAlign = TextAlign.Center,
-            fontSize = typography.titleSmall.fontSize,
-            textDecoration = TextDecoration.Underline,
-            color = Color.Black,
-            lineHeight = 16.sp,
-            modifier = Modifier
-                .align(Alignment.CenterHorizontally)
-                .clickable(){
-                    onSeeFullAnalysisClicked()
-                }
-        )
-
-        Spacer(
-            modifier = Modifier
-                .height(8.dp)
-        )
     }
 }
 @Composable
@@ -171,30 +120,50 @@ fun ReversibilityCard(
     val typography = LocalAppTypography.current
 
     val imageResource = when (optionAnalyses.first().reversibility){
-        1 -> R.drawable.impossible_foreground
-        2 -> R.drawable.hard_foreground
-        3 -> R.drawable.medium_foreground
-        4 -> R.drawable.easy_foreground
-        5 -> R.drawable.veryeasy_foreground
+        in 1..2 -> R.drawable.impossible_foreground
+        in 3..4 -> R.drawable.hard_foreground
+        in 5..6 -> R.drawable.medium_foreground
+        in 7..8 -> R.drawable.easy_foreground
+        in 9..10 -> R.drawable.veryeasy_foreground
         else -> R.drawable.medium_foreground
     }
 
     val color = when (optionAnalyses.first().reversibility){
-        1 -> ImpossibleReverseRed
-        2 -> HardReverseRed
-        3 -> MediumReverseOrange
-        4 -> EasyReverseGreen
-        5 -> VeryEasyReverseGreen
+        in 1..2 -> ImpossibleReverseRed
+        in 3..4 -> HardReverseRed
+        in 5..6 -> MediumReverseOrange
+        in 7..8 -> EasyReverseGreen
+        in 9..10 -> VeryEasyReverseGreen
         else -> MediumReverseOrange
     }
 
     val title = when (optionAnalyses.first().reversibility){
-        1 -> "Impossible"
-        2 -> "Hard"
-        3 -> "Medium"
-        4 -> "Easy"
-        5 -> "Very Easy"
+        in 1 .. 2  -> "Impossible"
+        in 3 .. 4 -> "Hard"
+        in 5 .. 6 -> "Medium"
+        in 7 .. 8 -> "Easy"
+        in 9 .. 10 -> "Very Easy"
         else -> "Medium"
+    }
+
+    val description = when (optionAnalyses.first().reversibility) {
+        in 1..2 ->
+            "This decision is extremely difficult or impossible to reverse. Consider it carefully before committing."
+
+        in 3..4 ->
+            "Reversing this decision would require significant time, effort, or resources. Proceed with caution."
+
+        in 5..6 ->
+            "This decision is moderately reversible. Changing course is possible but may involve some cost or inconvenience."
+
+        in 7..8 ->
+            "This decision can be reversed with relatively little effort. You have room to adjust if needed."
+
+        in 9..10 ->
+            "This decision is highly reversible. You can easily change your mind later with minimal consequences."
+
+        else ->
+            "The reversibility of this decision is moderate."
     }
 
     Column(
@@ -253,8 +222,13 @@ fun ReversibilityCard(
                     lineHeight = 32.sp
                 )
 
+                Spacer(
+                    modifier = Modifier
+                        .height(8.dp)
+                )
+
                 Text(
-                    text = "reversibility bla bla",
+                    text = description,
                     textAlign = TextAlign.Left,
                     fontSize = typography.titleSmall.fontSize,
                     fontWeight = FontWeight.SemiBold,
@@ -274,7 +248,10 @@ fun ReversibilityCard(
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            repeat(5) {
+            val reversibility = optionAnalyses.first().reversibility
+            val filledBars = (reversibility + 1) / 2
+
+            repeat(5) { index ->
                 Box(
                     modifier = Modifier
                         .shadow(
@@ -284,7 +261,7 @@ fun ReversibilityCard(
                         .weight(1f)
                         .height(12.dp)
                         .background(
-                            color = if (it < optionAnalyses.first().reversibility) color else Color.Gray,
+                            color = if (index < filledBars) color else Color.Gray,
                             shape = RoundedCornerShape(48.dp)
                         )
                 )
@@ -302,6 +279,7 @@ fun ReversibilityCard(
 fun ReversibilityAnalysisScreen(
     modifier: Modifier = Modifier,
     optionAnalyses: List<OptionAnalysis>,
+    decisionAnalysisResult: DecisionAnalysisResult?,
     onContinueClicked: () -> Unit
 ){
     val typography = LocalAppTypography.current
@@ -363,9 +341,7 @@ fun ReversibilityAnalysisScreen(
                 .padding(horizontal = 8.dp)
                 .weight(1f),
             optionAnalyses = optionAnalyses,
-            onSeeFullAnalysisClicked = {
-
-            }
+            reversibilityAnalysisText = decisionAnalysisResult?.reversibility ?: ""
         )
 
         Spacer(

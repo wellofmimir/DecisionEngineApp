@@ -8,6 +8,7 @@ import com.molokosoft.decisionengine.database.entities.DecisionEntity
 import com.molokosoft.decisionengine.database.entities.OptionEntity
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.DecisionDraft
 
+
 class DecisionRepository(
     context: Context
 ) {
@@ -25,34 +26,39 @@ class DecisionRepository(
             val decisionId = dao.insertDecision(
                 DecisionEntity(
                     title = draft.title,
-                    category = draft.decisionAnalysisResult?.category ?: "GENERIC",
+                    category = draft.decisionAnalysisResult?.category.orEmpty(),
+                    summary = draft.decisionAnalysisResult?.summary.orEmpty(),
+                    recommendedOption = draft.decisionAnalysisResult?.recommendedOption.orEmpty(),
+                    whyItStandsOut = draft.decisionAnalysisResult?.whyItStandsOut.orEmpty(),
+                    reversibility = draft.decisionAnalysisResult?.reversibility.orEmpty(),
+                    blindSpots = draft.decisionAnalysisResult?.blindSpots.orEmpty(),
+                    roadmapToSuccess = draft.decisionAnalysisResult?.roadmapToSuccess.orEmpty(),
+                    conclusion = draft.decisionAnalysisResult?.conclusion.orEmpty(),
                     createdAt = System.currentTimeMillis()
                 )
             )
 
-            var optionId: Long = 0
-
-            draft.optionAnalyses.forEach { option ->
-                optionId = dao.insertOption(
+            draft.optionAnalyses.zip(draft.options).forEach { (analysis, option) ->
+                val optionId = dao.insertOption(
                     OptionEntity(
                         decisionId = decisionId,
-                        name = option.name,
-                        reversibility = option.reversibility,
-                        confidence = option.weightedScoreAsPercentage()
+                        name = analysis.name,
+                        reversibility = analysis.reversibility,
+                        confidence = analysis.weightedScoreAsPercentage()
                     )
                 )
 
-                draft.options.forEach { subOption ->
-                    subOption.criteria.forEach { criterion ->
-                        dao.insertCriterion(
-                            CriterionEntity(
-                                optionId = optionId,
-                                name = criterion.name,
-                                importance = criterion.importance,
-                                score = criterion.score
-                            )
+                analysis.analyses.forEach { criterionAnalysis ->
+                    dao.insertCriterion(
+                        CriterionEntity(
+                            optionId = optionId,
+                            name = criterionAnalysis.name,
+                            importance = criterionAnalysis.importance,
+                            score = criterionAnalysis.score,
+                            contribution = criterionAnalysis.contribution,
+                            percentage = criterionAnalysis.percentage
                         )
-                    }
+                    )
                 }
             }
         }

@@ -53,7 +53,9 @@ fun Option.analyze(): OptionAnalysis {
     )
 }
 
-class FactoryAnalysisRepository(private val decisionEngineClient: DecisionEngineClient){
+class FactorAnalysisRepository(
+    private val decisionEngineClient: DecisionEngineClient
+){
     fun analyzeOptions(options: List<Option>): List<OptionAnalysis> {
         return options.map {
             it.analyze()

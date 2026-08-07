@@ -8,6 +8,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.Intent
 
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -23,7 +24,7 @@ import com.molokosoft.decisionengine.AppState.*
 import com.molokosoft.decisionengine.network.SharedHttpClient
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.NewDecisionViewModel
 import com.molokosoft.decisionengine.paywall.PaywallScreen
-import com.molokosoft.decisionengine.repositories.FactoryAnalysisRepository
+import com.molokosoft.decisionengine.repositories.FactorAnalysisRepository
 import com.molokosoft.decisionengine.network.backend.DecisionEngineClient
 import com.molokosoft.decisionengine.repositories.UserDataRepository
 import com.molokosoft.decisionengine.billing.BillingManager
@@ -31,9 +32,13 @@ import com.molokosoft.decisionengine.decisionhistoryscreen.viewmodel.DecisionHis
 import com.molokosoft.decisionengine.preferences.SecurePreferences
 import com.molokosoft.decisionengine.repositories.DecisionRepository
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
 import com.molokosoft.decisionengine.repositories.ArticlesRepository
+import com.molokosoft.decisionengine.repositories.QuoteRepository
 import com.molokosoft.decisionengine.settingsscreen.model.SettingsScreenViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 
 sealed class AppState {
@@ -52,11 +57,15 @@ fun AppState.next(): AppState =
     }
 
 class MainActivity : ComponentActivity() {
+
+    private val _showMotivationalQuote = MutableStateFlow(false)
+    val showMotivationalQuote = _showMotivationalQuote.asStateFlow()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        handleIntent(intent = intent)
         enableEdgeToEdge()
         setContent {
-
             val securePreferences = SecurePreferences(applicationContext)
             val decisionRepository = DecisionRepository(applicationContext)
             val decisionEngineClient = DecisionEngineClient(SharedHttpClient.sharedClient, "")
@@ -68,7 +77,7 @@ class MainActivity : ComponentActivity() {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
 
                         return NewDecisionViewModel(
-                            factorAnalysisRepository = FactoryAnalysisRepository(decisionEngineClient),
+                            factorAnalysisRepository = FactorAnalysisRepository(decisionEngineClient),
                             userDataRepository = userDataRepository,
                             decisionRepository = decisionRepository,
                             billingManager = BillingManager(applicationContext)
@@ -95,11 +104,13 @@ class MainActivity : ComponentActivity() {
                     override fun <T : ViewModel> create(modelClass: Class<T>): T {
 
                         val articlesRepository = ArticlesRepository(applicationContext, securePreferences, decisionEngineClient)
+                        val quoteRepository = QuoteRepository(applicationContext, securePreferences, decisionEngineClient)
 
                         return HomeScreenViewModel(
                             articlesRepository = articlesRepository,
                             decisionRepository = decisionRepository,
-                            userDataRepository = userDataRepository
+                            userDataRepository = userDataRepository,
+                            quoteRepository = quoteRepository
                         ) as T
                     }
                 }
@@ -117,7 +128,8 @@ class MainActivity : ComponentActivity() {
             )
 
             val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(NotificationChannel("motivational_quote", "motivational_quote", NotificationManager.IMPORTANCE_HIGH))
+            manager.createNotificationChannel(NotificationChannel("motivationalQuote", "motivationalQuote", NotificationManager.IMPORTANCE_HIGH))
+            val showQuote by showMotivationalQuote.collectAsState()
 
             var appState by remember {
                 mutableStateOf<AppState>(Welcome)
@@ -143,7 +155,7 @@ class MainActivity : ComponentActivity() {
                     )
 
                     Onboarding -> EnterDecisionScreen(
-                        viewModel = newDecisionViewModel,
+                        newDecisionViewModel = newDecisionViewModel,
                         onBackClicked = {
                             appState = Welcome
                         },
@@ -179,11 +191,25 @@ class MainActivity : ComponentActivity() {
                             newDecisionViewModel = newDecisionViewModel,
                             decisionHistoryViewModel = decisionHistoryViewModel,
                             homeScreenViewModel = homeScreenViewModel,
-                            settingsScreenViewModel = settingsScreenViewModel
+                            settingsScreenViewModel = settingsScreenViewModel,
+                            showMotivationalQuote = showQuote
                         )
                     }
                 }
             }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent?.getBooleanExtra("showMotivationalQuote", false) == true) {
+            _showMotivationalQuote.value = true
+            intent.removeExtra("showMotivationalQuote") //event konsumieren
         }
     }
 }

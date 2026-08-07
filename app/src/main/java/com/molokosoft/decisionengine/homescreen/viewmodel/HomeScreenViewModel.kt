@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import com.molokosoft.decisionengine.homescreen.viewmodel.model.Article
 import com.molokosoft.decisionengine.repositories.ArticlesRepository
 import com.molokosoft.decisionengine.repositories.DecisionRepository
+import com.molokosoft.decisionengine.repositories.QuoteRepository
 import com.molokosoft.decisionengine.repositories.UserDataRepository
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,19 +25,21 @@ import kotlin.collections.component2
 class HomeScreenViewModel(
     private val articlesRepository: ArticlesRepository,
     private val decisionRepository: DecisionRepository,
-    private val userDataRepository: UserDataRepository
+    private val userDataRepository: UserDataRepository,
+    private val quoteRepository: QuoteRepository
 ) : ViewModel() {
 
     private val _article =
         MutableStateFlow(Article())
 
+    val article =
+        _article.asStateFlow()
     private val _username =
         MutableStateFlow(username())
 
     val username =
         _username.asStateFlow()
-    val article =
-        _article.asStateFlow()
+
     fun setUsername(username: String) {
         userDataRepository.setUsername(username)
         _username.value = username
@@ -45,6 +48,62 @@ class HomeScreenViewModel(
     private fun username(): String {
         return userDataRepository.username()
     }
+
+    val averageOptionsPerDecision: StateFlow<Int> =
+        decisionRepository.decisionHistory
+            .map { decisions ->
+
+                val average = decisions
+                    .map { it
+                        it.options.size
+                    }
+                    .average()
+                    .toInt()
+
+                average
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(1000),
+                0
+            )
+
+    val amountOfDecisions: StateFlow<Int> =
+        decisionRepository.decisionHistory
+            .map {
+                it.size
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(1000),
+                0
+            )
+
+    val averageConfidence: StateFlow<Int> =
+        decisionRepository.decisionHistory
+            .map { decisions ->
+
+                val confidences = decisions
+                    .map { decision ->
+                        decision.options.maxByOrNull {
+                            it.option.confidence
+                        }
+                    }
+
+                val average = confidences
+                    .map {
+                        it?.option?.confidence ?: 0
+                    }
+                    .average()
+                    .toInt()
+
+                average
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(1000),
+                0
+            )
 
     val historyItems: StateFlow<List<DecisionMonthGroup>> =
         decisionRepository.decisionHistory
@@ -55,8 +114,7 @@ class HomeScreenViewModel(
                         .let { zoned ->
                             YearMonth.from(zoned)
                         }
-                }
-                    .map { (month, decisions) ->
+                }.map { (month, decisions) ->
                         DecisionMonthGroup(
                             yearMonth = month,
                             decisions = decisions
@@ -91,4 +149,7 @@ class HomeScreenViewModel(
             articlesRepository.setDailyArticleObtained()
         }
     }
+
+    fun motivationalQuote(): Pair<String, String> =
+        quoteRepository.motivationalQuote()
 }

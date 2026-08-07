@@ -31,7 +31,8 @@ import com.molokosoft.decisionengine.theme.LocalAppTypography
 fun RecentDecisionsSection(
     decisions: List<DecisionCompleteRelation>,
     modifier: Modifier = Modifier,
-    onViewAllClicked: () -> Unit
+    onViewAllClicked: () -> Unit,
+    onShowOldDecisionClicked: (oldDecision: DecisionCompleteRelation) -> Unit
 ) {
     val typography = LocalAppTypography.current
 
@@ -107,7 +108,9 @@ fun RecentDecisionsSection(
                     score = bestOption?.option?.confidence.toString(),
                     color = getColorToLogo(decisionCategory = getDecisionCategory(decision.decision.category)),
                     decisionButtonLogo = getLogo(decisionCategory = getDecisionCategory(decision.decision.category)),
-                    onClicked = { }
+                    onClicked = {
+                        onShowOldDecisionClicked(decision)
+                    }
                 )
             }
         }

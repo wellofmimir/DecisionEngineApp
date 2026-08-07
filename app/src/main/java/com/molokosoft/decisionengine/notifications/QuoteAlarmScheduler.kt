@@ -11,9 +11,12 @@ object QuoteAlarmScheduler {
 
     fun schedule(context: Context) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val intent = Intent(context, QuoteAlarmReceiver::class.java)
+        val intent = Intent(context, QuoteAlarmReceiver::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("showMotivationalQuote", true)
+        }
 
-        val pendingIntent = PendingIntent.getBroadcast (
+        val pendingIntent = PendingIntent.getBroadcast(
             context,
             REQUEST_CODE,
             intent,
@@ -21,8 +24,8 @@ object QuoteAlarmScheduler {
         )
 
         val calendar = Calendar.getInstance().apply {
-            set(Calendar.HOUR_OF_DAY, 0)
-            set(Calendar.MINUTE, 55)
+            set(Calendar.HOUR_OF_DAY, 5)
+            set(Calendar.MINUTE, 28)
             set(Calendar.SECOND, 0)
             set(Calendar.MILLISECOND, 0)
 

@@ -65,7 +65,7 @@ fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
 
 @Composable
 fun EnterDecisionScreen(
-    viewModel: NewDecisionViewModel,
+    newDecisionViewModel: NewDecisionViewModel,
     modifier: Modifier = Modifier,
     onBackClicked: () -> Unit,
     onContinueClicked: () -> Unit
@@ -79,7 +79,7 @@ fun EnterDecisionScreen(
     var errorMessageDialogOpen by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("" to "") }
 
-    val draft by viewModel.draft.collectAsState()
+    val draft by newDecisionViewModel.draft.collectAsState()
 
     val optionNames = remember(draft.options) {
         draft.options.map {
@@ -94,7 +94,7 @@ fun EnterDecisionScreen(
     }
 
     val yesOrNoDecision = draft.yesOrNoDecision
-    val nextOptionName = viewModel.getNextOption()
+    val nextOptionName = newDecisionViewModel.getNextOption()
 
     when (currentScreen) {
         DecisionScreen.EnterDecisionName -> EnterDecisionNameScreen(
@@ -111,8 +111,8 @@ fun EnterDecisionScreen(
                     return@EnterDecisionNameScreen
                 }
 
-                viewModel.setTitle(name)
-                viewModel.setDecisionType(yesOrNoDecision)
+                newDecisionViewModel.setTitle(name)
+                newDecisionViewModel.setDecisionType(yesOrNoDecision)
                 currentScreen = currentScreen.next(yesOrNoDecision)
             }
         )
@@ -124,7 +124,7 @@ fun EnterDecisionScreen(
                 enterOptionDialogOpen = true
             },
             onDeleteOption = {
-                viewModel.deleteOption(it)
+                newDecisionViewModel.deleteOption(it)
             },
             onBackClicked = {
                 currentScreen = currentScreen.previous(yesOrNoDecision)
@@ -147,7 +147,7 @@ fun EnterDecisionScreen(
                 enterCriterionDialogOpen = true
             },
             onDeleteCriteria = {
-                viewModel.deleteCriterion(it)
+                newDecisionViewModel.deleteCriterion(it)
             },
             onBackClicked = {
                 currentScreen = currentScreen.previous(yesOrNoDecision)
@@ -166,7 +166,7 @@ fun EnterDecisionScreen(
         DecisionScreen.RateComparisonCriteria -> {
             if (nextOptionName == null) {
                 LaunchedEffect(Unit) {
-                    viewModel.startAnalysis()
+                    newDecisionViewModel.startAnalysis()
                     onContinueClicked()
                 }
 
@@ -191,7 +191,7 @@ fun EnterDecisionScreen(
                         )
                     }
 
-                    viewModel.setRatedCriteriaToOption(
+                    newDecisionViewModel.setRatedCriteriaToOption(
                         optionName = nextOptionName,
                         criteria = listOfCriteria
                     )
@@ -206,10 +206,10 @@ fun EnterDecisionScreen(
                     it.name to it.description
                 },
                 onCriterionClicked = { name, importance ->
-                    viewModel.setCriteria(Criterion(name, importance))
+                    newDecisionViewModel.setCriteria(Criterion(name, importance))
                 },
                 onCriterionDeleted = { name ->
-                    viewModel.deleteCriterion(name)
+                    newDecisionViewModel.deleteCriterion(name)
                 },
                 onBackClicked = {
 
@@ -224,7 +224,7 @@ fun EnterDecisionScreen(
     if (enterOptionDialogOpen)
         EnterOptionDialog(
             onOptionEntered = { name, reversibility ->
-                viewModel.setOption(
+                newDecisionViewModel.setOption(
                     Option(
                         name = name,
                         reversibility = reversibility
@@ -240,7 +240,7 @@ fun EnterDecisionScreen(
     else if (enterCriterionDialogOpen)
         EnterCriterionDialog(
             onCriterionEntered = { name, importance ->
-                viewModel.setCriteria(
+                newDecisionViewModel.setCriteria(
                     Criterion(
                         name = name,
                         importance = importance

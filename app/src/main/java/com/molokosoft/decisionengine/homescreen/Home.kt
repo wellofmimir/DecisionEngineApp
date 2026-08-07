@@ -39,8 +39,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.res.painterResource
 import com.molokosoft.decisionengine.R
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextAlign
+import com.molokosoft.decisionengine.database.relation.DecisionCompleteRelation
 
 
 import com.molokosoft.decisionengine.theme.LocalAppTypography
@@ -54,15 +56,23 @@ fun Home(
     onClicked: () -> Unit,
     onViewHistoryRequested: () -> Unit,
     onSettingsHistoryClicked: () -> Unit,
-    homeScreenViewModel: HomeScreenViewModel
+    onShowOldDecisionClicked: (oldDecision: DecisionCompleteRelation) -> Unit,
+    homeScreenViewModel: HomeScreenViewModel,
+    showMotivationalQuote: Boolean = false
 ){
     val typography = LocalAppTypography.current
+    val verticalScroll = rememberScrollState()
+
     val article by homeScreenViewModel.article.collectAsState()
     val decisionHistory by homeScreenViewModel.historyItems.collectAsState()
-    val verticalScroll = rememberScrollState()
-    var readArticleBoxExpanded by remember { mutableStateOf(false) }
     val username by homeScreenViewModel.username.collectAsState()
+    val averageConfidence by homeScreenViewModel.averageConfidence.collectAsState()
+    val amountOfDecisions by homeScreenViewModel.amountOfDecisions.collectAsState()
+    val averageOptionsPerDecision by homeScreenViewModel.averageOptionsPerDecision.collectAsState()
+
     var showUsernameEntryBox by remember { mutableStateOf(false) }
+    var showMotivationalQuoteBox by remember { mutableStateOf(false) }
+    var readArticleBoxExpanded by remember { mutableStateOf(false) }
 
     val listOfGreetings = listOf(
         "Hey there,\n$username.",
@@ -78,7 +88,7 @@ fun Home(
         "Time to get things done.",
         "Hope you're having a great day!",
         "Everything is ready for you.",
-        "Great to see you,\n$username!",
+        "Great to see you, $username!",
         "Let's do this!",
         "You've got this!",
         "One step at a time.",
@@ -86,14 +96,14 @@ fun Home(
         "Ready when you are.",
         "Let's keep the momentum going!",
         "Welcome back.\nLet's continue.",
-        "Nice to see you again,\n$username!",
-        "Hope you're doing well,\n$username!",
+        "Nice to see you again, $username!",
+        "Hope you're doing well, $username!",
         "Let's achieve something great today.",
         "Your next step starts here.",
         "Another day,\nanother opportunity.",
         "Success starts with a single step.",
         "Let's make some progress!",
-        "Happy to see you back,\n$username!"
+        "Happy to see you back, $username!"
     )
 
     val greetingText by rememberSaveable { mutableStateOf(if (username.isBlank()) "Welcome, Stranger!" else listOfGreetings.random()) }
@@ -108,36 +118,13 @@ fun Home(
         if (username.isBlank()) {
             delay(1000)
             showUsernameEntryBox = true
+        } else if (showMotivationalQuote) {
+            showMotivationalQuoteBox = true
         }
     }
 
-    if (showUsernameEntryBox) {
-        EnterUsernameBox(
-            onDismissRequest = {
-                showUsernameEntryBox = false
-            },
-            onAdd = { newUsername ->
-                showUsernameEntryBox = false
-                homeScreenViewModel.setUsername(newUsername)
-
-                if (Build.VERSION.SDK_INT >= 33) {
-                    notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                }
-            }
-        )
-    }
-
-    if (readArticleBoxExpanded) {
-        ReadArticleBox(
-            article.title,
-            article.content,
-            modifier = modifier,
-            onCloseArticleClicked = {
-                readArticleBoxExpanded = false
-            }
-        )
-
-        return
+    LaunchedEffect(showMotivationalQuote) {
+        showMotivationalQuoteBox = showMotivationalQuote
     }
 
     Column(
@@ -175,9 +162,15 @@ fun Home(
                     color = Color.Black,
                     textAlign = TextAlign.Start,
                     softWrap = true,
-                    maxLines = 2,
+                    maxLines = 3,
+                    lineHeight = 28.sp,
                     modifier = Modifier
                         .padding(bottom = 2.dp)
+                )
+
+                Spacer(
+                    modifier = Modifier
+                        .weight(1f)
                 )
 
                 Text(
@@ -247,6 +240,9 @@ fun Home(
                 decisions = decisionHistory.first().decisions,
                 onViewAllClicked = {
                     onViewHistoryRequested()
+                },
+                onShowOldDecisionClicked = { oldDecision ->
+                    onShowOldDecisionClicked(oldDecision)
                 }
             )
         }
@@ -269,11 +265,56 @@ fun Home(
                 .height(8.dp)
         )
 
-        YourDecisionJourneySection()
+        YourDecisionJourneySection(
+            averageConfidence = averageConfidence,
+            amountOfDecisions = amountOfDecisions,
+            averageOptionsPerDecision = averageOptionsPerDecision
+        )
         
         Spacer(
             modifier = Modifier
                 .height(8.dp)
+        )
+    }
+
+    if (showUsernameEntryBox) {
+        EnterUsernameBox(
+            onDismissRequest = {
+                showUsernameEntryBox = false
+            },
+            onAdd = { newUsername ->
+                showUsernameEntryBox = false
+                homeScreenViewModel.setUsername(newUsername)
+
+                if (Build.VERSION.SDK_INT >= 33) {
+                    notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+        )
+    }
+
+    if (readArticleBoxExpanded) {
+        ReadArticleBox(
+            title = article.title,
+            text = article.content,
+            modifier = modifier,
+            onCloseArticleClicked = {
+                readArticleBoxExpanded = false
+            }
+        )
+
+        return
+    }
+
+    if (showMotivationalQuoteBox) {
+        val motivationalQuote = homeScreenViewModel.motivationalQuote()
+
+        MotivationalQuoteBox(
+            quote = motivationalQuote.first,
+            person = motivationalQuote.second,
+            onDismissRequest = {
+                showMotivationalQuoteBox = false
+            }
         )
     }
 }

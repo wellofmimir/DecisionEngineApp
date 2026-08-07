@@ -11,6 +11,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,21 +28,24 @@ import com.molokosoft.decisionengine.decisionhistoryscreen.viewmodel.DecisionHis
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
 import com.molokosoft.decisionengine.settingsscreen.SettingsScreen
 import com.molokosoft.decisionengine.settingsscreen.model.SettingsScreenViewModel
+import kotlinx.coroutines.launch
 
 @Composable
 fun MainApplication(
     newDecisionViewModel: NewDecisionViewModel,
     decisionHistoryViewModel: DecisionHistoryViewModel,
     homeScreenViewModel: HomeScreenViewModel,
-    settingsScreenViewModel: SettingsScreenViewModel
+    settingsScreenViewModel: SettingsScreenViewModel,
+    showMotivationalQuote: Boolean = false
 ){
     val decisionDraft by newDecisionViewModel.draft.collectAsState()
     val showNavigationBar by newDecisionViewModel.showBottomBar.collectAsState()
+    val scope = rememberCoroutineScope()
 
     var navigationItem by remember {
         mutableStateOf(
             value =
-                if (decisionDraft.optionAnalyses.isEmpty())
+                if (decisionDraft.optionAnalyses.isEmpty() || showMotivationalQuote)
                     NavigationItem.HOME
                 else
                     NavigationItem.SEE_DECISION
@@ -80,10 +84,19 @@ fun MainApplication(
                 onSettingsHistoryClicked = {
                     navigationItem = NavigationItem.SETTINGS
                 },
-                homeScreenViewModel = homeScreenViewModel
+                onShowOldDecisionClicked = { oldDecision ->
+                    scope.launch {
+                        newDecisionViewModel.setDraftToOldDecision(oldDecision.decision.id)
+                        navigationItem = NavigationItem.SEE_DECISION
+                    }
+                },
+                homeScreenViewModel = homeScreenViewModel,
+                showMotivationalQuote = showMotivationalQuote
             )
 
             NavigationItem.NEW_DECISION -> {
+                newDecisionViewModel.resetDraft()
+
                 EnterDecisionScreen(
                     newDecisionViewModel,
                     modifier = Modifier
@@ -105,6 +118,12 @@ fun MainApplication(
                     .padding(innerPadding),
                 onSettingsHistoryClicked = {
                     navigationItem = NavigationItem.SETTINGS
+                },
+                onShowOldDecision = { oldDecision ->
+                    scope.launch {
+                        newDecisionViewModel.setDraftToOldDecision(oldDecision.decision.id)
+                        navigationItem = NavigationItem.SEE_DECISION
+                    }
                 }
             )
 

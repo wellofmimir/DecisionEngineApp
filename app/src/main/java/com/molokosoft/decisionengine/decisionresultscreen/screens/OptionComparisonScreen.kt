@@ -254,103 +254,91 @@ fun BestOptionCard(
     }
 }
 
-
 @Composable
-fun OptionBreakdownSection(
+fun OptionsDifferenceCard(
     modifier: Modifier = Modifier,
-    optionAnalyses: List<OptionAnalysis>
+    difference: Int,
+    optionName: String
 ){
     val typography = LocalAppTypography.current
 
     Column(
         modifier = modifier
-            .fillMaxWidth(),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .fillMaxWidth()
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .background(
+                color = DecisionBlueLight,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(top = 16.dp, bottom = 8.dp, start = 8.dp, end = 8.dp)
     ){
-        Column(
+        Text(
+            text = "What is the difference between the best options?",
+            textAlign = TextAlign.Left,
+            fontSize = typography.titleMedium.fontSize,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.Black,
             modifier = Modifier
-                .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .background(
-                    color = DecisionBlueLight,
-                    shape = RoundedCornerShape(12.dp)
-                )
-                .padding(top = 8.dp)
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Start
-            ) {
-                Spacer(
-                    modifier = Modifier
-                        .width(16.dp)
-                )
+                .padding(start = 16.dp)
+        )
 
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(
-                            color = VeryEasyReverseGreen,
-                            shape = CircleShape
-                        )
-                )
-
-                Spacer(
-                    modifier = Modifier
-                        .width(16.dp)
-                )
-
-                Text(
-                    text = "High Impact",
-                    fontSize = typography.titleSmall.fontSize * 0.8f,
-                    color = Color.Black
-                )
-
-                Spacer(
-                    modifier = Modifier
-                        .width(32.dp)
-                )
-
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .background(
-                            color = ImpossibleReverseRed,
-                            shape = CircleShape
-                        )
-                )
-
-                Spacer(
-                    modifier = Modifier
-                        .width(16.dp)
-                )
-
-                Text(
-                    text = "Low Impact",
-                    fontSize = typography.titleSmall.fontSize * 0.8f,
-                    color = Color.Black
-                )
-            }
-
-            HorizontalDivider(
+        Row(
+            modifier = Modifier
+                .fillMaxWidth(),
+            verticalAlignment = Alignment.Top,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ){
+            Image(
+                painter = painterResource(id = R.drawable.pokal),
+                contentDescription = null,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                thickness = 1.dp,
-                color = Color.LightGray
+                    .size(128.dp)
             )
 
-            val bestOption = optionAnalyses.first()
+            Column(
+                modifier = Modifier
+                    .weight(2f),
+                horizontalAlignment = Alignment.Start
+            ){
+                Spacer(
+                    modifier = Modifier
+                        .height(16.dp)
+                )
 
-            bestOption.analyses.forEach { criteria ->
-                FactorBreakdownCard(
-                    iconResource = R.drawable.star_blue_foreground,
-                    factorName = criteria.name,
-                    factorImpact = criteria.percentage.toInt(),
-                    factorWeight = criteria.importance
+                Text(
+                    text = "There is a difference of $difference% between the two highest options.",
+                    textAlign = TextAlign.Start,
+                    fontSize = typography.titleSmall.fontSize,
+                    fontWeight = FontWeight.Normal,
+                    color = Color.Black
+                )
+
+                val text = when {
+                    difference >= 20 ->
+                        "The recommendation is very clear. $optionName stands out significantly from all other alternatives."
+
+                    difference >= 10 ->
+                        "$optionName has a clear advantage and is the strongest overall choice."
+
+                    difference >= 5 ->
+                        "Option $optionName performs better overall, although the alternatives remain competitive."
+
+                    difference >= 2 ->
+                        "The top options are fairly close. Small changes in priorities or scores could affect the outcome."
+
+                    else ->
+                        "The top two options are nearly tied. In this case, personal preference or additional considerations should guide your final decision."
+                }
+
+                Text(
+                    text = text,
+                    textAlign = TextAlign.Start,
+                    fontSize = typography.titleSmall.fontSize,
+                    fontWeight = FontWeight.Light,
+                    color = Color.Black
                 )
             }
         }
@@ -372,6 +360,12 @@ fun OptionComparisonScreen(
         derivedStateOf {
             verticalScroll.maxValue == 0 || verticalScroll.value >= verticalScroll.maxValue
         }
+    }
+
+    val difference = if (optionAnalyses.size > 1) {
+        optionAnalyses.first().weightedScoreAsPercentage() - optionAnalyses[1].weightedScoreAsPercentage()
+    } else {
+        -1
     }
 
     Box(
@@ -414,8 +408,9 @@ fun OptionComparisonScreen(
                     .height(16.dp)
             )
 
-            BestOptionCard(
-                biggestFactor = optionAnalyses.first().analyses.first().name
+            OptionsDifferenceCard(
+                difference = difference,
+                optionName = optionAnalyses.first().name
             )
 
             Spacer(
@@ -423,7 +418,7 @@ fun OptionComparisonScreen(
                     .height(4.dp)
             )
 
-            FactorBreakdownSection(
+            OptionsBreakdownSection(
                 optionAnalyses = optionAnalyses
             )
 

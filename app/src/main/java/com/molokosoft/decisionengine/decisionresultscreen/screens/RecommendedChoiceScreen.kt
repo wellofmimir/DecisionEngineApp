@@ -80,13 +80,13 @@ fun RecommendedChoiceScreen(
 
         Spacer(
             modifier = Modifier
-                .height(8.dp)
+                .height(32.dp)
         )
 
         Text(
             text = optionAnalyses.first().name,
             textAlign = TextAlign.Center,
-            fontSize = typography.titleLarge.fontSize,
+            fontSize = typography.titleLarge.fontSize * 2,
             color = Color.Black
         )
 
@@ -109,7 +109,7 @@ fun RecommendedChoiceScreen(
 
                 withStyle(
                     style = SpanStyle(
-                        fontSize = typography.titleSmall.fontSize,
+                        fontSize = typography.titleSmall.fontSize * 1.25f,
                         color = Color.Black,
                         fontWeight = FontWeight.Normal
                     ),
@@ -118,23 +118,10 @@ fun RecommendedChoiceScreen(
                 }
             },
             textAlign = TextAlign.Center,
-            fontSize = typography.titleLarge.fontSize * 2,
+            fontSize = typography.titleLarge.fontSize * 2.5,
             fontWeight = FontWeight.Bold,
             color = textColorForConfidenceRating,
-            lineHeight = 24.sp
-        )
-
-        Spacer(
-            modifier = Modifier
-                .height(32.dp)
-        )
-
-        Text(
-            text = "Why is this the best option?",
-            textAlign = TextAlign.Center,
-            fontSize = typography.titleMedium.fontSize,
-            fontWeight = FontWeight.Normal,
-            color = Color.Black
+            lineHeight = 36.sp
         )
 
         Spacer(

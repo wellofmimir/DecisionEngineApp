@@ -9,5 +9,12 @@ data class DecisionEntity(
     val id: Long = 0,
     val title: String,
     val category: String,
+    val summary: String,
+    val recommendedOption: String,
+    val whyItStandsOut: String,
+    val reversibility: String,
+    val blindSpots: String,
+    val roadmapToSuccess: String,
+    val conclusion: String,
     val createdAt: Long
 )

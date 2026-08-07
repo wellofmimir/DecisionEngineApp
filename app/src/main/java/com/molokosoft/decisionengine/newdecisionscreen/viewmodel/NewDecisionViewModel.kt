@@ -4,7 +4,7 @@ import android.app.Activity
 import androidx.lifecycle.ViewModel
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.*
 
-import com.molokosoft.decisionengine.repositories.FactoryAnalysisRepository
+import com.molokosoft.decisionengine.repositories.FactorAnalysisRepository
 import com.molokosoft.decisionengine.repositories.UserDataRepository
 
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -13,17 +13,22 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewModelScope
 import android.util.Log
+import kotlinx.coroutines.flow.map
 
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
-import com.molokosoft.decisionengine.BuildConfig
 import com.molokosoft.decisionengine.commonclasses.EMail
 import com.molokosoft.decisionengine.commonclasses.SubscriptionTypes
 import com.molokosoft.decisionengine.billing.BillingManager
+import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
 import com.molokosoft.decisionengine.repositories.DecisionRepository
+import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
+import com.molokosoft.decisionengine.repositories.model.CriterionAnalysis
+import kotlinx.coroutines.flow.firstOrNull
+import kotlin.String
 
 class NewDecisionViewModel(
-    private val factorAnalysisRepository: FactoryAnalysisRepository,
+    private val factorAnalysisRepository: FactorAnalysisRepository,
     private val userDataRepository: UserDataRepository,
     private val decisionRepository: DecisionRepository,
     private val billingManager: BillingManager
@@ -37,6 +42,7 @@ class NewDecisionViewModel(
 
     private val _showBottomBar =
         MutableStateFlow(true)
+
     val showBottomBar =
         _showBottomBar.asStateFlow()
 
@@ -51,6 +57,83 @@ class NewDecisionViewModel(
     fun resetDraft() {
         viewModelScope.launch {
             _draft.value = DecisionDraft()
+        }
+    }
+
+    suspend fun setDraftToOldDecision(oldDecisionID: Long) {
+        resetDraft()
+
+        val oldDecision =
+            decisionRepository.decisionHistory
+                .map { decisions ->
+                    decisions.firstOrNull() {
+                        it.decision.id == oldDecisionID
+                    }
+                }
+                .firstOrNull()
+
+        if (oldDecision == null)
+            return
+
+        _draft.update {
+            it.copy(
+                title = oldDecision.decision.title,
+            )
+        }
+
+        oldDecision.options.forEach { option ->
+            val criteria = listOf(
+                Criterion(
+                    name = option.criteria.first().name,
+                    importance = option.criteria.first().importance,
+                    score = option.criteria.first().score
+                )
+            )
+
+            setOption(
+                Option(
+                    name = option.option.name,
+                    reversibility = option.option.reversibility,
+                    criteria = criteria
+                )
+            )
+        }
+
+        _draft.update {
+            it.copy(
+                decisionAnalysisResult =
+                    DecisionAnalysisResult(
+                        summary = oldDecision.decision.summary,
+                        recommendedOption = oldDecision.decision.recommendedOption,
+                        whyItStandsOut = oldDecision.decision.whyItStandsOut,
+                        reversibility = oldDecision.decision.reversibility,
+                        blindSpots = oldDecision.decision.blindSpots,
+                        roadmapToSuccess = oldDecision.decision.roadmapToSuccess,
+                        conclusion = oldDecision.decision.conclusion,
+                        category = oldDecision.decision.category
+                    )
+            )
+        }
+
+        _draft.update {
+            it.copy(
+                optionAnalyses = oldDecision.options.map { option ->
+                    OptionAnalysis(
+                        name = option.option.name,
+                        reversibility = option.option.reversibility,
+                        weightedScore = option.option.confidence / 10.0,
+                        analyses = option.criteria.map { criterion ->
+                            CriterionAnalysis(
+                                name = criterion.name,
+                                importance = criterion.importance,
+                                score = criterion.score,
+                                contribution = criterion.contribution,
+                                percentage = criterion.percentage
+                            )
+                        }
+                    )
+                }
+            )
         }
     }
 

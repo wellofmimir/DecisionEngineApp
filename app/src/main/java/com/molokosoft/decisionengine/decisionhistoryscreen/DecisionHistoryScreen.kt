@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.molokosoft.decisionengine.R
+import com.molokosoft.decisionengine.database.relation.DecisionCompleteRelation
 import com.molokosoft.decisionengine.decisionhistoryscreen.viewmodel.DecisionHistoryViewModel
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.LocalAppTypography
@@ -42,7 +43,8 @@ import com.molokosoft.decisionengine.theme.LocalAppTypography
 fun DecisionHistoryScreen(
     decisionHistoryViewModel: DecisionHistoryViewModel,
     modifier: Modifier = Modifier,
-    onSettingsHistoryClicked: () -> Unit
+    onSettingsHistoryClicked: () -> Unit,
+    onShowOldDecision: (oldDecision: DecisionCompleteRelation) -> Unit
 ) {
     val typography = LocalAppTypography.current
     val groups by decisionHistoryViewModel.historyItems.collectAsState()
@@ -167,7 +169,10 @@ fun DecisionHistoryScreen(
                             RoundedCornerShape(12.dp)
                         ),
                     month = group.yearMonth,
-                    decisions = group.decisions
+                    decisions = group.decisions,
+                    onShowOldDecision = { oldDecision ->
+                        onShowOldDecision(oldDecision)
+                    }
                 )
             }
         }

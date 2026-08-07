@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -18,13 +19,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.molokosoft.decisionengine.homescreen.viewmodel.model.Statistic
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 
 @Composable
 fun JourneyCard(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    statistic: Statistic
 ) {
     val typography = LocalAppTypography.current
 
@@ -34,53 +38,33 @@ fun JourneyCard(
             .background(
                 color = Color.White
             ),
-        verticalArrangement = Arrangement.Top,
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ){
         Image(
-            painterResource(id = com.molokosoft.decisionengine.R.drawable.diagnosis_foreground),
+            painterResource(id = statistic.icon),
             contentDescription = null,
             modifier = Modifier
-                .padding(top = 16.dp)
                 .size(32.dp, 32.dp)
         )
 
-        Spacer(
-            modifier = Modifier
-                .weight(1f)
+        Text(
+            text = statistic.value,
+            fontSize = typography.titleSmall.fontSize,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black
         )
 
-        Column(
-            modifier = Modifier,
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ){
-            Text(
-                text = "12",
-                fontSize = typography.titleSmall.fontSize,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-
-            Text(
-                text = "Decisions Made",
-                fontSize = typography.titleSmall.fontSize,
-                fontWeight = FontWeight.Normal,
-                color = Color.Black,
-                lineHeight = 2.sp
-            )
-
-            Text(
-                text = "Keep Going!",
-                fontSize = typography.titleSmall.fontSize,
-                fontWeight = FontWeight.Bold,
-                color = Color.Black
-            )
-        }
-
-        Spacer(
+        Text(
             modifier = Modifier
-                .height(8.dp)
+                .fillMaxWidth(),
+            text = statistic.title,
+            fontSize = typography.titleSmall.fontSize,
+            fontWeight = FontWeight.Normal,
+            color = Color.Black,
+            textAlign = TextAlign.Center,
+            maxLines = 2,
+            lineHeight = 16.sp
         )
     }
 }

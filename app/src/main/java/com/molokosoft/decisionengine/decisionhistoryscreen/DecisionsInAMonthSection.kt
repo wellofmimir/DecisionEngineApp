@@ -59,7 +59,8 @@ fun getColorToLogo(decisionCategory: DecisionCategory): Color {
 fun DecisionsInAMonthSection(
     month: YearMonth,
     decisions: List<DecisionCompleteRelation>,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onShowOldDecision: (oldDecision: DecisionCompleteRelation) -> Unit
 ) {
     val typography = LocalAppTypography.current
 
@@ -81,7 +82,7 @@ fun DecisionsInAMonthSection(
             )
     ) {
         Text(
-            text = month.month.toString(),
+            text = month.month.toString() + ", " + month.year.toString(),
             fontSize = typography.titleMedium.fontSize * 0.75f,
             color = Color.Black,
             modifier = Modifier
@@ -109,7 +110,9 @@ fun DecisionsInAMonthSection(
                     score = "100",
                     color = getColorToLogo(decisionCategory = getDecisionCategory(it.decision.category)),
                     decisionButtonLogo = getLogo(decisionCategory = getDecisionCategory(it.decision.category)),
-                    onClicked = {}
+                    onClicked = {
+                        onShowOldDecision(it)
+                    }
                 )
             }
         }

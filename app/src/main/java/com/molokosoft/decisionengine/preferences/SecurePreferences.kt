@@ -24,7 +24,6 @@ class SecurePreferences(
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
 
-
     fun setFeedbackLimitReached() {
         securePreferences.edit {
             putBoolean("feedbackLimitReached", true)
@@ -59,5 +58,18 @@ class SecurePreferences(
 
     fun dailyArticleObtained(): Boolean {
         return securePreferences.getBoolean("dailyArticle", false)
+    }
+
+    fun saveMotivationalQuote(quote: String, person: String) {
+        securePreferences.edit {
+            putString("quote", quote)
+            putString("person", person)
+        }
+    }
+
+    fun motivationalQuote(): Pair<String, String> {
+        val quote = securePreferences.getString("quote", "Every mistake seems incredibly stupid when others make it.") ?: "Every mistake seems incredibly stupid when others make it."
+        val person = securePreferences.getString("person", "Georg Christoph Lichtenberg") ?: "Georg Christoph Lichtenberg"
+        return quote to person
     }
 }

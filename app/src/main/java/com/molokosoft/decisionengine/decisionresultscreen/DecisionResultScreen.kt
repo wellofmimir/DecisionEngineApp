@@ -69,7 +69,7 @@ fun DecisionResultScreen(
             modifier = modifier,
             optionAnalyses = optionAnalyses,
             decisionAnalysisResult = decisionAnalysisResult,
-            onContinueButtonText = "See Reversibility",
+            onContinueButtonText = "See Option Breakdown",
             onContinueClicked = {
                 currentScreen = currentScreen.next()
             }
@@ -88,6 +88,7 @@ fun DecisionResultScreen(
 
         ReversibilityAnalysis -> ReversibilityAnalysisScreen(
             modifier = modifier,
+            decisionAnalysisResult = decisionAnalysisResult,
             optionAnalyses = optionAnalyses,
             onContinueClicked = {
                 currentScreen = currentScreen.next()

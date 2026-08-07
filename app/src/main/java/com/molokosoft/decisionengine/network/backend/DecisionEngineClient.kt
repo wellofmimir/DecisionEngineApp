@@ -15,6 +15,7 @@ import android.util.Log
 import com.molokosoft.decisionengine.network.backend.model.responses.ApiResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.dailyarticle.DailyArticleResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.decision.CriteriaSuggestionResponse
+import com.molokosoft.decisionengine.network.backend.model.responses.quote.QuoteResponse
 import okio.IOException
 import org.json.JSONObject
 
@@ -25,7 +26,7 @@ else
 
 class DecisionEngineClient(
     private val client: OkHttpClient,
-    private val apiKey: String
+    private val apiKey: String = ""
 ) {
     suspend fun dailyArticle(): DailyArticleResponse? =
         withContext(Dispatchers.IO) {
@@ -155,6 +156,28 @@ class DecisionEngineClient(
                 }
             } catch (e: Exception) {
                 Log.e("DecisionEngine", "Network error", e)
+                e.printStackTrace()
+                null
+            }
+        }
+
+    suspend fun getQuote(): QuoteResponse? =
+        withContext(Dispatchers.IO) {
+            val request = Request.Builder()
+                .addHeader("Authorization", "Bearer $apiKey")
+                .get()
+                .url("$baseUrl/api/v1/quotes/daily")
+                .build()
+
+            try {
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string() ?: ""
+                    val apiResponse = Json.decodeFromString<ApiResponse<QuoteResponse>>(responseBody)
+                    return@withContext apiResponse.data
+                }
+            } catch (e: Exception) {
+                Log.e("DecisionEngine", "Network error", e)
+                Log.d("DecisionEngine", Json.encodeToString(DailyArticleResponse))
                 e.printStackTrace()
                 null
             }
