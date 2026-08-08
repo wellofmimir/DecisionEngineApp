@@ -12,7 +12,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.serialization.encodeToString
 import android.util.Log
-import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
 import com.molokosoft.decisionengine.network.backend.model.requests.SafetyClassificationRequest
 import com.molokosoft.decisionengine.network.backend.model.responses.ApiResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.dailyarticle.DailyArticleResponse

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.width
@@ -29,7 +28,6 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
 
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.shadow
@@ -55,10 +53,11 @@ import com.molokosoft.decisionengine.theme.LocalAppTypography
 fun CriteriaWithSlider(
     modifier: Modifier = Modifier,
     criteria: String,
+    score: Float,
     onValueChange: (Float) -> Unit
 ){
     val typography = LocalAppTypography.current
-    var score by remember { mutableFloatStateOf(5f) }
+    var newScore by remember { mutableFloatStateOf(score) }
 
     Row(
         modifier = modifier
@@ -108,8 +107,8 @@ fun CriteriaWithSlider(
                     .fillMaxWidth(),
                 value = score,
                 onValueChange = {
-                    score = it
-                    onValueChange(score)
+                    newScore = it
+                    onValueChange(newScore)
                 },
                 valueRange = 1f..10f,
                 steps = 8,
@@ -157,7 +156,15 @@ fun CriteriaWithSlider(
                     textAlign = TextAlign.Start,
                     color = Color.Black,
                     lineHeight = 10.sp,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
+                )
+
+                Text(
+                    text = score.toInt().toString(),
+                    textAlign = TextAlign.Center,
+                    color = Color.Black,
+                    fontWeight = FontWeight.SemiBold
                 )
 
                 Text(
@@ -184,7 +191,8 @@ fun CriteriaWithSlider(
                     textAlign = TextAlign.End,
                     color = Color.Black,
                     lineHeight = 10.sp,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier
+                        .weight(1f)
                 )
             }
         }
@@ -209,7 +217,7 @@ fun RateComparisonCriteriaScreen(
     val ratings = remember(criteria) {
         mutableStateMapOf<String, Float>().apply {
             criteria.forEach { criterion ->
-                put(criterion, 0f)
+                put(criterion, 5f)
             }
         }
     }
@@ -272,6 +280,7 @@ fun RateComparisonCriteriaScreen(
             items(criteria) { criterion ->
                 CriteriaWithSlider(
                     criteria = criterion,
+                    score = ratings[criterion] ?: 5f,
                     onValueChange = { newValue ->
                         ratings[criterion] = newValue
                     }
@@ -308,6 +317,10 @@ fun RateComparisonCriteriaScreen(
                             criterion to rating
                         }
                     )
+
+                    ratings.keys.forEach { criterion ->
+                        ratings[criterion] = 5f
+                    }
                 },
             contentAlignment = Alignment.Center
         ){

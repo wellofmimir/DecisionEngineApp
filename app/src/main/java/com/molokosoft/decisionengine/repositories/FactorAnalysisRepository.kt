@@ -90,38 +90,64 @@ class FactorAnalysisRepository(
             options = optionList
         )
 
-        repeat(3) { attempt ->
+        for (attempt in 1..3) {
             try {
                 val response = decisionEngineClient.analyze(decisionAnalysisRequest)
-                return response?.result
+
+                if (response?.result != null)
+                    return response.result
+
+                Log.e(
+                    "DecisionEngine",
+                    "Empty response (Attempt $attempt)"
+                )
 
             } catch (e: ClientRequestException) {
                 val status = e.response.status.value
 
-                Log.e("DecisionEngine", "Client error $status (Attempt ${attempt + 1})", e)
+                Log.e(
+                    "DecisionEngine",
+                    "Client error $status (Attempt $attempt)",
+                    e
+                )
 
-                if (status != 400 || attempt == 2) {
+                if (attempt == 3)
                     return null
-                }
 
             } catch (e: ServerResponseException) {
-                Log.e("DecisionEngine", "Server error ${e.response.status.value}", e)
-                return null
+                Log.e(
+                    "DecisionEngine",
+                    "Server error ${e.response.status.value} (Attempt $attempt)",
+                    e
+                )
+
+                // Bei 5xx erneut versuchen
+                if (attempt == 3)
+                    return null
 
             } catch (e: IOException) {
-                Log.e("DecisionEngine", "Network error", e)
+                Log.e(
+                    "DecisionEngine",
+                    "Network error (Attempt $attempt)",
+                    e
+                )
 
-                if (attempt == 2) {
+                if (attempt == 3)
                     return null
-                }
 
             } catch (e: Exception) {
-                Log.e("DecisionEngine", "Unexpected error", e)
+                Log.e(
+                    "DecisionEngine",
+                    "Unexpected error (Attempt $attempt)",
+                    e
+                )
                 return null
             }
 
             delay(1500)
         }
+
+        return null
 
         return null
     }
