@@ -12,9 +12,12 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.serialization.encodeToString
 import android.util.Log
+import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
+import com.molokosoft.decisionengine.network.backend.model.requests.SafetyClassificationRequest
 import com.molokosoft.decisionengine.network.backend.model.responses.ApiResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.dailyarticle.DailyArticleResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.decision.CriteriaSuggestionResponse
+import com.molokosoft.decisionengine.network.backend.model.responses.decision.SafetyClassificationResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.quote.QuoteResponse
 import okio.IOException
 import org.json.JSONObject
@@ -152,6 +155,33 @@ class DecisionEngineClient(
                 client.newCall(request).execute().use { response ->
                     val responseBody = response.body?.string() ?: ""
                     val apiResponse = Json.decodeFromString<ApiResponse<CriteriaSuggestionResponse>>(responseBody)
+                    return@withContext apiResponse.data
+                }
+            } catch (e: Exception) {
+                Log.e("DecisionEngine", "Network error", e)
+                e.printStackTrace()
+                null
+            }
+        }
+
+    suspend fun safetyClassification(safetyClassificationRequest: SafetyClassificationRequest): SafetyClassificationResponse? =
+        withContext(Dispatchers.IO) {
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val json = JSONObject()
+                .put("title", safetyClassificationRequest.title)
+
+            val requestBody = json.toString().toRequestBody(mediaType)
+
+            val request = Request.Builder()
+                .addHeader("Authorization", "Bearer $apiKey")
+                .post(requestBody)
+                .url("$baseUrl/api/v1/decision/safetyClassification")
+                .build()
+
+            try {
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string() ?: ""
+                    val apiResponse = Json.decodeFromString<ApiResponse<SafetyClassificationResponse>>(responseBody)
                     return@withContext apiResponse.data
                 }
             } catch (e: Exception) {

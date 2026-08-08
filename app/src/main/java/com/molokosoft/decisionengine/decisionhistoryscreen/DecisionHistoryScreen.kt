@@ -134,13 +134,8 @@ fun DecisionHistoryScreen(
             }
         }
 
-        Spacer(
-            modifier = Modifier
-                .weight(1f)
-        )
-
         LazyColumn(
-            modifier = modifier
+            modifier = Modifier
                 .background(
                     color = Color.White
                 )

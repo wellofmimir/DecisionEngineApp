@@ -10,6 +10,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalContext
 
 import com.molokosoft.decisionengine.newdecisionscreen.dialogs.EnterOptionDialog
 import com.molokosoft.decisionengine.newdecisionscreen.dialogs.EnterCriterionDialog
@@ -22,6 +23,7 @@ import com.molokosoft.decisionengine.newdecisionscreen.screens.ChooseComparisonC
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Criterion
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Option
 import com.molokosoft.decisionengine.commonuielements.ErrorDialog
+import com.molokosoft.decisionengine.newdecisionscreen.screens.NotAllowedScreen
 
 sealed class DecisionScreen {
     data object EnterDecisionName : DecisionScreen()
@@ -30,6 +32,7 @@ sealed class DecisionScreen {
 
     data object ChooseDecisionCriteria : DecisionScreen()
     data object RateComparisonCriteria : DecisionScreen()
+    data object NotAllowedScreen : DecisionScreen()
 }
 
 fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
@@ -45,6 +48,7 @@ fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
         DecisionScreen.ChooseDecisionCriteria -> DecisionScreen.EnterDecisionCriteria
         DecisionScreen.EnterDecisionCriteria -> DecisionScreen.RateComparisonCriteria
         DecisionScreen.RateComparisonCriteria -> DecisionScreen.EnterDecisionName
+        DecisionScreen.NotAllowedScreen -> DecisionScreen.EnterDecisionName
     }
 
 fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
@@ -61,6 +65,7 @@ fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
         DecisionScreen.RateComparisonCriteria -> DecisionScreen.EnterDecisionName
         DecisionScreen.EnterDecisionName -> DecisionScreen.EnterDecisionName
         DecisionScreen.ChooseDecisionCriteria -> DecisionScreen.EnterDecisionName
+        DecisionScreen.NotAllowedScreen -> DecisionScreen.EnterDecisionName
     }
 
 @Composable
@@ -70,6 +75,8 @@ fun EnterDecisionScreen(
     onBackClicked: () -> Unit,
     onContinueClicked: () -> Unit
 ){
+    val context = LocalContext.current
+
     var currentScreen by remember {
         mutableStateOf<DecisionScreen>(DecisionScreen.EnterDecisionName)
     }
@@ -78,6 +85,11 @@ fun EnterDecisionScreen(
     var enterCriterionDialogOpen by remember { mutableStateOf(false) }
     var errorMessageDialogOpen by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("" to "") }
+
+    val showNotAllowedScreen by newDecisionViewModel.showNotAllowedScreen.collectAsState()
+
+    if (showNotAllowedScreen)
+        currentScreen = DecisionScreen.NotAllowedScreen
 
     val draft by newDecisionViewModel.draft.collectAsState()
 
@@ -217,6 +229,13 @@ fun EnterDecisionScreen(
                 onNextClicked = {
                     currentScreen = currentScreen.next()
                 }
+            )
+        }
+
+        DecisionScreen.NotAllowedScreen -> {
+            NotAllowedScreen(
+                modifier = modifier,
+                context = context
             )
         }
     }

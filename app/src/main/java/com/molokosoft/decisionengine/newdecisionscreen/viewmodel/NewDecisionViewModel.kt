@@ -46,6 +46,12 @@ class NewDecisionViewModel(
     val showBottomBar =
         _showBottomBar.asStateFlow()
 
+    private val _showNotAllowedScreen =
+        MutableStateFlow(false)
+
+    val showNotAllowedScreen =
+        _showNotAllowedScreen.asStateFlow()
+
     fun showBottomBar() {
         _showBottomBar.value = true
     }
@@ -57,6 +63,7 @@ class NewDecisionViewModel(
     fun resetDraft() {
         viewModelScope.launch {
             _draft.value = DecisionDraft()
+            _showNotAllowedScreen.value = false
         }
     }
 
@@ -139,6 +146,7 @@ class NewDecisionViewModel(
 
     fun setTitle(title: String) {
         _draft.value.title.ifBlank {
+            getSafetyClassification(title)
             getCriteriaSuggestions(title)
         }
 
@@ -250,6 +258,18 @@ class NewDecisionViewModel(
           //"Save the E-Mail in case the sendEmail-Method fails.")
             val success = userDataRepository.sendEmail(eMail.toString())
             //"If the sendEMail-Method fails, try it again, until it doesn't fail anymore")
+        }
+    }
+
+    fun getSafetyClassification(title: String) {
+        viewModelScope.launch {
+            val result = factorAnalysisRepository.safetyClassification(title)
+
+            if (result.classification == "NOT_ALLOWED") {
+                resetDraft()
+                _showNotAllowedScreen.value = true
+                return@launch
+            }
         }
     }
 

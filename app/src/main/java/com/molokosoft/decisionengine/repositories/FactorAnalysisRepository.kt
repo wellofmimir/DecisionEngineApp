@@ -9,7 +9,10 @@ import com.molokosoft.decisionengine.network.backend.model.dto.decision.Decision
 import com.molokosoft.decisionengine.network.backend.model.requests.DecisionAnalysisRequest
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionCriterion
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.CriterionSuggestion
+import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
+
 import android.util.Log
+import com.molokosoft.decisionengine.network.backend.model.requests.SafetyClassificationRequest
 import kotlinx.coroutines.delay
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ServerResponseException
@@ -126,5 +129,18 @@ class FactorAnalysisRepository(
     suspend fun getCriteriaSuggestions(decisionTitle: String): List<CriterionSuggestion> {
         val response = decisionEngineClient.getCriteriaSuggestions(decisionTitle)
         return response?.criteria ?: emptyList()
+    }
+
+    suspend fun safetyClassification(decisionTitle: String): SafetyClassification {
+        val safetyClassificationRequest = SafetyClassificationRequest(
+            title = decisionTitle
+        )
+
+        val response = decisionEngineClient.safetyClassification(safetyClassificationRequest)
+
+        return response?.safetyClassification ?: SafetyClassification(
+            classification = "NOT_ALLOWED",
+            reason = "FAILURE"
+        )
     }
 }
