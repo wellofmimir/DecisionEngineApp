@@ -141,7 +141,7 @@ class MainActivity : ComponentActivity() {
                         appState = MainApp
                     },
                     onFailure = {
-                        appState = Welcome
+                        appState = MainApp
                     }
                 )
             }

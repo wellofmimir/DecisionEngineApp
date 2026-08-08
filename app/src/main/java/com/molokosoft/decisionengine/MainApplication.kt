@@ -23,6 +23,7 @@ import com.molokosoft.decisionengine.homescreen.navigation.NavigationItem
 import com.molokosoft.decisionengine.newdecisionscreen.EnterDecisionScreen
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.NewDecisionViewModel
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.molokosoft.decisionengine.decisionhistoryscreen.DecisionHistoryScreen
 import com.molokosoft.decisionengine.decisionhistoryscreen.viewmodel.DecisionHistoryViewModel
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
@@ -39,7 +40,6 @@ fun MainApplication(
     showMotivationalQuote: Boolean = false
 ){
     val decisionDraft by newDecisionViewModel.draft.collectAsState()
-    val showNavigationBar by newDecisionViewModel.showBottomBar.collectAsState()
     val scope = rememberCoroutineScope()
 
     var navigationItem by remember {
@@ -52,6 +52,14 @@ fun MainApplication(
         )
     }
 
+    val showBottomBar = when (navigationItem) {
+        NavigationItem.HOME -> true
+        NavigationItem.NEW_DECISION -> false
+        NavigationItem.SETTINGS -> true
+        NavigationItem.HISTORY -> true
+        NavigationItem.SEE_DECISION -> false
+    }
+
     Scaffold(
         modifier = Modifier
             .background(
@@ -59,7 +67,7 @@ fun MainApplication(
             )
             .fillMaxSize(),
         bottomBar = {
-            if (showNavigationBar) {
+            if (showBottomBar) {
                 NavigationBar(
                     selectedItem = navigationItem,
                     onNavigationSelected = {
@@ -135,7 +143,6 @@ fun MainApplication(
                     decisionAnalysisResult = decisionDraft.decisionAnalysisResult,
                     optionAnalyses = decisionDraft.optionAnalyses,
                     onContinueClicked = {
-                        newDecisionViewModel.showBottomBar()
                         navigationItem = NavigationItem.HOME
                         newDecisionViewModel.resetDraft()
                     }

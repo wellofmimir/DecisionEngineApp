@@ -38,6 +38,7 @@ import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 
 import com.molokosoft.decisionengine.commonuielements.ErrorDialog
+import com.molokosoft.decisionengine.commonuielements.WaitingScreen
 import com.molokosoft.decisionengine.newdecisionscreen.dialogs.EnterCriterionImportanceDialog
 
 @Composable
@@ -49,6 +50,14 @@ fun ChooseComparisonCriteriaScreen(
     onNextClicked: () -> Unit,
     modifier: Modifier = Modifier
 ){
+    criterionAndDescription.ifEmpty {
+        WaitingScreen(
+            text = "Thinking of useful criteria...\n" + "This usually takes just a few seconds."
+        )
+
+        return
+    }
+
     val typography = LocalAppTypography.current
 
     var showErrorDialog by remember { mutableStateOf(false) }

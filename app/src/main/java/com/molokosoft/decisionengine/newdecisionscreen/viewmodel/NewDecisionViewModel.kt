@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import androidx.lifecycle.viewModelScope
 import android.util.Log
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.StateFlow
 
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
@@ -24,7 +25,9 @@ import com.molokosoft.decisionengine.network.backend.model.dto.decision.Decision
 import com.molokosoft.decisionengine.repositories.DecisionRepository
 import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
 import com.molokosoft.decisionengine.repositories.model.CriterionAnalysis
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.stateIn
 import kotlin.String
 
 class NewDecisionViewModel(
@@ -40,30 +43,20 @@ class NewDecisionViewModel(
     val draft =
         _draft.asStateFlow()
 
-    private val _showBottomBar =
-        MutableStateFlow(true)
-
-    val showBottomBar =
-        _showBottomBar.asStateFlow()
-
-    private val _showNotAllowedScreen =
-        MutableStateFlow(false)
-
-    val showNotAllowedScreen =
-        _showNotAllowedScreen.asStateFlow()
-
-    fun showBottomBar() {
-        _showBottomBar.value = true
-    }
-
-    fun hideBottomBar() {
-        _showBottomBar.value = false
-    }
+    val showNotAllowedScreen: StateFlow<Boolean> =
+        draft
+            .map {
+                draft.value.safetyClassification != null && draft.value.safetyClassification!!.classification == "NOT_ALLOWED"
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                false
+            )
 
     fun resetDraft() {
         viewModelScope.launch {
             _draft.value = DecisionDraft()
-            _showNotAllowedScreen.value = false
         }
     }
 
@@ -146,12 +139,19 @@ class NewDecisionViewModel(
 
     fun setTitle(title: String) {
         _draft.value.title.ifBlank {
-            getSafetyClassification(title)
-            getCriteriaSuggestions(title)
+            viewModelScope.launch {
+                getSafetyClassification(title)
+
+                if (!showNotAllowedScreen.value)
+                    getCriteriaSuggestions(title)
+            }
         }
 
-        if (title != _draft.value.title && _draft.value.title.isNotBlank())
-            getCriteriaSuggestions(title)
+        if (title != _draft.value.title && _draft.value.title.isNotBlank()) {
+            viewModelScope.launch {
+                getCriteriaSuggestions(title)
+            }
+        }
 
         _draft.update {
             it.copy(
@@ -240,8 +240,6 @@ class NewDecisionViewModel(
             )
         }
 
-        hideBottomBar()
-
         viewModelScope.launch {
             _draft.update {
                 it.copy(
@@ -261,36 +259,29 @@ class NewDecisionViewModel(
         }
     }
 
-    fun getSafetyClassification(title: String) {
-        viewModelScope.launch {
-            val result = factorAnalysisRepository.safetyClassification(title)
+    suspend fun getSafetyClassification(title: String) {
+        val result = factorAnalysisRepository.safetyClassification(title)
 
-            if (result.classification == "NOT_ALLOWED") {
-                resetDraft()
-                _showNotAllowedScreen.value = true
-                return@launch
-            }
+        _draft.update {
+            it.copy(
+                safetyClassification = result
+            )
         }
     }
 
-    fun getCriteriaSuggestions(title: String) {
-        viewModelScope.launch {
-            val result = factorAnalysisRepository.getCriteriaSuggestions(title)
+    suspend fun getCriteriaSuggestions(title: String) {
+        val result = factorAnalysisRepository.getCriteriaSuggestions(title)
 
-            _draft.update {
-                it.copy(
-                    criteriaSuggestions = result
-                )
-            }
+        _draft.update {
+            it.copy(
+                criteriaSuggestions = result
+            )
         }
     }
 
-    private fun saveDecision() {
+    private suspend fun saveDecision() {
         val fullDraft = _draft.value
-
-        viewModelScope.launch {
-            decisionRepository.insertDecision(fullDraft)
-        }
+        decisionRepository.insertDecision(fullDraft)
     }
 
     fun checkSubscription(

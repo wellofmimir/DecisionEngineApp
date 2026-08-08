@@ -1,6 +1,8 @@
 package com.molokosoft.decisionengine.newdecisionscreen
 
 
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 
 import androidx.compose.runtime.remember
@@ -114,6 +116,7 @@ fun EnterDecisionScreen(
             currentDecisionText = draft.title,
             yesOrNoDecision = yesOrNoDecision,
             onBackClicked = {
+                newDecisionViewModel.resetDraft()
                 onBackClicked()
             },
             onNextClicked = { name, yesOrNoDecision ->
@@ -139,6 +142,7 @@ fun EnterDecisionScreen(
                 newDecisionViewModel.deleteOption(it)
             },
             onBackClicked = {
+                newDecisionViewModel.resetDraft()
                 currentScreen = currentScreen.previous(yesOrNoDecision)
             },
             onNextClicked = {
@@ -224,7 +228,7 @@ fun EnterDecisionScreen(
                     newDecisionViewModel.deleteCriterion(name)
                 },
                 onBackClicked = {
-
+                    currentScreen = currentScreen.previous()
                 },
                 onNextClicked = {
                     currentScreen = currentScreen.next()
@@ -234,8 +238,13 @@ fun EnterDecisionScreen(
 
         DecisionScreen.NotAllowedScreen -> {
             NotAllowedScreen(
-                modifier = modifier,
-                context = context
+                modifier = modifier
+                    .fillMaxHeight(),
+                context = context,
+                onBackClicked = {
+                    newDecisionViewModel.resetDraft()
+                    currentScreen = currentScreen.previous()
+                }
             )
         }
     }

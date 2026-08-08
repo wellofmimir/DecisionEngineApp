@@ -60,7 +60,7 @@ fun EnterCriterionDialog(
         }
     ){
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .border(
                     width = 1.dp,
                     color = DecisionBlueLight,

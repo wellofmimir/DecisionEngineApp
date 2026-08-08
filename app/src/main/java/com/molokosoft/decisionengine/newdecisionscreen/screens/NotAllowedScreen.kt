@@ -26,9 +26,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import android.net.Uri
 import android.content.Intent
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -287,6 +289,7 @@ fun WeCareAboutYouCard(
 fun NotAllowedScreen(
     modifier: Modifier = Modifier,
     context: Context,
+    onBackClicked: () -> Unit
 ) {
     val typography = LocalAppTypography.current
     val verticalScroll = rememberScrollState()
@@ -301,6 +304,11 @@ fun NotAllowedScreen(
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        Spacer(
+            modifier = Modifier
+                .height(64.dp)
+        )
+
         Image(
             painter = painterResource(id = R.drawable.notallowed),
             contentDescription = null,
@@ -375,7 +383,24 @@ fun NotAllowedScreen(
 
         Spacer(
             modifier = Modifier
-                .height(32.dp)
+                .height(16.dp)
+        )
+
+        Text(
+            text = "Back",
+            textAlign = TextAlign.Center,
+            color = Color.Black,
+            fontSize = typography.titleSmall.fontSize,
+            textDecoration = TextDecoration.Underline,
+            modifier = Modifier
+                .clickable {
+                    onBackClicked()
+                }
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(16.dp)
         )
     }
 }
