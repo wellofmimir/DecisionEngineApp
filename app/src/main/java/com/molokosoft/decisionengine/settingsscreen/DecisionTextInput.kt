@@ -54,10 +54,7 @@ fun DecisionTextInput(
         if (!hasChanged)
             return@LaunchedEffect
 
-        showCheckmark = false
-        delay(800)
         showCheckmark = true
-        focusManager.clearFocus()
     }
 
     Surface(
@@ -122,6 +119,7 @@ fun DecisionTextInput(
                             .clickable {
                                 onNewUsernameEntered(newUsername)
                                 showCheckmark = false
+                                focusManager.clearFocus()
                             }
                     )
                 }
