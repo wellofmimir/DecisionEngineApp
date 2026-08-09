@@ -22,6 +22,7 @@ import com.molokosoft.decisionengine.commonclasses.EMail
 import com.molokosoft.decisionengine.commonclasses.SubscriptionTypes
 import com.molokosoft.decisionengine.billing.BillingManager
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
+import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
 import com.molokosoft.decisionengine.repositories.DecisionRepository
 import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
 import com.molokosoft.decisionengine.repositories.model.CriterionAnalysis
@@ -43,10 +44,13 @@ class NewDecisionViewModel(
     val draft =
         _draft.asStateFlow()
 
+    var isOnboarding: Boolean = true
+        private set
+
     val showNotAllowedScreen: StateFlow<Boolean> =
         draft
-            .map {
-                draft.value.safetyClassification != null && draft.value.safetyClassification!!.classification == "NOT_ALLOWED"
+            .map { draft ->
+                draft.safetyClassification != null && draft.safetyClassification.classification == "NOT_ALLOWED"
             }
             .stateIn(
                 viewModelScope,
@@ -140,9 +144,9 @@ class NewDecisionViewModel(
     fun setTitle(title: String) {
         _draft.value.title.ifBlank {
             viewModelScope.launch {
-                getSafetyClassification(title)
+                val result = getSafetyClassification(title)
 
-                if (!showNotAllowedScreen.value)
+                if (result?.classification != "NOT_ALLOWED")
                     getCriteriaSuggestions(title)
             }
         }
@@ -226,6 +230,11 @@ class NewDecisionViewModel(
         }
     }
 
+    fun finishOnboarding() {
+        startAnalysis()
+        isOnboarding = false
+    }
+
     fun getNextOption(): String? {
         return draft.value.options
             .firstOrNull {
@@ -258,8 +267,7 @@ class NewDecisionViewModel(
             //"If the sendEMail-Method fails, try it again, until it doesn't fail anymore")
         }
     }
-
-    suspend fun getSafetyClassification(title: String) {
+    suspend fun getSafetyClassification(title: String): SafetyClassification? {
         val result = factorAnalysisRepository.safetyClassification(title)
 
         _draft.update {
@@ -267,7 +275,10 @@ class NewDecisionViewModel(
                 safetyClassification = result
             )
         }
+
+        return result
     }
+
 
     suspend fun getCriteriaSuggestions(title: String) {
         val result = factorAnalysisRepository.getCriteriaSuggestions(title)
@@ -282,6 +293,24 @@ class NewDecisionViewModel(
     private suspend fun saveDecision() {
         val fullDraft = _draft.value
         decisionRepository.insertDecision(fullDraft)
+    }
+
+    private fun verifyPurchaseAndContinue(
+        purchase: Purchase,
+        onSuccess: () -> Unit,
+        onFailure: () -> Unit
+    ) {
+        viewModelScope.launch {
+            val verified = userDataRepository.verifyPurchase(
+                purchase.purchaseToken
+            )
+
+            if (verified) {
+                onSuccess()
+            } else {
+                onFailure()
+            }
+        }
     }
 
     fun checkSubscription(
@@ -309,16 +338,24 @@ class NewDecisionViewModel(
 
                 Log.d("Billing", "Has subscription = $hasSubscription")
 
-                if (hasSubscription)
+                if (hasSubscription) {
+                    isOnboarding = false
                     onSuccess()
-                else
+                } else {
+                    isOnboarding = true
                     onFailure()
+                }
             }
 
             override fun onProductsLoaded() {
             }
 
             override fun onPurchaseAcknowledged(purchase: Purchase) {
+                verifyPurchaseAndContinue(
+                    purchase,
+                    onSuccess,
+                    onFailure
+                )
             }
 
             override fun onPurchaseFailure(billingResult: BillingResult) {
@@ -348,13 +385,17 @@ class NewDecisionViewModel(
 
             override fun onProductsLoaded() {
                 billingManager.buySubscription(activity, "test_weekly_subscription")
-
-                //TODO: raus damit
-                onSuccess()
             }
 
             override fun onPurchaseAcknowledged(purchase: Purchase) {
-                onSuccess()
+                viewModelScope.launch {
+                    val verified = userDataRepository.verifyPurchase(purchase.purchaseToken)
+
+                    if (verified)
+                        onSuccess()
+                    else
+                        onFailure()
+                }
             }
 
             override fun onPurchaseFailure(billingResult: BillingResult) {
@@ -366,15 +407,21 @@ class NewDecisionViewModel(
             }
 
             override fun onActivePurchasesLoaded(purchases: List<Purchase>) {
-                val hasSubscription = purchases.any {
+                val purchase = purchases.firstOrNull {
+                    it.purchaseState == Purchase.PurchaseState.PURCHASED &&
                     "test_weekly_subscription" in it.products
                 }
 
-                if (hasSubscription) {
-                    onSuccess()
-                }
-                else {
-                    billingManager.loadProducts(listOf("test_weekly_subscription"))
+                if (purchase != null) {
+                    verifyPurchaseAndContinue(
+                        purchase,
+                        onSuccess,
+                        onFailure
+                    )
+                } else {
+                    billingManager.loadProducts(
+                        listOf("test_weekly_subscription")
+                    )
                 }
             }
         })

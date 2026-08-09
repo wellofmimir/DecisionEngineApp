@@ -181,11 +181,10 @@ fun EnterDecisionScreen(
 
         DecisionScreen.RateComparisonCriteria -> {
             if (nextOptionName == null) {
-                LaunchedEffect(Unit) {
+                if (!newDecisionViewModel.isOnboarding)
                     newDecisionViewModel.startAnalysis()
-                    onContinueClicked()
-                }
 
+                onContinueClicked()
                 return
             }
 

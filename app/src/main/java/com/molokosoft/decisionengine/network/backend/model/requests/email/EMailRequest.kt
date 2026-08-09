@@ -1,4 +1,4 @@
-package com.molokosoft.decisionengine.network.backend.model.requests
+package com.molokosoft.decisionengine.network.backend.model.requests.email
 
 import kotlinx.serialization.Serializable
 

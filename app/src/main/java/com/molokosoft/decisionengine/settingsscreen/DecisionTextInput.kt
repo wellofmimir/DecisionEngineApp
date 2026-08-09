@@ -43,7 +43,6 @@ fun DecisionTextInput(
     modifier: Modifier = Modifier,
     onNewUsernameEntered: (newUsername: String) -> Unit
 ) {
-    val typography = LocalAppTypography.current
     val focusManager = LocalFocusManager.current
 
     var newUsername by rememberSaveable { mutableStateOf(username) }

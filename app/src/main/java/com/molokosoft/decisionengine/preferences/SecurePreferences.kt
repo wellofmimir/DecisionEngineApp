@@ -24,6 +24,16 @@ class SecurePreferences(
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
 
+    fun setApiKey(apiKey: String) {
+        securePreferences.edit {
+            putString("apiKey", apiKey)
+        }
+    }
+
+    fun apiKey(): String {
+        return securePreferences.getString("apiKey", "") ?: ""
+    }
+
     fun setFeedbackLimitReached() {
         securePreferences.edit {
             putBoolean("feedbackLimitReached", true)

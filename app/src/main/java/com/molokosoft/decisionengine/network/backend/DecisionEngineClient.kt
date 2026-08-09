@@ -1,7 +1,7 @@
 package com.molokosoft.decisionengine.network.backend
 
 import com.molokosoft.decisionengine.BuildConfig
-import com.molokosoft.decisionengine.network.backend.model.requests.DecisionAnalysisRequest
+import com.molokosoft.decisionengine.network.backend.model.requests.decision.DecisionAnalysisRequest
 import com.molokosoft.decisionengine.network.backend.model.responses.decision.DecisionAnalysisResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -12,8 +12,10 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.serialization.encodeToString
 import android.util.Log
-import com.molokosoft.decisionengine.network.backend.model.requests.SafetyClassificationRequest
+import com.molokosoft.decisionengine.network.backend.model.requests.billing.VerifyPurchaseRequest
+import com.molokosoft.decisionengine.network.backend.model.requests.decision.SafetyClassificationRequest
 import com.molokosoft.decisionengine.network.backend.model.responses.ApiResponse
+import com.molokosoft.decisionengine.network.backend.model.responses.billing.VerifyPurchaseResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.dailyarticle.DailyArticleResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.decision.CriteriaSuggestionResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.decision.SafetyClassificationResponse
@@ -22,14 +24,48 @@ import okio.IOException
 import org.json.JSONObject
 
 val baseUrl = if (BuildConfig.DEBUG)
-    "http://192.168.188.21:45003"
+    "https://greeen-app.com/dec"
 else
-    "http://192.168.188.21:45003"
+    "https://greeen-app.com/dec"
 
 class DecisionEngineClient(
-    private val client: OkHttpClient,
-    private val apiKey: String = ""
+    private val client: OkHttpClient
 ) {
+    private var apiKey: String = ""
+
+    fun setApiKey(key: String) {
+        apiKey = key
+    }
+
+    suspend fun verifyPurchase(verifyPurchaseRequest: VerifyPurchaseRequest): VerifyPurchaseResponse? =
+        withContext(Dispatchers.IO) {
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val json = Json.encodeToString(verifyPurchaseRequest)
+            val requestBody = json.toRequestBody(mediaType)
+
+            val request = Request.Builder()
+                .post(requestBody)
+                .url("$baseUrl/api/v1/billing/verify")
+                .build()
+
+            try {
+                client.newCall(request).execute().use { response ->
+
+                    if (!response.isSuccessful)
+                        throw IOException("HTTP ${response.code}: ${response.message}")
+
+                    val responseBody = response.body?.string() ?: ""
+                    val apiResponse = Json.decodeFromString<ApiResponse<VerifyPurchaseResponse>>(responseBody)
+                    return@withContext apiResponse.data
+                }
+            } catch (e: Exception) {
+                Log.e("DecisionEngine", "Network error", e)
+                Log.d("DecisionEngine", Json.encodeToString(VerifyPurchaseRequest))
+                e.printStackTrace()
+                null
+            }
+        }
+
     suspend fun dailyArticle(): DailyArticleResponse? =
         withContext(Dispatchers.IO) {
             val request = Request.Builder()
@@ -64,19 +100,66 @@ class DecisionEngineClient(
                 .url("$baseUrl/api/v1/decision/analyze")
                 .build()
 
+            Log.d("DecisionEngine", "========== ANALYZE START ==========")
+            Log.d("DecisionEngine", "URL: ${request.url}")
+            Log.d("DecisionEngine", "Method: ${request.method}")
+            Log.d("DecisionEngine", "API Key present: ${apiKey.isNotBlank()}")
+            Log.d("DecisionEngine", "Request body: $json")
+
             try {
+                Log.d("DecisionEngine", "Sending request...")
+
                 client.newCall(request).execute().use { response ->
+
+                    Log.d(
+                        "DecisionEngine",
+                        "Response received: ${response.code} ${response.message}"
+                    )
 
                     if (!response.isSuccessful)
                         throw IOException("HTTP ${response.code}: ${response.message}")
 
                     val responseBody = response.body?.string() ?: ""
+
+                    Log.d(
+                        "DecisionEngine",
+                        "Response body: $responseBody"
+                    )
+
                     val apiResponse = Json.decodeFromString<ApiResponse<DecisionAnalysisResponse>>(responseBody)
+
+                    Log.d("DecisionEngine", "Response parsed successfully")
+                    Log.d("DecisionEngine", "========== ANALYZE SUCCESS ==========")
+
                     return@withContext apiResponse.data
                 }
             } catch (e: Exception) {
                 Log.e("DecisionEngine", "Network error", e)
                 Log.d("DecisionEngine", Json.encodeToString(decisionAnalysisRequest))
+
+                Log.e(
+                    "DecisionEngine",
+                    "Network request failed",
+                    e
+                )
+
+                Log.e(
+                    "DecisionEngine",
+                    "Exception type: ${e::class.java.name}"
+                )
+
+                Log.e(
+                    "DecisionEngine",
+                    "Exception message: ${e.message}"
+                )
+
+                Log.e(
+                    "DecisionEngine",
+                    "Request body was: $json"
+                )
+
+                Log.d("DecisionEngine", "========== ANALYZE FAILED ==========")
+
                 e.printStackTrace()
                 null
             }
@@ -91,7 +174,6 @@ class DecisionEngineClient(
             val requestBody = json.toString().toRequestBody(mediaType)
 
             val request = Request.Builder()
-                .addHeader("Authorization", "Bearer $apiKey")
                 .post(requestBody)
                 .url("$baseUrl/api/v1/email")
                 .build()
@@ -145,7 +227,6 @@ class DecisionEngineClient(
             val requestBody = json.toString().toRequestBody(mediaType)
 
             val request = Request.Builder()
-                .addHeader("Authorization", "Bearer $apiKey")
                 .post(requestBody)
                 .url("$baseUrl/api/v1/criteria/suggest")
                 .build()
@@ -172,7 +253,6 @@ class DecisionEngineClient(
             val requestBody = json.toString().toRequestBody(mediaType)
 
             val request = Request.Builder()
-                .addHeader("Authorization", "Bearer $apiKey")
                 .post(requestBody)
                 .url("$baseUrl/api/v1/decision/safetyClassification")
                 .build()

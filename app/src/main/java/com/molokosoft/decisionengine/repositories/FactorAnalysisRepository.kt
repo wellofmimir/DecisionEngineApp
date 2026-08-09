@@ -6,13 +6,13 @@ import com.molokosoft.decisionengine.repositories.model.CriterionAnalysis
 import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
 import com.molokosoft.decisionengine.network.backend.DecisionEngineClient
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionOption
-import com.molokosoft.decisionengine.network.backend.model.requests.DecisionAnalysisRequest
+import com.molokosoft.decisionengine.network.backend.model.requests.decision.DecisionAnalysisRequest
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionCriterion
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.CriterionSuggestion
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
 
 import android.util.Log
-import com.molokosoft.decisionengine.network.backend.model.requests.SafetyClassificationRequest
+import com.molokosoft.decisionengine.network.backend.model.requests.decision.SafetyClassificationRequest
 import kotlinx.coroutines.delay
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ServerResponseException
@@ -92,6 +92,11 @@ class FactorAnalysisRepository(
 
         for (attempt in 1..3) {
             try {
+                Log.e(
+                    "DecisionEngine",
+                    "Start AI-Analysis (Attempt $attempt)"
+                )
+
                 val response = decisionEngineClient.analyze(decisionAnalysisRequest)
 
                 if (response?.result != null)

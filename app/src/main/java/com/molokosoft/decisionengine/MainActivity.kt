@@ -68,7 +68,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             val securePreferences = SecurePreferences(applicationContext)
             val decisionRepository = DecisionRepository(applicationContext)
-            val decisionEngineClient = DecisionEngineClient(SharedHttpClient.sharedClient, "")
+            val decisionEngineClient = DecisionEngineClient(SharedHttpClient.sharedClient)
+            decisionEngineClient.setApiKey(securePreferences.apiKey())
+
             val userDataRepository = UserDataRepository(decisionEngineClient, securePreferences)
 
             @Suppress("UNCHECKED_CAST")
@@ -141,7 +143,7 @@ class MainActivity : ComponentActivity() {
                         appState = MainApp
                     },
                     onFailure = {
-                        appState = MainApp
+                        appState = Welcome
                     }
                 )
             }
@@ -167,20 +169,21 @@ class MainActivity : ComponentActivity() {
                     Paywall -> PaywallScreen(
                         onContinueClicked = { subscriptionType, eMail ->
 
-                            appState = appState.next()
-                            return@PaywallScreen
-
                             newDecisionViewModel.startBillingProcess(
                                 subscriptionType = subscriptionType,
                                 activity = this,
                                 onSuccess = {
                                     appState = appState.next()
 
+                                    if (newDecisionViewModel.isOnboarding)
+                                        newDecisionViewModel.finishOnboarding()
+
                                     if (eMail != null)
                                         newDecisionViewModel.saveEMail(eMail)
                                 },
                                 onFailure = {
-
+                                    appState = Welcome
+                                    //TODO("Einbauen eine Buchungsfehler-Screens, erstmal geht es nur zurück!")
                                 }
                             )
                         }

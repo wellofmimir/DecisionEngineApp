@@ -1,6 +1,7 @@
-package com.molokosoft.decisionengine.network.backend.model.requests
-import kotlinx.serialization.Serializable
+package com.molokosoft.decisionengine.network.backend.model.requests.decision
+
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionOption
+import kotlinx.serialization.Serializable
 
 @Serializable
 data class DecisionAnalysisRequest(
