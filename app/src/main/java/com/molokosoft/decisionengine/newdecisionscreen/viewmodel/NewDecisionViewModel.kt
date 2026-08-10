@@ -15,12 +15,14 @@ import androidx.lifecycle.viewModelScope
 import android.util.Log
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.collections.listOf
 
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.molokosoft.decisionengine.commonclasses.EMail
 import com.molokosoft.decisionengine.commonclasses.SubscriptionTypes
 import com.molokosoft.decisionengine.billing.BillingManager
+import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
 import com.molokosoft.decisionengine.repositories.DecisionRepository
@@ -43,6 +45,21 @@ class NewDecisionViewModel(
 
     val draft =
         _draft.asStateFlow()
+
+    private val _subscriptionProducts =
+        MutableStateFlow(listOf(
+            SubscriptionProduct(
+                "test_weekly_subscription",
+                ""
+            ),
+            SubscriptionProduct(
+                "test_weekly_subscription",
+                ""
+            )
+        ))
+
+    val subscriptionProducts =
+        _subscriptionProducts.asStateFlow()
 
     var isOnboarding: Boolean = true
         private set
@@ -231,8 +248,15 @@ class NewDecisionViewModel(
     }
 
     fun finishOnboarding() {
-        startAnalysis()
+        if (isOnboarding)
+            startAnalysis()
+
         isOnboarding = false
+    }
+
+    fun onComparisonCompleted() {
+        if (!isOnboarding)
+            startAnalysis()
     }
 
     fun getNextOption(): String? {
@@ -313,6 +337,10 @@ class NewDecisionViewModel(
         }
     }
 
+    fun getPriceToSubscriptionProduct(productId: String): String? {
+        return billingManager.getFormattedPrice(productId)
+    }
+
     fun checkSubscription(
         onSuccess: () -> Unit,
         onFailure: () -> Unit
@@ -322,6 +350,12 @@ class NewDecisionViewModel(
         billingManager.setListener(object : BillingManager.Listener {
             override fun onBillingReady() {
                 billingManager.queryActiveSubscriptions()
+
+                billingManager.loadProducts(
+                    productIds = _subscriptionProducts.value.map {
+                        it.productId
+                    }
+                )
             }
 
             override fun onActivePurchasesLoaded(purchases: List<Purchase>) {
@@ -348,6 +382,15 @@ class NewDecisionViewModel(
             }
 
             override fun onProductsLoaded() {
+                _subscriptionProducts.update { products ->
+                    products.map { product ->
+                        product.copy(
+                            formattedPrice =
+                                billingManager.getFormattedPrice(product.productId)
+                                    ?: ""
+                        )
+                    }
+                }
             }
 
             override fun onPurchaseAcknowledged(purchase: Purchase) {
@@ -388,14 +431,11 @@ class NewDecisionViewModel(
             }
 
             override fun onPurchaseAcknowledged(purchase: Purchase) {
-                viewModelScope.launch {
-                    val verified = userDataRepository.verifyPurchase(purchase.purchaseToken)
-
-                    if (verified)
-                        onSuccess()
-                    else
-                        onFailure()
-                }
+                verifyPurchaseAndContinue(
+                    purchase,
+                    onSuccess,
+                    onFailure
+                )
             }
 
             override fun onPurchaseFailure(billingResult: BillingResult) {

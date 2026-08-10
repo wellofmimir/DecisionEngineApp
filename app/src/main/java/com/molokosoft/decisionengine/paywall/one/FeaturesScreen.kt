@@ -112,12 +112,12 @@ fun FeaturesScreen(
             ),
 
             FeatureCard(
-                imageResource = R.drawable.document_foreground,
-                text = "Export your decisions as PDF."
+                imageResource = R.drawable.analysis_foreground,
+                text = "Get a clear roadmap to success."
             ),
 
             FeatureCard(
-                imageResource = R.drawable.wrench_foreground,
+                imageResource = R.drawable.upwards_trend_file_foreground,
                 text = "Less overthinking. More action."
             )
         )

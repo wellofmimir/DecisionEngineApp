@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 
@@ -33,6 +34,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.molokosoft.decisionengine.R
+import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
 import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.DecisionGreen
@@ -44,6 +46,7 @@ import com.molokosoft.decisionengine.commonclasses.SubscriptionTypes
 @Composable
 fun OfferTilesScreen(
     modifier: Modifier = Modifier,
+    subscriptionProducts: List<SubscriptionProduct>,
     onContinueClicked: (offerType: SubscriptionTypes) -> Unit
 ){
     val typography = LocalAppTypography.current
@@ -178,7 +181,9 @@ fun OfferTilesScreen(
                     )
 
                     Text(
-                        text = "$0.79",
+                        text = subscriptionProducts.find {
+                            it.productId == "test_weekly_subscription"
+                        }?.formattedPrice ?: "$0.89",
                         fontWeight = FontWeight.Bold,
                         color = Color.Black,
                         fontSize = typography.titleLarge.fontSize,
@@ -277,11 +282,16 @@ fun OfferTilesScreen(
                     )
 
                     Image(
-                        painter = painterResource(id = R.drawable.star_foreground),
+                        painter = painterResource(id = R.drawable.star_blue_foreground),
                         contentDescription = null,
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .fillMaxWidth(0.45f)
+                            .background(
+                                shape = CircleShape,
+                                color = MostChosenGreen
+                            )
+                            .padding(8.dp)
                     )
                 }
 
@@ -298,7 +308,9 @@ fun OfferTilesScreen(
                     )
 
                     Text(
-                        text = "$24.99",
+                        text = subscriptionProducts.find {
+                            it.productId == "test_weekly_subscription"
+                        }?.formattedPrice ?: "$24.99",
                         fontWeight = FontWeight.Bold,
                         color = Color.Black,
                         fontSize = typography.titleLarge.fontSize,

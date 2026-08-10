@@ -99,7 +99,6 @@ fun DecisionResultScreen(
             modifier = modifier,
             decisionAnalysisResult = decisionAnalysisResult,
             onContinueClicked = {
-                currentScreen = currentScreen.next()
                 onContinueClicked()
             }
         )

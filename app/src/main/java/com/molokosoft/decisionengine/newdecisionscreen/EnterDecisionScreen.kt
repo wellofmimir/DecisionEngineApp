@@ -90,8 +90,10 @@ fun EnterDecisionScreen(
 
     val showNotAllowedScreen by newDecisionViewModel.showNotAllowedScreen.collectAsState()
 
-    if (showNotAllowedScreen)
-        currentScreen = DecisionScreen.NotAllowedScreen
+    LaunchedEffect(showNotAllowedScreen) {
+        if (showNotAllowedScreen)
+            currentScreen = DecisionScreen.NotAllowedScreen
+    }
 
     val draft by newDecisionViewModel.draft.collectAsState()
 
@@ -181,10 +183,11 @@ fun EnterDecisionScreen(
 
         DecisionScreen.RateComparisonCriteria -> {
             if (nextOptionName == null) {
-                if (!newDecisionViewModel.isOnboarding)
-                    newDecisionViewModel.startAnalysis()
+                LaunchedEffect(Unit) {
+                    newDecisionViewModel.onComparisonCompleted()
+                    onContinueClicked()
+                }
 
-                onContinueClicked()
                 return
             }
 

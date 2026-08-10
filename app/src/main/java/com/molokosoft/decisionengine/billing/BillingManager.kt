@@ -112,7 +112,7 @@ class BillingManager(context: Context) {
         }
     }
 
-    fun loadProducts(productIDs: List<String>) {
+    fun loadProducts(productIds: List<String>) {
         if (!isReady)
             return
 
@@ -120,7 +120,7 @@ class BillingManager(context: Context) {
             QueryProductDetailsParams
                 .newBuilder()
                 .setProductList(
-                    productIDs.map {
+                    productIds.map {
                         QueryProductDetailsParams.Product
                             .newBuilder()
                             .setProductId(it)
@@ -190,6 +190,19 @@ class BillingManager(context: Context) {
                 }
             }
         )
+    }
+
+    fun getFormattedPrice(productId: String): String? {
+        val details =
+            productDetails[productId]
+                ?: return null
+
+        return details.subscriptionOfferDetails
+            ?.firstOrNull()
+            ?.pricingPhases
+            ?.pricingPhaseList
+            ?.firstOrNull()
+            ?.formattedPrice
     }
 
     fun buySubscription(

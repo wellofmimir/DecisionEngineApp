@@ -33,6 +33,7 @@ import com.molokosoft.decisionengine.preferences.SecurePreferences
 import com.molokosoft.decisionengine.repositories.DecisionRepository
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
 import com.molokosoft.decisionengine.repositories.ArticlesRepository
 import com.molokosoft.decisionengine.repositories.QuoteRepository
@@ -66,12 +67,26 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent = intent)
         enableEdgeToEdge()
         setContent {
-            val securePreferences = SecurePreferences(applicationContext)
-            val decisionRepository = DecisionRepository(applicationContext)
-            val decisionEngineClient = DecisionEngineClient(SharedHttpClient.sharedClient)
-            decisionEngineClient.setApiKey(securePreferences.apiKey())
+            val securePreferences = remember {
+                SecurePreferences(applicationContext)
+            }
 
-            val userDataRepository = UserDataRepository(decisionEngineClient, securePreferences)
+            val decisionRepository = remember {
+                DecisionRepository(applicationContext)
+            }
+
+            val decisionEngineClient = remember {
+                DecisionEngineClient(SharedHttpClient.sharedClient).apply {
+                    setApiKey(securePreferences.apiKey())
+                }
+            }
+
+            val userDataRepository = remember {
+                UserDataRepository(
+                    decisionEngineClient,
+                    securePreferences
+                )
+            }
 
             @Suppress("UNCHECKED_CAST")
             val newDecisionViewModel: NewDecisionViewModel = viewModel(
@@ -129,9 +144,16 @@ class MainActivity : ComponentActivity() {
                 }
             )
 
-            val manager = getSystemService(NotificationManager::class.java)
+            val manager =
+                getSystemService(NotificationManager::class.java)
+
             manager.createNotificationChannel(NotificationChannel("motivationalQuote", "motivationalQuote", NotificationManager.IMPORTANCE_HIGH))
-            val showQuote by showMotivationalQuote.collectAsState()
+
+            val showQuote by
+                showMotivationalQuote.collectAsState()
+
+            val subscriptionProducts by
+                newDecisionViewModel.subscriptionProducts.collectAsState()
 
             var appState by remember {
                 mutableStateOf<AppState>(Welcome)
@@ -174,9 +196,7 @@ class MainActivity : ComponentActivity() {
                                 activity = this,
                                 onSuccess = {
                                     appState = appState.next()
-
-                                    if (newDecisionViewModel.isOnboarding)
-                                        newDecisionViewModel.finishOnboarding()
+                                    newDecisionViewModel.finishOnboarding()
 
                                     if (eMail != null)
                                         newDecisionViewModel.saveEMail(eMail)
@@ -186,7 +206,8 @@ class MainActivity : ComponentActivity() {
                                     //TODO("Einbauen eine Buchungsfehler-Screens, erstmal geht es nur zurück!")
                                 }
                             )
-                        }
+                        },
+                        subscriptionProducts = subscriptionProducts
                     )
 
                     MainApp -> {

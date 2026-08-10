@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -84,6 +85,7 @@ fun MainApplication(
                     .fillMaxHeight()
                     .padding(innerPadding),
                 onClicked = {
+                    newDecisionViewModel.resetDraft()
                     navigationItem = NavigationItem.NEW_DECISION
                 },
                 onViewHistoryRequested = {
@@ -103,8 +105,6 @@ fun MainApplication(
             )
 
             NavigationItem.NEW_DECISION -> {
-                newDecisionViewModel.resetDraft()
-
                 EnterDecisionScreen(
                     newDecisionViewModel,
                     modifier = Modifier
@@ -143,8 +143,8 @@ fun MainApplication(
                     decisionAnalysisResult = decisionDraft.decisionAnalysisResult,
                     optionAnalyses = decisionDraft.optionAnalyses,
                     onContinueClicked = {
-                        navigationItem = NavigationItem.HOME
                         newDecisionViewModel.resetDraft()
+                        navigationItem = NavigationItem.HOME
                     }
                 )
             }

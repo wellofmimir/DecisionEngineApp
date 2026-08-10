@@ -9,6 +9,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
 
 import com.molokosoft.decisionengine.commonuielements.ErrorDialog
 import com.molokosoft.decisionengine.commonclasses.EMail
@@ -38,6 +39,7 @@ fun Paywall.next(): Paywall =
 @Composable
 fun PaywallScreen(
     modifier: Modifier = Modifier,
+    subscriptionProducts: List<SubscriptionProduct>,
     onContinueClicked: (subscriptionType: SubscriptionTypes, eMail: EMail?) -> Unit
 ){
     val notificationPermissionLauncher = rememberLauncherForActivityResult (
@@ -77,6 +79,7 @@ fun PaywallScreen(
 
         Paywall.OfferTiles -> OfferTilesScreen(
             modifier = modifier,
+            subscriptionProducts = subscriptionProducts,
             onContinueClicked = { subscriptionType ->
                 if (subscriptionType == SubscriptionTypes.FreeTrial) {
                     currentScreen = currentScreen.next()

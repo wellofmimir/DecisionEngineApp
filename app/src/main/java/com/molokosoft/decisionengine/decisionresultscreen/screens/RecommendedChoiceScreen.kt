@@ -83,6 +83,11 @@ fun RecommendedChoiceScreen(
                 .height(32.dp)
         )
 
+        Spacer(
+            modifier = Modifier
+                .weight(1f)
+        )
+
         Text(
             text = optionAnalyses.first().name,
             textAlign = TextAlign.Center,
@@ -122,11 +127,6 @@ fun RecommendedChoiceScreen(
             fontWeight = FontWeight.Bold,
             color = textColorForConfidenceRating,
             lineHeight = 36.sp
-        )
-
-        Spacer(
-            modifier = Modifier
-                .weight(1f)
         )
 
         Spacer(
