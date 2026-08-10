@@ -87,15 +87,16 @@ fun RecommendedChoiceScreen(
             text = optionAnalyses.first().name,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = 8.dp),
             textAlign = TextAlign.Center,
-            fontSize = typography.titleLarge.fontSize * 2,
+            fontSize = typography.titleLarge.fontSize * 1.75f,
+            lineHeight = typography.titleLarge.lineHeight * 2f,
             color = Color.Black
         )
 
         Spacer(
             modifier = Modifier
-                .height(32.dp)
+                .height(8.dp)
         )
 
         val textColorForConfidenceRating = when (optionAnalyses.first().weightedScoreAsPercentage()) {
