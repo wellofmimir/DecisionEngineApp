@@ -47,19 +47,14 @@ class NewDecisionViewModel(
         _draft.asStateFlow()
 
     private val _subscriptionProducts =
-        MutableStateFlow(listOf(
-            SubscriptionProduct(
-                "test_weekly_subscription",
-                ""
-            ),
-            SubscriptionProduct(
-                "test_weekly_subscription",
-                ""
-            )
-        ))
+        MutableStateFlow(emptyList<SubscriptionProduct>())
 
     val subscriptionProducts =
         _subscriptionProducts.asStateFlow()
+
+    val trialOffer =
+        MutableStateFlow(false)
+
 
     var isOnboarding: Boolean = true
         private set
@@ -337,10 +332,6 @@ class NewDecisionViewModel(
         }
     }
 
-    fun getPriceToSubscriptionProduct(productId: String): String? {
-        return billingManager.getFormattedPrice(productId)
-    }
-
     fun checkSubscription(
         onSuccess: () -> Unit,
         onFailure: () -> Unit
@@ -356,6 +347,7 @@ class NewDecisionViewModel(
                         it.productId
                     }
                 )
+
             }
 
             override fun onActivePurchasesLoaded(purchases: List<Purchase>) {
@@ -367,7 +359,7 @@ class NewDecisionViewModel(
                 }
 
                 val hasSubscription = purchases.any {
-                    it.purchaseState == Purchase.PurchaseState.PURCHASED && "test_weekly_subscription" in it.products
+                    it.purchaseState == Purchase.PurchaseState.PURCHASED
                 }
 
                 Log.d("Billing", "Has subscription = $hasSubscription")
@@ -427,7 +419,7 @@ class NewDecisionViewModel(
             }
 
             override fun onProductsLoaded() {
-                billingManager.buySubscription(activity, "test_weekly_subscription")
+                billingManager.buySubscription(activity, subscriptionType.value)
             }
 
             override fun onPurchaseAcknowledged(purchase: Purchase) {
@@ -449,7 +441,7 @@ class NewDecisionViewModel(
             override fun onActivePurchasesLoaded(purchases: List<Purchase>) {
                 val purchase = purchases.firstOrNull {
                     it.purchaseState == Purchase.PurchaseState.PURCHASED &&
-                    "test_weekly_subscription" in it.products
+                    subscriptionType.value in it.products
                 }
 
                 if (purchase != null) {
@@ -460,7 +452,9 @@ class NewDecisionViewModel(
                     )
                 } else {
                     billingManager.loadProducts(
-                        listOf("test_weekly_subscription")
+                        SubscriptionTypes.entries.map { type ->
+                            type.value
+                        }
                     )
                 }
             }

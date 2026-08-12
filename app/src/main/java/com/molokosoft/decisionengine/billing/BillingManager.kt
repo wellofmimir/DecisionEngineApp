@@ -205,6 +205,23 @@ class BillingManager(context: Context) {
             ?.formattedPrice
     }
 
+    fun hasFreeTrial(productId: String): Boolean {
+        val details =
+            productDetails[productId]
+                ?: return false
+
+        val trialOffer =
+            details
+                .subscriptionOfferDetails
+                ?.find { offer ->
+                    offer.pricingPhases.pricingPhaseList.any { phase ->
+                        phase.priceAmountMicros == 0L
+                    }
+                }
+
+        return trialOffer != null
+    }
+
     fun buySubscription(
         activity: Activity,
         productID: String

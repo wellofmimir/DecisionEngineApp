@@ -19,6 +19,7 @@ import com.molokosoft.decisionengine.paywall.one.EnforceConversionScreen
 import com.molokosoft.decisionengine.paywall.one.FreeTrialScreen
 import com.molokosoft.decisionengine.paywall.one.OfferTilesScreen
 import com.molokosoft.decisionengine.commonclasses.SubscriptionTypes
+import com.molokosoft.decisionengine.paywall.common.SubscriptionInformationDialog
 
 sealed class Paywall {
     data object Features : Paywall()
@@ -51,16 +52,8 @@ fun PaywallScreen(
     }
 
     var hasError by remember { mutableStateOf(false) }
-
-    if (hasError) {
-        ErrorDialog(
-            errorTitle = "Incorrect E-Mail Format",
-            errorMessage = "Please enter a valid e-mail address.",
-            onDismissRequest = {
-                hasError = false
-            }
-        )
-    }
+    var showSubscriptionInformation by remember { mutableStateOf(false) }
+    var subscriptionType: SubscriptionTypes by remember { mutableStateOf(SubscriptionTypes.Undefined) }
 
     when (currentScreen) {
         Paywall.Features -> FeaturesScreen(
@@ -80,16 +73,15 @@ fun PaywallScreen(
         Paywall.OfferTiles -> OfferTilesScreen(
             modifier = modifier,
             subscriptionProducts = subscriptionProducts,
-            onContinueClicked = { subscriptionType ->
-                if (subscriptionType == SubscriptionTypes.FreeTrial) {
-                    currentScreen = currentScreen.next()
-                } else {
-                    if (Build.VERSION.SDK_INT >= 33) {
-                        notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
-                    }
+            onContinueClicked = { chosenSubscription ->
 
-                    onContinueClicked(subscriptionType, null)
+                if (chosenSubscription == SubscriptionTypes.FreeTrial) {
+                    currentScreen = currentScreen.next()
+                    return@OfferTilesScreen
                 }
+
+                showSubscriptionInformation = true
+                subscriptionType = chosenSubscription
             }
         )
 
@@ -113,5 +105,32 @@ fun PaywallScreen(
                 onContinueClicked(SubscriptionTypes.FreeTrial, EMail.tryCreate(eMailAddress))
             }
         )
+    }
+
+    if (hasError) {
+        ErrorDialog(
+            errorTitle = "Incorrect E-Mail Format",
+            errorMessage = "Please enter a valid e-mail address.",
+            onDismissRequest = {
+                hasError = false
+            }
+        )
+
+        return
+    }
+
+    if (showSubscriptionInformation) {
+        SubscriptionInformationDialog(
+            subscriptionType = subscriptionType,
+            onDismissRequest = {
+                showSubscriptionInformation = false
+            },
+            onAcceptedOffer = {
+                showSubscriptionInformation = false
+                onContinueClicked(subscriptionType, null)
+            }
+        )
+
+        return
     }
 }

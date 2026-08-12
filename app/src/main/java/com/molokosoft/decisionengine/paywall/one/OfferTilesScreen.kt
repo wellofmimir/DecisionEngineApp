@@ -182,7 +182,7 @@ fun OfferTilesScreen(
 
                     Text(
                         text = subscriptionProducts.find {
-                            it.productId == "test_weekly_subscription"
+                            it.productId == "decisionengine_weekly_subscription"
                         }?.formattedPrice ?: "$0.89",
                         fontWeight = FontWeight.Bold,
                         color = Color.Black,
@@ -251,7 +251,10 @@ fun OfferTilesScreen(
                     shape = RoundedCornerShape(12.dp)
                 )
                 .height(128.dp)
-                .fillMaxWidth(0.9f),
+                .fillMaxWidth(0.9f)
+                .clickable {
+                    onContinueClicked(SubscriptionTypes.Yearly)
+                },
             contentAlignment = Alignment.CenterStart
         ){
             Row(
@@ -309,7 +312,7 @@ fun OfferTilesScreen(
 
                     Text(
                         text = subscriptionProducts.find {
-                            it.productId == "test_weekly_subscription"
+                            it.productId == "yearly_subscription"
                         }?.formattedPrice ?: "$24.99",
                         fontWeight = FontWeight.Bold,
                         color = Color.Black,
