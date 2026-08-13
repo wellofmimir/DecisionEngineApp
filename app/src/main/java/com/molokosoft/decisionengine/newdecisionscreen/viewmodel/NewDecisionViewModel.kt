@@ -25,12 +25,15 @@ import com.molokosoft.decisionengine.billing.BillingManager
 import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
+import com.molokosoft.decisionengine.network.backend.model.dto.security.dto.PromptReconnaissanceResult
 import com.molokosoft.decisionengine.repositories.DecisionRepository
 import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
 import com.molokosoft.decisionengine.repositories.model.CriterionAnalysis
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
+import okhttp3.internal.wait
 import kotlin.String
 
 class NewDecisionViewModel(
@@ -52,10 +55,6 @@ class NewDecisionViewModel(
     val subscriptionProducts =
         _subscriptionProducts.asStateFlow()
 
-    val trialOffer =
-        MutableStateFlow(false)
-
-
     var isOnboarding: Boolean = true
         private set
 
@@ -63,6 +62,17 @@ class NewDecisionViewModel(
         draft
             .map { draft ->
                 draft.safetyClassification != null && draft.safetyClassification.classification == "NOT_ALLOWED"
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                false
+            )
+
+    val showIsPromptScreen: StateFlow<Boolean> =
+        draft
+            .map { draft ->
+                draft.promptReconnaissanceResult?.isPrompt ?: false
             }
             .stateIn(
                 viewModelScope,
@@ -169,9 +179,24 @@ class NewDecisionViewModel(
     fun setTitle(title: String) {
         _draft.value.title.ifBlank {
             viewModelScope.launch {
-                val result = getSafetyClassification(title)
+                val safetyDeferred = async {
+                    getSafetyClassification(title)
+                }
 
-                if (result?.classification != "NOT_ALLOWED")
+                val reconnaissanceDeferred = async {
+                    getPromptReconnaissance(title)
+                }
+
+                val safetyResult =
+                    safetyDeferred.await()
+
+                val reconnaissanceResult =
+                    reconnaissanceDeferred.await()
+
+                if (safetyResult == null || reconnaissanceResult == null)
+                    return@launch
+
+                if (safetyResult.classification != "NOT_ALLOWED" && !reconnaissanceResult.isPrompt)
                     getCriteriaSuggestions(title)
             }
         }
@@ -184,7 +209,8 @@ class NewDecisionViewModel(
 
         _draft.update {
             it.copy(
-                title = title
+                title =
+                    title
             )
         }
     }
@@ -192,7 +218,8 @@ class NewDecisionViewModel(
     fun setDecisionType(yesOrNoDecision: Boolean) {
         _draft.update {
             it.copy(
-                yesOrNoDecision = yesOrNoDecision
+                yesOrNoDecision =
+                    yesOrNoDecision
             )
         }
 
@@ -206,7 +233,8 @@ class NewDecisionViewModel(
     fun setOption(option: Option) {
         _draft.update {
             it.copy(
-                options = it.options + option
+                options =
+                    it.options + option
             )
         }
     }
@@ -224,7 +252,8 @@ class NewDecisionViewModel(
     fun setCriteria(criterion: Criterion) {
         _draft.update {
             it.copy(
-                criteria = it.criteria + criterion
+                criteria =
+                    it.criteria + criterion
             )
         }
     }
@@ -242,14 +271,16 @@ class NewDecisionViewModel(
     fun deleteCriteriaSuggestions() {
         _draft.update {
             it.copy(
-                criteriaSuggestions = emptyList()
+                criteriaSuggestions =
+                    emptyList()
             )
         }
     }
     fun deleteCriteria() {
         _draft.update {
             it.copy(
-                criteria = emptyList()
+                criteria =
+                    emptyList()
             )
         }
     }
@@ -265,7 +296,8 @@ class NewDecisionViewModel(
             }
 
             draft.copy(
-                options = updatedOptions
+                options =
+                    updatedOptions
             )
         }
     }
@@ -292,14 +324,16 @@ class NewDecisionViewModel(
     fun startAnalysis() {
         _draft.update {
             it.copy(
-                optionAnalyses = factorAnalysisRepository.analyzeOptions(it.options)
+                optionAnalyses =
+                    factorAnalysisRepository.analyzeOptions(it.options)
             )
         }
 
         viewModelScope.launch {
             _draft.update {
                 it.copy(
-                    decisionAnalysisResult = factorAnalysisRepository.getAiAnalysis(it.optionAnalyses)
+                    decisionAnalysisResult =
+                        factorAnalysisRepository.getAiAnalysis(it.optionAnalyses)
                 )
             }
 
@@ -310,12 +344,17 @@ class NewDecisionViewModel(
     fun saveEMail(eMail: EMail) {
         viewModelScope.launch {
           //"Save the E-Mail in case the sendEmail-Method fails.")
-            val success = userDataRepository.sendEmail(eMail.toString())
+
+            val success =
+                userDataRepository.sendEmail(eMail.toString())
+
             //"If the sendEMail-Method fails, try it again, until it doesn't fail anymore")
         }
     }
     suspend fun getSafetyClassification(title: String): SafetyClassification? {
-        val result = factorAnalysisRepository.safetyClassification(title)
+
+        val result =
+            factorAnalysisRepository.safetyClassification(title)
 
         _draft.update {
             it.copy(
@@ -326,9 +365,22 @@ class NewDecisionViewModel(
         return result
     }
 
+    suspend fun getPromptReconnaissance(input: String): PromptReconnaissanceResult? {
+        val result =
+            factorAnalysisRepository.promptReconnaissance(input)
+
+        _draft.update {
+            it.copy(
+                promptReconnaissanceResult = result
+            )
+        }
+
+        return result
+    }
 
     suspend fun getCriteriaSuggestions(title: String) {
-        val result = factorAnalysisRepository.getCriteriaSuggestions(title)
+        val result =
+            factorAnalysisRepository.getCriteriaSuggestions(title)
 
         _draft.update {
             it.copy(
@@ -338,7 +390,9 @@ class NewDecisionViewModel(
     }
 
     private suspend fun saveDecision() {
-        val fullDraft = _draft.value
+        val fullDraft =
+            _draft.value
+
         decisionRepository.insertDecision(fullDraft)
     }
 

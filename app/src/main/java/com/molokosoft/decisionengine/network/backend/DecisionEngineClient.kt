@@ -12,6 +12,8 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.serialization.encodeToString
 import android.util.Log
+import com.molokosoft.decisionengine.network.backend.model.dto.security.requests.PromptReconnaissanceRequest
+import com.molokosoft.decisionengine.network.backend.model.dto.security.responses.PromptReconnaissanceResponse
 import com.molokosoft.decisionengine.network.backend.model.requests.billing.VerifyPurchaseRequest
 import com.molokosoft.decisionengine.network.backend.model.requests.decision.SafetyClassificationRequest
 import com.molokosoft.decisionengine.network.backend.model.responses.ApiResponse
@@ -301,6 +303,41 @@ class DecisionEngineClient(
             } catch (e: Exception) {
                 Log.e("DecisionEngine", "Network error", e)
                 Log.d("DecisionEngine", Json.encodeToString(DailyArticleResponse))
+                e.printStackTrace()
+                null
+            }
+        }
+
+    suspend fun promptReconnaissance(promptReconnaissanceRequest: PromptReconnaissanceRequest): PromptReconnaissanceResponse? =
+        withContext(Dispatchers.IO) {
+            val mediaType =
+                "application/json; charset=utf-8".toMediaType()
+
+            val json = JSONObject()
+                .put("prompt", promptReconnaissanceRequest.prompt)
+
+            val requestBody =
+                json.toString().toRequestBody(mediaType)
+
+            val request =
+                Request.Builder()
+                    .addHeader("X-Installation-ID", installationId)
+                    .post(requestBody)
+                    .url("$baseUrl/api/v1/security/promptReconnaissance")
+                    .build()
+
+            try {
+                client.newCall(request).execute().use { response ->
+                    val responseBody =
+                        response.body?.string() ?: ""
+
+                    val apiResponse =
+                        Json.decodeFromString<ApiResponse<PromptReconnaissanceResponse>>(responseBody)
+
+                    return@withContext apiResponse.data
+                }
+            } catch (e: Exception) {
+                Log.e("DecisionEngine", "Network error", e)
                 e.printStackTrace()
                 null
             }

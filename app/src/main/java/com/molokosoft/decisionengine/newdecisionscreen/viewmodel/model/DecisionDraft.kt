@@ -4,6 +4,7 @@ import com.molokosoft.decisionengine.network.backend.model.dto.decision.Decision
 import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.CriterionSuggestion
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
+import com.molokosoft.decisionengine.network.backend.model.dto.security.dto.PromptReconnaissanceResult
 
 data class DecisionDraft(
     val title: String = "",
@@ -13,5 +14,6 @@ data class DecisionDraft(
     val criteriaSuggestions: List<CriterionSuggestion> = emptyList(),
     val optionAnalyses: List<OptionAnalysis> = emptyList(),
     val decisionAnalysisResult: DecisionAnalysisResult? = null,
-    val safetyClassification: SafetyClassification? = null
+    val safetyClassification: SafetyClassification? = null,
+    val promptReconnaissanceResult: PromptReconnaissanceResult? = null
 )

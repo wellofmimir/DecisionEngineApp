@@ -24,9 +24,7 @@ import android.content.Context
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import android.net.Uri
 import android.content.Intent
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -36,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.molokosoft.decisionengine.R
 import com.molokosoft.decisionengine.theme.DecisionBlue
-import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 import androidx.core.net.toUri
 import com.molokosoft.decisionengine.theme.DecisionGreen

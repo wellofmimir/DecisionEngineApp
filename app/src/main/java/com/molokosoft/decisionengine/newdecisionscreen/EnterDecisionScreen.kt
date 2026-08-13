@@ -25,16 +25,17 @@ import com.molokosoft.decisionengine.newdecisionscreen.screens.ChooseComparisonC
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Criterion
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Option
 import com.molokosoft.decisionengine.commonuielements.ErrorDialog
+import com.molokosoft.decisionengine.newdecisionscreen.screens.ForbiddenInputDataScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.NotAllowedScreen
 
 sealed class DecisionScreen {
     data object EnterDecisionName : DecisionScreen()
     data object EnterDecisionOptions : DecisionScreen()
     data object EnterDecisionCriteria : DecisionScreen()
-
     data object ChooseDecisionCriteria : DecisionScreen()
     data object RateComparisonCriteria : DecisionScreen()
     data object NotAllowedScreen : DecisionScreen()
+    data object ForbiddenInputScreen : DecisionScreen()
 }
 
 fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
@@ -51,6 +52,7 @@ fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
         DecisionScreen.EnterDecisionCriteria -> DecisionScreen.RateComparisonCriteria
         DecisionScreen.RateComparisonCriteria -> DecisionScreen.EnterDecisionName
         DecisionScreen.NotAllowedScreen -> DecisionScreen.EnterDecisionName
+        DecisionScreen.ForbiddenInputScreen -> DecisionScreen.EnterDecisionName
     }
 
 fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
@@ -61,6 +63,8 @@ fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
         DecisionScreen.EnterDecisionName -> DecisionScreen.EnterDecisionName
         DecisionScreen.ChooseDecisionCriteria -> DecisionScreen.EnterDecisionName
         DecisionScreen.NotAllowedScreen -> DecisionScreen.EnterDecisionName
+        DecisionScreen.ForbiddenInputScreen -> DecisionScreen.EnterDecisionName
+
     }
 
 @Composable
@@ -70,7 +74,8 @@ fun EnterDecisionScreen(
     onBackClicked: () -> Unit,
     onContinueClicked: () -> Unit
 ){
-    val context = LocalContext.current
+    val context =
+        LocalContext.current
 
     var currentScreen by remember {
         mutableStateOf<DecisionScreen>(DecisionScreen.EnterDecisionName)
@@ -82,10 +87,16 @@ fun EnterDecisionScreen(
     var errorMessage by remember { mutableStateOf("" to "") }
 
     val showNotAllowedScreen by newDecisionViewModel.showNotAllowedScreen.collectAsState()
+    val showForbiddenInputScreen by newDecisionViewModel.showIsPromptScreen.collectAsState()
 
     LaunchedEffect(showNotAllowedScreen) {
         if (showNotAllowedScreen)
             currentScreen = DecisionScreen.NotAllowedScreen
+    }
+
+    LaunchedEffect(showForbiddenInputScreen) {
+        if (showForbiddenInputScreen)
+            currentScreen = DecisionScreen.ForbiddenInputScreen
     }
 
     val draft by newDecisionViewModel.draft.collectAsState()
@@ -98,8 +109,11 @@ fun EnterDecisionScreen(
 
     val criteriaNames by newDecisionViewModel.criteriaNames.collectAsState()
 
-    val yesOrNoDecision = draft.yesOrNoDecision
-    val nextOptionName = newDecisionViewModel.getNextOption()
+    val yesOrNoDecision =
+        draft.yesOrNoDecision
+
+    val nextOptionName =
+        newDecisionViewModel.getNextOption()
 
     when (currentScreen) {
         DecisionScreen.EnterDecisionName -> EnterDecisionNameScreen(
@@ -231,6 +245,18 @@ fun EnterDecisionScreen(
 
         DecisionScreen.NotAllowedScreen -> {
             NotAllowedScreen(
+                modifier = modifier
+                    .fillMaxHeight(),
+                context = context,
+                onBackClicked = {
+                    newDecisionViewModel.resetDraft()
+                    currentScreen = currentScreen.previous()
+                }
+            )
+        }
+
+        DecisionScreen.ForbiddenInputScreen -> {
+            ForbiddenInputDataScreen(
                 modifier = modifier
                     .fillMaxHeight(),
                 context = context,

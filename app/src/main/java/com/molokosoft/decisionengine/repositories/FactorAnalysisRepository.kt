@@ -12,6 +12,8 @@ import com.molokosoft.decisionengine.network.backend.model.dto.decision.Criterio
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
 
 import android.util.Log
+import com.molokosoft.decisionengine.network.backend.model.dto.security.dto.PromptReconnaissanceResult
+import com.molokosoft.decisionengine.network.backend.model.dto.security.requests.PromptReconnaissanceRequest
 import com.molokosoft.decisionengine.network.backend.model.requests.decision.SafetyClassificationRequest
 import kotlinx.coroutines.delay
 import io.ktor.client.plugins.ClientRequestException
@@ -167,11 +169,27 @@ class FactorAnalysisRepository(
             title = decisionTitle
         )
 
-        val response = decisionEngineClient.safetyClassification(safetyClassificationRequest)
+        val response =
+            decisionEngineClient.safetyClassification(safetyClassificationRequest)
 
         return response?.safetyClassification ?: SafetyClassification(
             classification = "NOT_ALLOWED",
             reason = "FAILURE"
+        )
+    }
+
+    suspend fun promptReconnaissance(input: String): PromptReconnaissanceResult {
+        val promptReconnaissanceRequest =
+            PromptReconnaissanceRequest(
+                prompt = input
+            )
+
+        val response =
+            decisionEngineClient.promptReconnaissance(promptReconnaissanceRequest)
+
+        return response?.result ?: PromptReconnaissanceResult(
+            isPrompt = true,
+            reason = "FAILURE TO READ SERVER."
         )
     }
 }
