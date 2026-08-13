@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -31,6 +33,8 @@ import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 
 @Composable
 fun EnterUsernameBox(
@@ -39,7 +43,11 @@ fun EnterUsernameBox(
     onAdd: (username: String) -> Unit
 ) {
     val typography = LocalAppTypography.current
-    var newUsername by remember { mutableStateOf("") }
+    val focusManager = LocalFocusManager.current
+
+    var newUsername by remember {
+        mutableStateOf("")
+    }
 
     Dialog(
         onDismissRequest = {
@@ -88,7 +96,7 @@ fun EnterUsernameBox(
                 OutlinedTextField(
                     placeholder = {
                         Text(
-                            text = "Ex: John Doe",
+                            text = "Ex: Average Joe",
                             textAlign = TextAlign.Center,
                             fontStyle = FontStyle.Italic,
                             fontWeight = FontWeight.ExtraLight,
@@ -103,6 +111,14 @@ fun EnterUsernameBox(
                     },
                     textStyle = LocalTextStyle.current.copy(
                         textAlign = TextAlign.Center
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                        }
                     ),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = DecisionBlueLight,

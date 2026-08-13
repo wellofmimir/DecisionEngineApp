@@ -31,8 +31,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 
 import com.molokosoft.decisionengine.R
@@ -49,6 +53,8 @@ fun EnterDecisionNameScreen(
     onNextClicked: (name: String, yesOrNoDecision: Boolean) -> Unit
 ){
     val typography = LocalAppTypography.current
+    val focusManager = LocalFocusManager.current
+
     var decisionText by remember { mutableStateOf(currentDecisionText) }
     var checked by remember { mutableStateOf(yesOrNoDecision) }
 
@@ -101,7 +107,7 @@ fun EnterDecisionNameScreen(
         OutlinedTextField(
             placeholder = {
                 Text(
-                    text = "Ex: Should I quit my job?",
+                    text = "Ex: Which Car should I buy?",
                     textAlign = TextAlign.Center,
                     fontStyle = FontStyle.Italic,
                     fontWeight = FontWeight.Thin,
@@ -127,6 +133,14 @@ fun EnterDecisionNameScreen(
                 cursorColor = Color.Black,
                 focusedTextColor = Color.Black,
                 unfocusedTextColor = Color.Black
+            ),
+            keyboardOptions = KeyboardOptions(
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    focusManager.clearFocus()
+                }
             ),
             modifier = Modifier
                 .fillMaxWidth(0.75f)

@@ -24,7 +24,8 @@ class BillingManager(context: Context) {
         fun onError(billingResult: BillingResult)
     }
 
-    private var listener: Listener? = null
+    private var listener: Listener? =
+        null
 
     fun setListener(listener: Listener) {
         this.listener = listener
@@ -34,8 +35,8 @@ class BillingManager(context: Context) {
         listener = null
     }
 
-    private var isReady = false
-        private set
+    private var isReady =
+        false
 
     private val productDetails = mutableMapOf<String, ProductDetails>()
 
@@ -113,14 +114,43 @@ class BillingManager(context: Context) {
     }
 
     fun loadProducts(productIds: List<String>) {
-        if (!isReady)
+        Log.d(
+            "Billing",
+            "loadProducts called with: $productIds"
+        )
+
+        if (!isReady) {
+            Log.e("Billing", "Cannot load products: Billing not ready")
             return
+        }
+
+        val validProductIds = productIds
+            .map {
+                it.trim()
+            }
+            .filter {
+                it.isNotEmpty()
+            }
+
+        Log.d(
+            "Billing",
+            "Valid product IDs: $validProductIds"
+        )
+
+        if (validProductIds.isEmpty()) {
+            Log.e(
+                "Billing",
+                "No valid product IDs supplied"
+            )
+
+            return
+        }
 
         val query =
             QueryProductDetailsParams
                 .newBuilder()
                 .setProductList(
-                    productIds.map {
+                    validProductIds.map {
                         QueryProductDetailsParams.Product
                             .newBuilder()
                             .setProductId(it)
@@ -132,7 +162,19 @@ class BillingManager(context: Context) {
                 )
                 .build()
 
-        billingClient.queryProductDetailsAsync(query) { billingResult, result ->
+        billingClient.queryProductDetailsAsync(
+            query
+        ) { billingResult, result ->
+
+            Log.d(
+                "Billing",
+                "queryProductDetails: " +
+                        "code=${billingResult.responseCode}, " +
+                        "message=${billingResult.debugMessage}, " +
+                        "products=${result.productDetailsList.map {
+                            it.productId
+                        }}"
+            )
 
             if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
                 listener?.onError(billingResult)
@@ -142,14 +184,19 @@ class BillingManager(context: Context) {
             val products = result.productDetailsList
 
             if (products.isEmpty()) {
+                Log.e(
+                    "Billing",
+                    "Google Play returned no products"
+                )
                 listener?.onError(billingResult)
                 return@queryProductDetailsAsync
             }
 
             productDetails.clear()
 
-            for (product in products)
-                productDetails[product.productId] = product
+            products.forEach {
+                productDetails[it.productId] = it
+            }
 
             listener?.onProductsLoaded()
         }
@@ -174,18 +221,51 @@ class BillingManager(context: Context) {
             .build()
 
     fun connect() {
+        Log.d(
+            "Billing",
+            "connect(): " +
+                    "clientReady=${billingClient.isReady}, " +
+                    "isReady=$isReady"
+        )
+
+        if (billingClient.isReady) {
+            isReady = true
+            listener?.onBillingReady()
+            return
+        }
+
+
+        Log.d("Billing", "Starting billing connection")
+
         billingClient.startConnection(
             object : BillingClientStateListener {
-                override fun onBillingSetupFinished(billingResult: BillingResult) {
+
+                override fun onBillingSetupFinished(
+                    billingResult: BillingResult
+                ) {
+                    Log.d(
+                        "Billing",
+                        "Billing setup finished: " +
+                                "code=${billingResult.responseCode}, " +
+                                "message=${billingResult.debugMessage}"
+                    )
+
                     if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                         isReady = true
+                        Log.d("Billing", "Billing ready")
                         listener?.onBillingReady()
                     } else {
+                        isReady = false
                         listener?.onError(billingResult)
                     }
                 }
 
                 override fun onBillingServiceDisconnected() {
+                    Log.d(
+                        "Billing",
+                        "Billing service disconnected"
+                    )
+
                     isReady = false
                 }
             }
@@ -226,13 +306,45 @@ class BillingManager(context: Context) {
         activity: Activity,
         productID: String
     ) {
-        val details =
-            productDetails[productID] ?:
-                return
+        val details = productDetails[productID]
 
-        val offer =
-            details.subscriptionOfferDetails?.firstOrNull() ?:
-                return
+        if (details == null) {
+            Log.e(
+                "Billing",
+                "Product not found: $productID"
+            )
+
+            listener?.onError(
+                BillingResult.newBuilder()
+                    .setResponseCode(
+                        BillingClient.BillingResponseCode.ITEM_UNAVAILABLE
+                    )
+                    .setDebugMessage(
+                        "Product not loaded: $productID"
+                    )
+                    .build()
+            )
+
+            return
+        }
+
+        val offer = details.subscriptionOfferDetails?.firstOrNull()
+
+        if (offer == null) {
+            Log.e(
+                "Billing",
+                "No subscription offer found: $productID"
+            )
+
+            return
+        }
+
+        Log.d(
+            "Billing",
+            "Launching billing flow: " +
+                    "product=$productID, " +
+                    "offerToken=${offer.offerToken}"
+        )
 
         val productDetailsParams =
             BillingFlowParams.ProductDetailsParams
@@ -251,6 +363,13 @@ class BillingManager(context: Context) {
 
         val result =
             billingClient.launchBillingFlow(activity, billingFlowParams)
+
+        Log.d(
+            "Billing",
+            "launchBillingFlow: " +
+                    "code=${result.responseCode}, " +
+                    "message=${result.debugMessage}"
+        )
 
         if (result.responseCode != BillingClient.BillingResponseCode.OK)
             listener?.onPurchaseFailure(result)

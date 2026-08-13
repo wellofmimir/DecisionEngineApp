@@ -37,9 +37,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Slider
 import androidx.compose.ui.window.Dialog
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 
 import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
@@ -51,6 +55,8 @@ fun EnterCriterionDialog(
     onDismissRequest: () -> Unit
 ){
     val typography = LocalAppTypography.current
+    val focusManager = LocalFocusManager.current
+
     var criteriaName by remember { mutableStateOf("") }
     var score by remember { mutableFloatStateOf(5f) }
 
@@ -101,7 +107,7 @@ fun EnterCriterionDialog(
                 OutlinedTextField(
                     placeholder = {
                         Text(
-                            text = "Ex: Salary",
+                            text = "Ex: Price",
                             textAlign = TextAlign.Center,
                             fontStyle = FontStyle.Italic,
                             fontWeight = FontWeight.ExtraLight,
@@ -116,6 +122,14 @@ fun EnterCriterionDialog(
                     },
                     textStyle = LocalTextStyle.current.copy(
                         textAlign = TextAlign.Center
+                    ),
+                    keyboardOptions = KeyboardOptions(
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            focusManager.clearFocus()
+                        }
                     ),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = DecisionBlueLight,

@@ -19,9 +19,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,6 +46,7 @@ import com.molokosoft.decisionengine.newdecisionscreen.dialogs.EnterCriterionImp
 @Composable
 fun ChooseComparisonCriteriaScreen(
     criterionAndDescription: List<Pair<String, String>>,
+    alreadySelectedCriteria: List<String>,
     onCriterionClicked: (name: String, importance: Int) -> Unit,
     onCriterionDeleted: (name: String) -> Unit,
     onBackClicked: () -> Unit,
@@ -60,8 +63,9 @@ fun ChooseComparisonCriteriaScreen(
 
     val typography = LocalAppTypography.current
 
-    var showErrorDialog by remember { mutableStateOf(false) }
+    var showInfoDialog by remember { mutableStateOf(false) }
     var showEnterCriterionDialog by remember { mutableStateOf(false) }
+    var criterionToAdd by remember { mutableStateOf<String?>(null) }
     var infoTextAndDescription by remember { mutableStateOf("" to "") }
     var criterionToImportance by remember { mutableStateOf("" to 5) }
 
@@ -69,12 +73,26 @@ fun ChooseComparisonCriteriaScreen(
         mutableStateOf(setOf<String>())
     }
 
-    if (showErrorDialog)
+    if (showInfoDialog) //ErrorDialog wird hier als InfoDialog verwendet
         ErrorDialog(
             errorTitle = infoTextAndDescription.first,
             errorMessage = infoTextAndDescription.second,
+            errorButtonText = "Add",
             onDismissRequest = {
-                showErrorDialog = false
+                showInfoDialog = false
+                criterionToAdd = null
+            },
+            onAcceptRequest = {
+                criterionToAdd?.let { criterion ->
+                    if (!selectedCriteria.contains(criterion)) {
+                        selectedCriteria = selectedCriteria + criterion
+                        criterionToImportance = criterion to 5
+                    }
+                }
+
+                showInfoDialog = false
+                showEnterCriterionDialog = true
+                criterionToAdd = null
             }
         )
 
@@ -141,8 +159,8 @@ fun ChooseComparisonCriteriaScreen(
             )
 
             Text(
-                text = "Tap to add or remove your criteria." +
-                        "\nDouble Tap to read the description.",
+                text = "Tap to add a criterion." +
+                        "\nDouble Tap to remove a criterion",
                 textAlign = TextAlign.Center,
                 fontSize = typography.titleSmall.fontSize,
                 color = Color.Black
@@ -163,10 +181,20 @@ fun ChooseComparisonCriteriaScreen(
         ) {
             items(criterionAndDescription){ criterion ->
 
-                var isSelected = criterion.first in selectedCriteria
-                val backGroundColor = if (isSelected) DecisionBlue else DecisionBlueLight
-                val textColor = if (isSelected) Color.White else Color.Black
+                val isSelected =
+                    criterion.first in alreadySelectedCriteria
 
+                val backGroundColor =
+                    if (isSelected)
+                        DecisionBlue
+                    else
+                        DecisionBlueLight
+
+                val textColor =
+                    if (isSelected)
+                        Color.White
+                    else
+                        Color.Black
 
                 Box(
                     modifier = Modifier
@@ -185,20 +213,20 @@ fun ChooseComparisonCriteriaScreen(
                             color = DecisionBlueLight,
                             shape = RoundedCornerShape(4.dp)
                         )
-                        .pointerInput(Unit) {
+                        .pointerInput(isSelected) {
                             detectTapGestures(
                                 onTap = {
-                                    if (isSelected) {
-                                        selectedCriteria = selectedCriteria - criterion.first
-                                    } else {
-                                        selectedCriteria = selectedCriteria + criterion.first
-                                        criterionToImportance = criterion.first to 5
-                                        showEnterCriterionDialog = true
+                                    if (!isSelected) {
+                                        criterionToAdd = criterion.first
+                                        infoTextAndDescription = criterion.first to criterion.second
+                                        showInfoDialog = true
                                     }
                                 },
                                 onDoubleTap = {
-                                    infoTextAndDescription = criterion.first to criterion.second
-                                    showErrorDialog = true
+                                    if (isSelected) {
+                                        selectedCriteria = selectedCriteria - criterion.first
+                                        onCriterionDeleted(criterion.first)
+                                    }
                                 }
                             )
                         },

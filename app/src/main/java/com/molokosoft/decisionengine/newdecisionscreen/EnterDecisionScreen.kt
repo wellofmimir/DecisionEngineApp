@@ -41,7 +41,7 @@ fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
     when (this) {
         DecisionScreen.EnterDecisionName -> {
             if (yesOrNoDecision)
-                DecisionScreen.EnterDecisionCriteria
+                DecisionScreen.ChooseDecisionCriteria
             else
                 DecisionScreen.EnterDecisionOptions
         }
@@ -56,14 +56,7 @@ fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
 fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
     when (this) {
         DecisionScreen.EnterDecisionOptions -> DecisionScreen.EnterDecisionName
-
-        DecisionScreen.EnterDecisionCriteria -> {
-            if (yesOrNoDecision)
-                DecisionScreen.EnterDecisionName
-            else
-                DecisionScreen.EnterDecisionOptions
-        }
-
+        DecisionScreen.EnterDecisionCriteria -> DecisionScreen.ChooseDecisionCriteria
         DecisionScreen.RateComparisonCriteria -> DecisionScreen.EnterDecisionName
         DecisionScreen.EnterDecisionName -> DecisionScreen.EnterDecisionName
         DecisionScreen.ChooseDecisionCriteria -> DecisionScreen.EnterDecisionName
@@ -103,11 +96,7 @@ fun EnterDecisionScreen(
         }
     }
 
-    val criteriaNames = remember(draft.criteria) {
-        draft.criteria.map {
-            it.name
-        }
-    }
+    val criteriaNames by newDecisionViewModel.criteriaNames.collectAsState()
 
     val yesOrNoDecision = draft.yesOrNoDecision
     val nextOptionName = newDecisionViewModel.getNextOption()
@@ -220,6 +209,7 @@ fun EnterDecisionScreen(
         DecisionScreen.ChooseDecisionCriteria -> {
             ChooseComparisonCriteriaScreen(
                 modifier = modifier,
+                alreadySelectedCriteria = criteriaNames,
                 criterionAndDescription = draft.criteriaSuggestions.map {
                     it.name to it.description
                 },
@@ -230,6 +220,7 @@ fun EnterDecisionScreen(
                     newDecisionViewModel.deleteCriterion(name)
                 },
                 onBackClicked = {
+                    newDecisionViewModel.resetDraft()
                     currentScreen = currentScreen.previous()
                 },
                 onNextClicked = {
@@ -288,6 +279,9 @@ fun EnterDecisionScreen(
             errorTitle = errorMessage.first,
             errorMessage = errorMessage.second,
             onDismissRequest = {
+                errorMessageDialogOpen = false
+            },
+            onAcceptRequest = {
                 errorMessageDialogOpen = false
             }
         )

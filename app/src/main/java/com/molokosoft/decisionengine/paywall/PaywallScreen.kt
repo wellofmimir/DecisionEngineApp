@@ -52,6 +52,8 @@ fun PaywallScreen(
     }
 
     var hasError by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("" to "") }
+
     var showSubscriptionInformation by remember { mutableStateOf(false) }
     var subscriptionType: SubscriptionTypes by remember { mutableStateOf(SubscriptionTypes.Undefined) }
 
@@ -88,11 +90,14 @@ fun PaywallScreen(
         Paywall.FreeTrial -> FreeTrialScreen(
             modifier = modifier,
             onBackClicked = {
-
+                currentScreen = Paywall.OfferTiles
             },
             onContinueClicked = { eMailAddress ->
                 if (!eMailAddress.isBlank()) {
                     if (EMail.tryCreate(eMailAddress) == null) {
+                        errorMessage =
+                            "Incorrect E-Mail Format" to "Please enter a valid e-mail address."
+
                         hasError = true
                         return@FreeTrialScreen
                     }
@@ -109,9 +114,12 @@ fun PaywallScreen(
 
     if (hasError) {
         ErrorDialog(
-            errorTitle = "Incorrect E-Mail Format",
-            errorMessage = "Please enter a valid e-mail address.",
+            errorTitle = errorMessage.first,
+            errorMessage = errorMessage.second,
             onDismissRequest = {
+                hasError = false
+            },
+            onAcceptRequest = {
                 hasError = false
             }
         )

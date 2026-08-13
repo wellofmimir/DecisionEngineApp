@@ -21,7 +21,9 @@ fun ErrorDialog(
     modifier: Modifier = Modifier,
     errorTitle: String,
     errorMessage: String,
-    onDismissRequest: () -> Unit
+    errorButtonText: String = "Okay",
+    onDismissRequest: () -> Unit,
+    onAcceptRequest: () -> Unit
 ){
     val typography = LocalAppTypography.current
 
@@ -59,11 +61,11 @@ fun ErrorDialog(
                         shape = RoundedCornerShape(12.dp)
                     ),
                 onClick = {
-                    onDismissRequest()
+                    onAcceptRequest()
                 }
             ) {
                 Text (
-                    text = "Okay",
+                    text = errorButtonText,
                     color = Color.White
                 )
             }

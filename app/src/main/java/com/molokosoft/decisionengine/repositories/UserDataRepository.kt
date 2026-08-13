@@ -11,7 +11,7 @@ class UserDataRepository(
     private val securePreferences: SecurePreferences
 ) {
     private val _username =
-        MutableStateFlow(username())
+        MutableStateFlow("")
 
     val username =
         _username.asStateFlow()
@@ -54,6 +54,8 @@ class UserDataRepository(
     }
 
     fun username(): String {
-        return securePreferences.username()
+        val username = securePreferences.username()
+        _username.value = username
+        return username
     }
 }

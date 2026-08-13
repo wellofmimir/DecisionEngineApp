@@ -24,6 +24,17 @@ class SecurePreferences(
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
 
+    fun installationId(): String {
+        return securePreferences.getString("installationId", "")
+            ?: ""
+    }
+
+    fun setInstallationId(installationId: String) {
+        securePreferences.edit {
+            putString("installationId", installationId)
+        }
+    }
+
     fun setApiKey(apiKey: String) {
         securePreferences.edit {
             putString("apiKey", apiKey)
@@ -31,7 +42,8 @@ class SecurePreferences(
     }
 
     fun apiKey(): String {
-        return securePreferences.getString("apiKey", "") ?: ""
+        return securePreferences.getString("apiKey", "")
+            ?: ""
     }
 
     fun setFeedbackLimitReached() {
@@ -57,7 +69,8 @@ class SecurePreferences(
     }
 
     fun username(): String {
-        return securePreferences.getString("username", "") ?: ""
+        return securePreferences.getString("username", "")
+            ?: ""
     }
 
     fun setDailyArticleObtained() {
@@ -78,8 +91,12 @@ class SecurePreferences(
     }
 
     fun motivationalQuote(): Pair<String, String> {
-        val quote = securePreferences.getString("quote", "Every mistake seems incredibly stupid when others make it.") ?: "Every mistake seems incredibly stupid when others make it."
-        val person = securePreferences.getString("person", "Georg Christoph Lichtenberg") ?: "Georg Christoph Lichtenberg"
+        val quote = securePreferences.getString("quote", "Every mistake seems incredibly stupid when others make it.")
+            ?: "Every mistake seems incredibly stupid when others make it."
+
+        val person = securePreferences.getString("person", "Georg Christoph Lichtenberg")
+            ?: "Georg Christoph Lichtenberg"
+
         return quote to person
     }
 }

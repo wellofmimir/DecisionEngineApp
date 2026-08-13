@@ -106,15 +106,27 @@ fun EnterComparisonCriteriaScreen(
 
         Spacer(
             modifier = Modifier
-                .height(8.dp)
+                .height(16.dp)
+        )
+
+        Text(
+            text = "Double Tap to remove a criterion.",
+            textAlign = TextAlign.Center,
+            fontSize = typography.titleSmall.fontSize,
+            color = Color.Black
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(16.dp)
         )
 
         LazyColumn(
             modifier = Modifier
-                .weight(3f)
+                .weight(1f)
                 .fillMaxWidth(0.75f),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ) {
             items(criteria){ criterion ->
                 Box(
@@ -136,7 +148,7 @@ fun EnterComparisonCriteriaScreen(
                         )
                         .pointerInput(Unit) {
                             detectTapGestures(
-                                onLongPress = {
+                                onDoubleTap = {
                                     onDeleteCriteria(criterion)
                                 }
                             )
@@ -158,11 +170,6 @@ fun EnterComparisonCriteriaScreen(
                 )
             }
         }
-
-        Spacer(
-            modifier = Modifier
-                .weight(1f)
-        )
 
         Spacer(
             modifier = Modifier

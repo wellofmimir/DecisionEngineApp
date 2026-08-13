@@ -14,8 +14,8 @@ android {
         applicationId = "com.molokosoft.decisionengine"
         minSdk = 26
         targetSdk = 36
-        versionCode = 27
-        versionName = "1.27"
+        versionCode = 37
+        versionName = "1.37"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

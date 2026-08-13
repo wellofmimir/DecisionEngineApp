@@ -70,6 +70,19 @@ class NewDecisionViewModel(
                 false
             )
 
+    val criteriaNames: StateFlow<List<String>> =
+        draft
+            .map { draft ->
+                draft.criteria.map {
+                    criterion -> criterion.name
+                }
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                emptyList()
+            )
+
     fun resetDraft() {
         viewModelScope.launch {
             _draft.value = DecisionDraft()
@@ -226,6 +239,21 @@ class NewDecisionViewModel(
         }
     }
 
+    fun deleteCriteriaSuggestions() {
+        _draft.update {
+            it.copy(
+                criteriaSuggestions = emptyList()
+            )
+        }
+    }
+    fun deleteCriteria() {
+        _draft.update {
+            it.copy(
+                criteria = emptyList()
+            )
+        }
+    }
+
     fun setRatedCriteriaToOption(optionName: String, criteria: List<Criterion>){
         _draft.update { draft ->
             val updatedOptions = draft.options.map { option ->
@@ -339,30 +367,50 @@ class NewDecisionViewModel(
         billingManager.clearListener()
 
         billingManager.setListener(object : BillingManager.Listener {
+
             override fun onBillingReady() {
+                Log.d("Billing", "Checking active subscriptions")
                 billingManager.queryActiveSubscriptions()
-
-                billingManager.loadProducts(
-                    productIds = _subscriptionProducts.value.map {
-                        it.productId
-                    }
-                )
-
             }
 
-            override fun onActivePurchasesLoaded(purchases: List<Purchase>) {
-                Log.d("Billing", "Found ${purchases.size} purchases")
+            override fun onActivePurchasesLoaded(
+                purchases: List<Purchase>
+            ) {
+                Log.d(
+                    "Billing",
+                    "Found ${purchases.size} purchases"
+                )
 
                 purchases.forEach {
-                    Log.d("Billing", "Products = ${it.products}")
-                    Log.d("Billing", "State = ${it.purchaseState}")
+                    Log.d(
+                        "Billing",
+                        "Products = ${it.products}"
+                    )
+
+                    Log.d(
+                        "Billing",
+                        "State = ${it.purchaseState}"
+                    )
                 }
 
                 val hasSubscription = purchases.any {
                     it.purchaseState == Purchase.PurchaseState.PURCHASED
                 }
 
-                Log.d("Billing", "Has subscription = $hasSubscription")
+                Log.d(
+                    "Billing",
+                    "Has subscription = $hasSubscription"
+                )
+
+                billingManager.loadProducts(
+                    SubscriptionTypes.entries
+                        .filter {
+                            it != SubscriptionTypes.Undefined
+                        }
+                        .map {
+                            it.value
+                        }
+                )
 
                 if (hasSubscription) {
                     isOnboarding = false
@@ -374,30 +422,61 @@ class NewDecisionViewModel(
             }
 
             override fun onProductsLoaded() {
-                _subscriptionProducts.update { products ->
-                    products.map { product ->
-                        product.copy(
-                            formattedPrice =
-                                billingManager.getFormattedPrice(product.productId)
-                                    ?: ""
-                        )
+                val products = SubscriptionTypes.entries
+                    .filter {
+                        it != SubscriptionTypes.Undefined
                     }
+                    .mapNotNull { type ->
+                        billingManager.getFormattedPrice(type.value)?.let { price ->
+                            SubscriptionProduct(
+                                productId = type.value,
+                                formattedPrice = price,
+                                hasFreeTrial = billingManager.hasFreeTrial(type.value)
+                            )
+                        }
+                    }
+
+                Log.d(
+                    "Billing",
+                    "Subscription products: $products"
+                )
+
+                _subscriptionProducts.value = products
+
+                if (isOnboarding) {
+                    onFailure()
+                } else {
+                    onSuccess()
                 }
             }
 
-            override fun onPurchaseAcknowledged(purchase: Purchase) {
-                verifyPurchaseAndContinue(
-                    purchase,
-                    onSuccess,
-                    onFailure
+            override fun onPurchaseAcknowledged(
+                purchase: Purchase
+            ) {
+                // Nicht relevant für checkSubscription()
+            }
+
+            override fun onPurchaseFailure(
+                billingResult: BillingResult
+            ) {
+                Log.e(
+                    "Billing",
+                    "Purchase failure: " +
+                            "${billingResult.responseCode} " +
+                            billingResult.debugMessage
                 )
             }
 
-            override fun onPurchaseFailure(billingResult: BillingResult) {
-                onFailure()
-            }
+            override fun onError(
+                billingResult: BillingResult
+            ) {
+                Log.e(
+                    "Billing",
+                    "Subscription check error: " +
+                            "${billingResult.responseCode} " +
+                            billingResult.debugMessage
+                )
 
-            override fun onError(billingResult: BillingResult) {
                 onFailure()
             }
         })
@@ -411,14 +490,23 @@ class NewDecisionViewModel(
         onSuccess: () -> Unit,
         onFailure: () -> Unit
     ) {
+        Log.d(
+            "Billing",
+            "START BILLING PROCESS: ${subscriptionType.value}"
+        )
+
         billingManager.clearListener()
 
         billingManager.setListener(object: BillingManager.Listener {
             override fun onBillingReady() {
+                Log.d("Billing", "Billing ready")
                 billingManager.queryActiveSubscriptions()
             }
 
             override fun onProductsLoaded() {
+                Log.d("Billing", "Products loaded")
+                Log.d("Billing", "Buying: ${subscriptionType.value}")
+
                 billingManager.buySubscription(activity, subscriptionType.value)
             }
 
@@ -431,30 +519,56 @@ class NewDecisionViewModel(
             }
 
             override fun onPurchaseFailure(billingResult: BillingResult) {
+                Log.e(
+                    "Billing",
+                    "Purchase failure: " +
+                            "responseCode=${billingResult.responseCode}, " +
+                            "debugMessage=${billingResult.debugMessage}"
+                )
+
                 onFailure()
             }
 
             override fun onError(billingResult: BillingResult) {
+                Log.e(
+                    "Billing",
+                    "Billing error: " +
+                            "responseCode=${billingResult.responseCode}, " +
+                            "debugMessage=${billingResult.debugMessage}"
+                )
                 onFailure()
             }
 
             override fun onActivePurchasesLoaded(purchases: List<Purchase>) {
+                Log.d(
+                    "Billing",
+                    "Active purchases: ${purchases.map { it.products }}"
+                )
+
                 val purchase = purchases.firstOrNull {
                     it.purchaseState == Purchase.PurchaseState.PURCHASED &&
                     subscriptionType.value in it.products
                 }
 
                 if (purchase != null) {
+                    Log.d("Billing", "Existing purchase found")
+
                     verifyPurchaseAndContinue(
                         purchase,
                         onSuccess,
                         onFailure
                     )
                 } else {
+                    Log.d("Billing", "No existing purchase, loading products")
+
                     billingManager.loadProducts(
-                        SubscriptionTypes.entries.map { type ->
-                            type.value
-                        }
+                        SubscriptionTypes.entries
+                            .filter {
+                                it != SubscriptionTypes.Undefined
+                            }
+                            .map {
+                                it.value
+                            }
                     )
                 }
             }

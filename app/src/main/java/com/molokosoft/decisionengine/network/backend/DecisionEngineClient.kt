@@ -37,6 +37,12 @@ class DecisionEngineClient(
         apiKey = key
     }
 
+    private var installationId: String = ""
+
+    fun setInstallationId(id: String) {
+        installationId = id
+    }
+
     suspend fun verifyPurchase(verifyPurchaseRequest: VerifyPurchaseRequest): VerifyPurchaseResponse? =
         withContext(Dispatchers.IO) {
             val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -44,6 +50,7 @@ class DecisionEngineClient(
             val requestBody = json.toRequestBody(mediaType)
 
             val request = Request.Builder()
+                .addHeader("X-Installation-ID", installationId)
                 .post(requestBody)
                 .url("$baseUrl/api/v1/billing/verify")
                 .build()
@@ -69,6 +76,7 @@ class DecisionEngineClient(
     suspend fun dailyArticle(): DailyArticleResponse? =
         withContext(Dispatchers.IO) {
             val request = Request.Builder()
+                .addHeader("X-Installation-ID", installationId)
                 .addHeader("Authorization", "Bearer $apiKey")
                 .get()
                 .url("$baseUrl/api/v1/articles/daily")
@@ -95,6 +103,7 @@ class DecisionEngineClient(
             val requestBody = json.toRequestBody(mediaType)
 
             val request = Request.Builder()
+                .addHeader("X-Installation-ID", installationId)
                 .addHeader("Authorization", "Bearer $apiKey")
                 .post(requestBody)
                 .url("$baseUrl/api/v1/decision/analyze")
@@ -174,6 +183,7 @@ class DecisionEngineClient(
             val requestBody = json.toString().toRequestBody(mediaType)
 
             val request = Request.Builder()
+                .addHeader("X-Installation-ID", installationId)
                 .post(requestBody)
                 .url("$baseUrl/api/v1/email")
                 .build()
@@ -200,6 +210,7 @@ class DecisionEngineClient(
             val requestBody = json.toString().toRequestBody(mediaType)
 
             val request = Request.Builder()
+                .addHeader("X-Installation-ID", installationId)
                 .addHeader("Authorization", "Bearer $apiKey")
                 .post(requestBody)
                 .url("$baseUrl/api/v1/feedback/send")
@@ -227,6 +238,7 @@ class DecisionEngineClient(
             val requestBody = json.toString().toRequestBody(mediaType)
 
             val request = Request.Builder()
+                .addHeader("X-Installation-ID", installationId)
                 .post(requestBody)
                 .url("$baseUrl/api/v1/criteria/suggest")
                 .build()
@@ -253,6 +265,7 @@ class DecisionEngineClient(
             val requestBody = json.toString().toRequestBody(mediaType)
 
             val request = Request.Builder()
+                .addHeader("X-Installation-ID", installationId)
                 .post(requestBody)
                 .url("$baseUrl/api/v1/decision/safetyClassification")
                 .build()
@@ -273,6 +286,7 @@ class DecisionEngineClient(
     suspend fun getQuote(): QuoteResponse? =
         withContext(Dispatchers.IO) {
             val request = Request.Builder()
+                .addHeader("X-Installation-ID", installationId)
                 .addHeader("Authorization", "Bearer $apiKey")
                 .get()
                 .url("$baseUrl/api/v1/quotes/daily")

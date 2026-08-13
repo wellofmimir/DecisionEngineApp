@@ -1,5 +1,6 @@
 package com.molokosoft.decisionengine.network
 
+import com.molokosoft.decisionengine.preferences.SecurePreferences
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 

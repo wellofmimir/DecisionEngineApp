@@ -17,6 +17,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
@@ -42,6 +44,8 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 
 import androidx.compose.ui.text.withStyle
@@ -57,6 +61,8 @@ fun FreeTrialScreen(
     onContinueClicked: (email: String) -> Unit
 ){
     val typography = LocalAppTypography.current
+    val focusManager = LocalFocusManager.current
+
     var email by remember { mutableStateOf("") }
     val verticalScroll = rememberScrollState()
 
@@ -275,6 +281,14 @@ fun FreeTrialScreen(
             onValueChange = {
                 email = it
             },
+            keyboardOptions = KeyboardOptions(
+                imeAction = ImeAction.Done
+            ),
+            keyboardActions = KeyboardActions(
+                onDone = {
+                    focusManager.clearFocus()
+                }
+            ),
             textStyle = LocalTextStyle.current.copy(
                 textAlign = TextAlign.Center
             ),

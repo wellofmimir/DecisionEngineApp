@@ -107,12 +107,24 @@ fun EnterDecisionOptionsScreen(
 
         Spacer(
             modifier = Modifier
-                .height(8.dp)
+                .height(16.dp)
+        )
+
+        Text(
+            text = "Double Tap to remove an option.",
+            textAlign = TextAlign.Center,
+            fontSize = typography.titleSmall.fontSize,
+            color = Color.Black
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(16.dp)
         )
 
         LazyColumn(
             modifier = Modifier
-                .weight(3f)
+                .weight(1f)
                 .fillMaxWidth(0.75f),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -137,7 +149,7 @@ fun EnterDecisionOptionsScreen(
                         )
                         .pointerInput(Unit) {
                             detectTapGestures(
-                                onLongPress = {
+                                onDoubleTap = {
                                     onDeleteOption(option)
                                 }
                             )
@@ -159,11 +171,6 @@ fun EnterDecisionOptionsScreen(
                 )
             }
         }
-
-        Spacer(
-            modifier = Modifier
-                .weight(1f)
-        )
 
         Spacer(
             modifier = Modifier

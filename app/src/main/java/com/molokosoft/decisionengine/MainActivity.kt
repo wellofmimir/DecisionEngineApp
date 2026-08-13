@@ -33,7 +33,8 @@ import com.molokosoft.decisionengine.preferences.SecurePreferences
 import com.molokosoft.decisionengine.repositories.DecisionRepository
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
+import com.molokosoft.decisionengine.commonuielements.ErrorDialog
+import java.util.UUID
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
 import com.molokosoft.decisionengine.repositories.ArticlesRepository
 import com.molokosoft.decisionengine.repositories.QuoteRepository
@@ -68,7 +69,11 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val securePreferences = remember {
-                SecurePreferences(applicationContext)
+                SecurePreferences(applicationContext).apply {
+                    installationId().ifBlank {
+                        setInstallationId(UUID.randomUUID().toString())
+                    }
+                }
             }
 
             val decisionRepository = remember {
@@ -78,6 +83,7 @@ class MainActivity : ComponentActivity() {
             val decisionEngineClient = remember {
                 DecisionEngineClient(SharedHttpClient.sharedClient).apply {
                     setApiKey(securePreferences.apiKey())
+                    setInstallationId(securePreferences.installationId())
                 }
             }
 
@@ -159,6 +165,14 @@ class MainActivity : ComponentActivity() {
                 mutableStateOf<AppState>(Welcome)
             }
 
+            var hasError by remember {
+                mutableStateOf(false)
+            }
+
+            var errorMessage by remember {
+                mutableStateOf("" to "")
+            }
+
             LaunchedEffect(Unit) {
                 newDecisionViewModel.checkSubscription(
                     onSuccess = {
@@ -202,8 +216,10 @@ class MainActivity : ComponentActivity() {
                                         newDecisionViewModel.saveEMail(eMail)
                                 },
                                 onFailure = {
-                                    appState = Welcome
-                                    //TODO("Einbauen eine Buchungsfehler-Screens, erstmal geht es nur zurück!")
+                                    errorMessage =
+                                        "Billing error." to "Billing error. We couldn't process your purchase. Please try again later."
+
+                                    hasError = true
                                 }
                             )
                         },
@@ -219,6 +235,19 @@ class MainActivity : ComponentActivity() {
                             showMotivationalQuote = showQuote
                         )
                     }
+                }
+
+                if (hasError) {
+                    ErrorDialog(
+                        errorTitle = errorMessage.first,
+                        errorMessage = errorMessage.second,
+                        onDismissRequest = {
+                            hasError = false
+                        },
+                        onAcceptRequest = {
+                            hasError = false
+                        }
+                    )
                 }
             }
         }

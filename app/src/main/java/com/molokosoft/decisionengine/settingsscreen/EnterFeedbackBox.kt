@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Favorite
@@ -49,6 +51,8 @@ import androidx.compose.ui.window.Dialog
 import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import kotlinx.coroutines.delay
 
@@ -60,6 +64,8 @@ fun EnterFeedbackBox(
     onSend: (feedback: String) -> Unit
 ) {
     val typography = LocalAppTypography.current
+    val focusManager = LocalFocusManager.current
+
     var feedbackText by remember { mutableStateOf("") }
     var feedbackSent by remember { mutableStateOf(false) }
 
@@ -194,7 +200,7 @@ fun EnterFeedbackBox(
                     OutlinedTextField(
                         placeholder = {
                             Text(
-                                text = "I really love DecisionEngine! ;D",
+                                text = "Ex: DecisionEngine is really awesome and helped me a lot!",
                                 textAlign = TextAlign.Center,
                                 fontStyle = FontStyle.Italic,
                                 fontWeight = FontWeight.ExtraLight,
@@ -207,6 +213,14 @@ fun EnterFeedbackBox(
                         onValueChange = {
                             feedbackText = it
                         },
+                        keyboardOptions = KeyboardOptions(
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                focusManager.clearFocus()
+                            }
+                        ),
                         textStyle = LocalTextStyle.current.copy(
                             textAlign = TextAlign.Center
                         ),
