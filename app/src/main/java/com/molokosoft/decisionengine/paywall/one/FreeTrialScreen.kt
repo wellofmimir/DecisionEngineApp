@@ -10,12 +10,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -25,9 +22,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import kotlinx.coroutines.delay
 
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.Alignment
@@ -62,6 +61,17 @@ fun FreeTrialScreen(
 ){
     val typography = LocalAppTypography.current
     val focusManager = LocalFocusManager.current
+
+    var isButtonActive by remember {
+        mutableStateOf(true)
+    }
+
+    LaunchedEffect(isButtonActive) {
+        if (!isButtonActive) {
+            delay(10000)
+            isButtonActive = true
+        }
+    }
 
     var email by remember { mutableStateOf("") }
     val verticalScroll = rememberScrollState()
@@ -330,10 +340,6 @@ fun FreeTrialScreen(
                     color = DecisionBlue,
                     shape = RoundedCornerShape(64.dp)
                 )
-                .shadow(
-                    elevation = 8.dp,
-                    shape = RoundedCornerShape(64.dp)
-                )
                 .background(
                     color = DecisionBlue,
                     shape = RoundedCornerShape(64.dp)
@@ -345,15 +351,18 @@ fun FreeTrialScreen(
                     .fillMaxWidth(0.75f)
                     .border(
                         width = 1.dp,
-                        color = DecisionBlue,
+                        color = if (isButtonActive) DecisionBlue else Color.Gray,
                         shape = RoundedCornerShape(64.dp)
                     )
                     .background(
-                        color = DecisionBlue,
+                        color = if (isButtonActive) DecisionBlue else Color.Gray,
                         shape = RoundedCornerShape(64.dp)
                     )
                     .clickable {
-                        onContinueClicked(email)
+                        if (isButtonActive) {
+                            onContinueClicked(email)
+                            isButtonActive = false
+                        }
                     },
                 contentAlignment = Alignment.Center
             ) {

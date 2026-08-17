@@ -12,6 +12,7 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.*
 import android.util.Log
+import com.molokosoft.decisionengine.billing.model.BillingProduct
 
 class BillingManager(context: Context) {
     interface Listener {
@@ -113,10 +114,10 @@ class BillingManager(context: Context) {
         }
     }
 
-    fun loadProducts(productIds: List<String>) {
+    fun loadProducts(products: List<BillingProduct>) {
         Log.d(
             "Billing",
-            "loadProducts called with: $productIds"
+            "loadProducts called with: $products"
         )
 
         if (!isReady) {
@@ -124,20 +125,23 @@ class BillingManager(context: Context) {
             return
         }
 
-        val validProductIds = productIds
+        val validProducts = products
             .map {
-                it.trim()
+                BillingProduct(
+                    productId = it.productId.trim(),
+                    productType = it.productType
+                )
             }
             .filter {
-                it.isNotEmpty()
+                it.productId.isNotEmpty()
             }
 
         Log.d(
             "Billing",
-            "Valid product IDs: $validProductIds"
+            "Valid product IDs: $validProducts"
         )
 
-        if (validProductIds.isEmpty()) {
+        if (validProducts.isEmpty()) {
             Log.e(
                 "Billing",
                 "No valid product IDs supplied"
@@ -146,16 +150,21 @@ class BillingManager(context: Context) {
             return
         }
 
+        Log.d(
+            "Billing",
+            "Valid product IDs: $validProducts"
+        )
+
         val query =
             QueryProductDetailsParams
                 .newBuilder()
                 .setProductList(
-                    validProductIds.map {
+                    validProducts.map {
                         QueryProductDetailsParams.Product
                             .newBuilder()
-                            .setProductId(it)
+                            .setProductId(it.productId)
                             .setProductType(
-                                BillingClient.ProductType.SUBS
+                                it.productType
                             )
                             .build()
                     }
@@ -302,16 +311,37 @@ class BillingManager(context: Context) {
         return trialOffer != null
     }
 
-    fun buySubscription(
+    fun buyProduct(
         activity: Activity,
-        productID: String
+        productId: String
     ) {
-        val details = productDetails[productID]
+        if (!billingClient.isReady) {
+            Log.e(
+                "Billing",
+                "Cannot launch billing flow: BillingClient is not ready"
+            )
+
+            listener?.onError(
+                BillingResult.newBuilder()
+                    .setResponseCode(
+                        BillingClient.BillingResponseCode.SERVICE_DISCONNECTED
+                    )
+                    .setDebugMessage(
+                        "Billing service is disconnected."
+                    )
+                    .build()
+            )
+
+            return
+        }
+
+        val details =
+            productDetails[productId]
 
         if (details == null) {
             Log.e(
                 "Billing",
-                "Product not found: $productID"
+                "Product not found: $productId"
             )
 
             listener?.onError(
@@ -320,7 +350,7 @@ class BillingManager(context: Context) {
                         BillingClient.BillingResponseCode.ITEM_UNAVAILABLE
                     )
                     .setDebugMessage(
-                        "Product not loaded: $productID"
+                        "Product not loaded: $productId"
                     )
                     .build()
             )
@@ -328,41 +358,57 @@ class BillingManager(context: Context) {
             return
         }
 
-        val offer = details.subscriptionOfferDetails?.firstOrNull()
-
-        if (offer == null) {
-            Log.e(
-                "Billing",
-                "No subscription offer found: $productID"
-            )
-
-            return
-        }
-
-        Log.d(
-            "Billing",
-            "Launching billing flow: " +
-                    "product=$productID, " +
-                    "offerToken=${offer.offerToken}"
-        )
-
         val productDetailsParams =
             BillingFlowParams.ProductDetailsParams
                 .newBuilder()
                 .setProductDetails(details)
-                .setOfferToken(offer.offerToken)
-                .build()
+
+        if (details.productType == BillingClient.ProductType.SUBS) {
+
+            val offer =
+                details.subscriptionOfferDetails?.firstOrNull()
+
+            if (offer == null) {
+                Log.e(
+                    "Billing",
+                    "No subscription offer found: $productId"
+                )
+
+                return
+            }
+
+            Log.d(
+                "Billing",
+                "Using subscription offer: ${offer.offerToken}"
+            )
+
+            productDetailsParams.setOfferToken(
+                offer.offerToken
+            )
+        }
 
         val billingFlowParams =
             BillingFlowParams
                 .newBuilder()
                 .setProductDetailsParamsList(
-                    listOf(productDetailsParams)
+                    listOf(
+                        productDetailsParams.build()
+                    )
                 )
                 .build()
 
+        Log.d(
+            "Billing",
+            "Launching billing flow: " +
+                    "product=$productId, " +
+                    "type=${details.productType}"
+        )
+
         val result =
-            billingClient.launchBillingFlow(activity, billingFlowParams)
+            billingClient.launchBillingFlow(
+                activity,
+                billingFlowParams
+            )
 
         Log.d(
             "Billing",
@@ -371,7 +417,8 @@ class BillingManager(context: Context) {
                     "message=${result.debugMessage}"
         )
 
-        if (result.responseCode != BillingClient.BillingResponseCode.OK)
+        if (result.responseCode != BillingClient.BillingResponseCode.OK) {
             listener?.onPurchaseFailure(result)
+        }
     }
 }

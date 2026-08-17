@@ -23,39 +23,56 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import com.molokosoft.decisionengine.R
-import com.molokosoft.decisionengine.commonclasses.SubscriptionTypes
+import com.molokosoft.decisionengine.commonclasses.ProductTypes
 import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.LocalAppTypography
+import kotlinx.coroutines.delay
 
 @Composable
 fun SubscriptionInformationDialog(
     modifier: Modifier = Modifier,
-    subscriptionType: SubscriptionTypes,
+    subscriptionType: ProductTypes,
     onDismissRequest: () -> Unit,
     onAcceptedOffer: () -> Unit
 ) {
     val title = when (subscriptionType) {
-        SubscriptionTypes.Weekly ->
+        ProductTypes.Weekly ->
             "Weekly Plan"
 
-        SubscriptionTypes.Yearly ->
+        ProductTypes.Yearly ->
             "Yearly Plan"
 
         else ->
             ""
     }
 
+    var isButtonActive by remember {
+        mutableStateOf(true)
+    }
+
+    LaunchedEffect(isButtonActive) {
+        if (!isButtonActive) {
+            delay(10000)
+            isButtonActive = true
+        }
+    }
+
     val subTitle = when (subscriptionType) {
-        SubscriptionTypes.Weekly ->
+        ProductTypes.Weekly ->
             "Get 100 decision analyses every week with the Weekly subscription plan.\n\n" +
             "This plan is ideal if you use Decision Engine regularly and prefer a flexible subscription with a short billing period."
 
-        SubscriptionTypes.Yearly ->
+        ProductTypes.Yearly ->
             "Get 5000 decision analyses every week with the Yearly subscription plan.\n\n" +
             "This plan is ideal for frequent users who want a large decision allowance and the convenience of a yearly subscription."
 
@@ -63,10 +80,10 @@ fun SubscriptionInformationDialog(
     }
 
     val howManyDecisionsText = when (subscriptionType) {
-        SubscriptionTypes.Weekly ->
+        ProductTypes.Weekly ->
             "You can analyze up to 100 decisions per week."
 
-        SubscriptionTypes.Yearly ->
+        ProductTypes.Yearly ->
             "You can analyze up to 5,000 decisions per year."
 
         else ->
@@ -74,10 +91,10 @@ fun SubscriptionInformationDialog(
     }
 
     val whenDoDecisionsResetText = when (subscriptionType) {
-        SubscriptionTypes.Weekly ->
+        ProductTypes.Weekly ->
             "Your 100 decisions are renewed at the beginning of each new weekly subscription period."
 
-        SubscriptionTypes.Yearly ->
+        ProductTypes.Yearly ->
             "Your 5,000 decisions are renewed at the beginning of each new yearly subscription period."
 
         else ->
@@ -91,10 +108,10 @@ fun SubscriptionInformationDialog(
         "Yes. You can cancel your subscription at any time. You will continue to have access to your subscription benefits until the end of the current subscription period."
 
     val whoForText = when (subscriptionType) {
-        SubscriptionTypes.Weekly ->
+        ProductTypes.Weekly ->
             "The Weekly plan is a good choice if you want to use Decision Engine regularly without committing to a yearly subscription."
 
-        SubscriptionTypes.Yearly ->
+        ProductTypes.Yearly ->
             "The Yearly plan is a good choice if you use Decision Engine frequently and want a generous decision allowance without having to renew your subscription every week."
 
         else ->
@@ -321,15 +338,18 @@ fun SubscriptionInformationDialog(
                     .fillMaxWidth(0.75f)
                     .border(
                         width = 1.dp,
-                        color = DecisionBlue,
+                        color = if (isButtonActive) DecisionBlue else Color.Gray,
                         shape = RoundedCornerShape(64.dp)
                     )
                     .background(
-                        color = DecisionBlue,
+                        color = if (isButtonActive) DecisionBlue else Color.Gray,
                         shape = RoundedCornerShape(64.dp)
                     )
                     .clickable(){
-                        onAcceptedOffer()
+                        if (isButtonActive) {
+                            onAcceptedOffer()
+                            isButtonActive = false
+                        }
                     },
                 contentAlignment = Alignment.Center
             ){

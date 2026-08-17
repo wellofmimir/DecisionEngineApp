@@ -1,5 +1,6 @@
 package com.molokosoft.decisionengine
 
+import android.app.Activity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,24 +25,35 @@ import com.molokosoft.decisionengine.homescreen.navigation.NavigationItem
 import com.molokosoft.decisionengine.newdecisionscreen.EnterDecisionScreen
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.NewDecisionViewModel
 import androidx.compose.runtime.collectAsState
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.molokosoft.decisionengine.commonclasses.ProductTypes
 import com.molokosoft.decisionengine.decisionhistoryscreen.DecisionHistoryScreen
 import com.molokosoft.decisionengine.decisionhistoryscreen.viewmodel.DecisionHistoryViewModel
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.ErrorCodes
+import com.molokosoft.decisionengine.paywall.PaywallScreen
+import com.molokosoft.decisionengine.repositories.BackendRepository
+import com.molokosoft.decisionengine.repositories.UserDataRepository
 import com.molokosoft.decisionengine.settingsscreen.SettingsScreen
 import com.molokosoft.decisionengine.settingsscreen.model.SettingsScreenViewModel
 import kotlinx.coroutines.launch
 
 @Composable
 fun MainApplication(
+    activity: Activity,
+    backendRepository: BackendRepository,
     newDecisionViewModel: NewDecisionViewModel,
     decisionHistoryViewModel: DecisionHistoryViewModel,
     homeScreenViewModel: HomeScreenViewModel,
     settingsScreenViewModel: SettingsScreenViewModel,
-    showMotivationalQuote: Boolean = false
+    userDataRepository: UserDataRepository,
+    showMotivationalQuote: Boolean = false,
+    onBackendNotAvailable: () -> Unit
 ){
     val decisionDraft by newDecisionViewModel.draft.collectAsState()
-    val scope = rememberCoroutineScope()
+    val subscriptionProducts by newDecisionViewModel.subscriptionProducts.collectAsState()
+
+    val scope =
+        rememberCoroutineScope()
 
     var navigationItem by remember {
         mutableStateOf(
@@ -59,6 +71,17 @@ fun MainApplication(
         NavigationItem.SETTINGS -> true
         NavigationItem.HISTORY -> true
         NavigationItem.SEE_DECISION -> false
+        NavigationItem.PAYWALL -> false
+    }
+
+    LaunchedEffect(navigationItem) {
+        if (navigationItem == NavigationItem.NEW_DECISION) {
+            val isAvailable =
+                backendRepository.checkAvailability()
+
+            if (!isAvailable)
+                onBackendNotAvailable()
+        }
     }
 
     Scaffold(
@@ -107,14 +130,37 @@ fun MainApplication(
             NavigationItem.NEW_DECISION -> {
                 EnterDecisionScreen(
                     newDecisionViewModel,
+                    productInformation = subscriptionProducts,
                     modifier = Modifier
                         .fillMaxHeight()
                         .padding(innerPadding),
                     onBackClicked = {
                         navigationItem = NavigationItem.HOME
                     },
-                    onContinueClicked = {
-                        navigationItem = NavigationItem.SEE_DECISION
+                    onContinueClicked = { errorType ->
+
+                        when (errorType) {
+                            ErrorCodes.SUCCESS -> {
+                                navigationItem = NavigationItem.SEE_DECISION
+                            }
+
+                            ErrorCodes.NO_MORE_USAGES -> {
+                                newDecisionViewModel.startBillingProcess(
+                                    productType = ProductTypes.Usages15,
+                                    activity = activity,
+                                    apiKey = userDataRepository.apiKey().ifBlank {
+                                        null
+                                    },
+                                    onSuccess = {
+                                        newDecisionViewModel.onComparisonCompleted()
+                                        navigationItem = NavigationItem.SEE_DECISION
+                                    },
+                                    onFailure = {
+                                        navigationItem = NavigationItem.HOME
+                                    }
+                                )
+                            }
+                        }
                     }
                 )
             }
@@ -155,6 +201,35 @@ fun MainApplication(
                         .fillMaxHeight()
                         .padding(innerPadding),
                     settingsScreenViewModel = settingsScreenViewModel
+                )
+            }
+
+            NavigationItem.PAYWALL -> {
+                PaywallScreen(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .padding(innerPadding),
+                    subscriptionProducts = subscriptionProducts,
+                    onContinueClicked = { productType, eMail ->
+
+                        newDecisionViewModel.startBillingProcess(
+                            productType = productType,
+                            activity = activity,
+                            apiKey = userDataRepository.apiKey().ifBlank {
+                                null
+                            },
+                            onSuccess = {
+                                newDecisionViewModel.onComparisonCompleted()
+                            },
+                            onFailure = {
+                            }
+                        )
+                    },
+                    onBackClicked = {
+                        newDecisionViewModel.resetDraft()
+                        navigationItem = NavigationItem.HOME
+                    },
+                    showOnlyOffer = true
                 )
             }
         }

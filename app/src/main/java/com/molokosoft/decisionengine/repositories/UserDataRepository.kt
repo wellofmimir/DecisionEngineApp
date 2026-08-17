@@ -16,16 +16,22 @@ class UserDataRepository(
     val username =
         _username.asStateFlow()
 
-    suspend fun verifyPurchase(purchaseToken: String): Boolean {
+    suspend fun verifyPurchase(purchaseToken: String, productId: String, apiKey: String?): Boolean {
         return decisionEngineClient.verifyPurchase(
             VerifyPurchaseRequest(
-                purchaseToken = purchaseToken
+                purchaseToken = purchaseToken,
+                productId = productId,
+                apiKey = apiKey
             )
         )?.let {
             securePreferences.setApiKey(it.apiKey)
             decisionEngineClient.setApiKey(securePreferences.apiKey())
             true
         } ?: false
+    }
+
+    fun apiKey(): String {
+        return securePreferences.apiKey()
     }
 
     suspend fun sendEmail(eMail: String): Boolean {

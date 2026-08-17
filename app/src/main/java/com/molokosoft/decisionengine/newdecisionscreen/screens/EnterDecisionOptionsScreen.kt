@@ -127,7 +127,7 @@ fun EnterDecisionOptionsScreen(
                 .weight(1f)
                 .fillMaxWidth(0.75f),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ){
             items(options) { option ->
                 Box(

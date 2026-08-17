@@ -41,13 +41,14 @@ import com.molokosoft.decisionengine.theme.DecisionGreen
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 import com.molokosoft.decisionengine.theme.FreeTrialPink
 import com.molokosoft.decisionengine.theme.MostChosenGreen
-import com.molokosoft.decisionengine.commonclasses.SubscriptionTypes
+import com.molokosoft.decisionengine.commonclasses.ProductTypes
 
 @Composable
 fun OfferTilesScreen(
     modifier: Modifier = Modifier,
     subscriptionProducts: List<SubscriptionProduct>,
-    onContinueClicked: (offerType: SubscriptionTypes) -> Unit
+    onContinueClicked: (offerType: ProductTypes) -> Unit,
+    showBackButton: Boolean = false
 ){
     val typography = LocalAppTypography.current
 
@@ -137,7 +138,7 @@ fun OfferTilesScreen(
                 .height(128.dp)
                 .fillMaxWidth(0.9f)
                 .clickable(){
-                    onContinueClicked(SubscriptionTypes.Weekly)
+                    onContinueClicked(ProductTypes.Weekly)
                 },
             contentAlignment = Alignment.CenterStart
         ){
@@ -253,7 +254,7 @@ fun OfferTilesScreen(
                 .height(128.dp)
                 .fillMaxWidth(0.9f)
                 .clickable {
-                    onContinueClicked(SubscriptionTypes.Yearly)
+                    onContinueClicked(ProductTypes.Yearly)
                 },
             contentAlignment = Alignment.CenterStart
         ){
@@ -403,7 +404,7 @@ fun OfferTilesScreen(
                 .height(128.dp)
                 .fillMaxWidth(0.9f)
                 .clickable {
-                    onContinueClicked(SubscriptionTypes.FreeTrial)
+                    onContinueClicked(ProductTypes.Usages15)
                 },
             contentAlignment = Alignment.CenterStart
         ){

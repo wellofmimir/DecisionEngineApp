@@ -5,5 +5,6 @@ enum class NavigationItem {
     NEW_DECISION,
     SEE_DECISION,
     HISTORY,
-    SETTINGS
+    SETTINGS,
+    PAYWALL
 }

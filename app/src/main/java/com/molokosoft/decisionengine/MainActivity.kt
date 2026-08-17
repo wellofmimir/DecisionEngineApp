@@ -9,6 +9,7 @@ import androidx.activity.enableEdgeToEdge
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Intent
+import androidx.compose.foundation.layout.fillMaxHeight
 
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -33,29 +34,46 @@ import com.molokosoft.decisionengine.preferences.SecurePreferences
 import com.molokosoft.decisionengine.repositories.DecisionRepository
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.Modifier
+import com.molokosoft.decisionengine.commonuielements.ConnectionErrorScreen
 import com.molokosoft.decisionengine.commonuielements.ErrorDialog
+import kotlinx.coroutines.async
 import java.util.UUID
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
 import com.molokosoft.decisionengine.repositories.ArticlesRepository
+import com.molokosoft.decisionengine.repositories.BackendRepository
 import com.molokosoft.decisionengine.repositories.QuoteRepository
 import com.molokosoft.decisionengine.settingsscreen.model.SettingsScreenViewModel
+import com.molokosoft.decisionengine.welcomescreen.SplashScreen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-
+sealed interface AppEvent {
+    data class ConnectionError(
+        val message: String? = null
+    ) : AppEvent
+}
 sealed class AppState {
+    data object Loading: AppState()
     data object Welcome : AppState()
     data object Onboarding : AppState()
     data object Paywall : AppState()
     data object MainApp : AppState()
+
+    data object Splash : AppState()
+
+    data object ConnectionError: AppState()
 }
 
 fun AppState.next(): AppState =
     when (this) {
+        Loading -> Splash
+        Splash -> Welcome
         Welcome -> Onboarding
         Onboarding -> Paywall
         Paywall -> MainApp
         MainApp -> MainApp
+        ConnectionError -> Splash
     }
 
 class MainActivity : ComponentActivity() {
@@ -73,6 +91,7 @@ class MainActivity : ComponentActivity() {
                     installationId().ifBlank {
                         setInstallationId(UUID.randomUUID().toString())
                     }
+                    setApiKey("leckmich")
                 }
             }
 
@@ -94,6 +113,12 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
+            val backendRepository = remember {
+                BackendRepository(
+                    decisionEngineClient
+                )
+            }
+
             @Suppress("UNCHECKED_CAST")
             val newDecisionViewModel: NewDecisionViewModel = viewModel(
                 factory = object : ViewModelProvider.Factory {
@@ -103,7 +128,8 @@ class MainActivity : ComponentActivity() {
                             factorAnalysisRepository = FactorAnalysisRepository(decisionEngineClient),
                             userDataRepository = userDataRepository,
                             decisionRepository = decisionRepository,
-                            billingManager = BillingManager(applicationContext)
+                            billingManager = BillingManager(applicationContext),
+                            decisionEngineClient = decisionEngineClient
                         ) as T
                     }
                 }
@@ -162,7 +188,11 @@ class MainActivity : ComponentActivity() {
                 newDecisionViewModel.subscriptionProducts.collectAsState()
 
             var appState by remember {
-                mutableStateOf<AppState>(Welcome)
+                mutableStateOf<AppState>(Loading)
+            }
+
+            var hasAccess by remember {
+                mutableStateOf(false)
             }
 
             var hasError by remember {
@@ -174,18 +204,46 @@ class MainActivity : ComponentActivity() {
             }
 
             LaunchedEffect(Unit) {
-                newDecisionViewModel.checkSubscription(
-                    onSuccess = {
-                        appState = MainApp
+                userDataRepository.apiKey().ifBlank {
+                    appState = Welcome
+                    return@LaunchedEffect
+                }
+
+                newDecisionViewModel.checkAccess(
+                    onAccessGranted = {
+                        appState = Splash
+                        hasAccess = true
                     },
-                    onFailure = {
+                    onAccessDenied = {
+                        hasAccess = false
                         appState = Welcome
+                        newDecisionViewModel.startOnboarding()
+                    },
+                    onReAccess = {
+                        appState = Splash
+                        hasAccess = true
+                    },
+                    onError = {
+                        hasAccess = false
+                        appState = ConnectionError
                     }
                 )
             }
 
             DecisionEngineTheme {
                 when (appState) {
+
+                    Loading -> {}
+
+                    Splash -> SplashScreen(
+                        onDone = {
+                            if (hasAccess) {
+                                appState = MainApp
+                                return@SplashScreen
+                            }
+                        }
+                    )
+
                     Welcome -> WelcomeScreen(
                         onContinueClicked = {
                             appState = appState.next()
@@ -194,6 +252,7 @@ class MainActivity : ComponentActivity() {
 
                     Onboarding -> EnterDecisionScreen(
                         newDecisionViewModel = newDecisionViewModel,
+                        productInformation = subscriptionProducts,
                         onBackClicked = {
                             appState = Welcome
                         },
@@ -203,11 +262,14 @@ class MainActivity : ComponentActivity() {
                     )
 
                     Paywall -> PaywallScreen(
-                        onContinueClicked = { subscriptionType, eMail ->
+                        onContinueClicked = { productType, eMail ->
 
                             newDecisionViewModel.startBillingProcess(
-                                subscriptionType = subscriptionType,
+                                productType = productType,
                                 activity = this,
+                                apiKey = securePreferences.apiKey().ifBlank {
+                                    null
+                                },
                                 onSuccess = {
                                     appState = appState.next()
                                     newDecisionViewModel.finishOnboarding()
@@ -223,16 +285,35 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         },
+                        onBackClicked = {
+
+                        },
                         subscriptionProducts = subscriptionProducts
                     )
 
                     MainApp -> {
                         MainApplication(
+                            activity = this,
+                            backendRepository = backendRepository,
                             newDecisionViewModel = newDecisionViewModel,
                             decisionHistoryViewModel = decisionHistoryViewModel,
                             homeScreenViewModel = homeScreenViewModel,
                             settingsScreenViewModel = settingsScreenViewModel,
-                            showMotivationalQuote = showQuote
+                            userDataRepository = userDataRepository,
+                            showMotivationalQuote = showQuote,
+                            onBackendNotAvailable = {
+                                appState = ConnectionError
+                            }
+                        )
+                    }
+
+                    ConnectionError -> {
+                        ConnectionErrorScreen(
+                            modifier = Modifier
+                                .fillMaxHeight(),
+                            onAccepted = {
+                                appState = MainApp
+                            }
                         )
                     }
                 }

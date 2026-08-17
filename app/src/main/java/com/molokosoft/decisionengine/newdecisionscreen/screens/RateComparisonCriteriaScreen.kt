@@ -275,7 +275,7 @@ fun RateComparisonCriteriaScreen(
                 .weight(1f)
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+            verticalArrangement = Arrangement.Top
         ){
             items(criteria) { criterion ->
                 CriteriaWithSlider(

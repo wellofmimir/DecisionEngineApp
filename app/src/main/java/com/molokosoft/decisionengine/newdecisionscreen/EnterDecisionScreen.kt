@@ -2,7 +2,6 @@ package com.molokosoft.decisionengine.newdecisionscreen
 
 
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 
 import androidx.compose.runtime.remember
@@ -13,6 +12,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
 
 import com.molokosoft.decisionengine.newdecisionscreen.dialogs.EnterOptionDialog
 import com.molokosoft.decisionengine.newdecisionscreen.dialogs.EnterCriterionDialog
@@ -25,8 +26,11 @@ import com.molokosoft.decisionengine.newdecisionscreen.screens.ChooseComparisonC
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Criterion
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Option
 import com.molokosoft.decisionengine.commonuielements.ErrorDialog
+import com.molokosoft.decisionengine.commonuielements.WaitingScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.ForbiddenInputDataScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.NoMoreUsagesScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.NotAllowedScreen
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.ErrorCodes
 
 sealed class DecisionScreen {
     data object EnterDecisionName : DecisionScreen()
@@ -36,6 +40,10 @@ sealed class DecisionScreen {
     data object RateComparisonCriteria : DecisionScreen()
     data object NotAllowedScreen : DecisionScreen()
     data object ForbiddenInputScreen : DecisionScreen()
+
+    data object NoMoreUsagesScreen : DecisionScreen()
+
+    data object WaitingForAnalysisScreen : DecisionScreen()
 }
 
 fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
@@ -53,6 +61,8 @@ fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
         DecisionScreen.RateComparisonCriteria -> DecisionScreen.EnterDecisionName
         DecisionScreen.NotAllowedScreen -> DecisionScreen.EnterDecisionName
         DecisionScreen.ForbiddenInputScreen -> DecisionScreen.EnterDecisionName
+        DecisionScreen.NoMoreUsagesScreen -> DecisionScreen.EnterDecisionName
+        DecisionScreen.WaitingForAnalysisScreen -> DecisionScreen.EnterDecisionName
     }
 
 fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
@@ -64,15 +74,18 @@ fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
         DecisionScreen.ChooseDecisionCriteria -> DecisionScreen.EnterDecisionName
         DecisionScreen.NotAllowedScreen -> DecisionScreen.EnterDecisionName
         DecisionScreen.ForbiddenInputScreen -> DecisionScreen.EnterDecisionName
+        DecisionScreen.NoMoreUsagesScreen -> DecisionScreen.EnterDecisionName
+        DecisionScreen.WaitingForAnalysisScreen -> DecisionScreen.EnterDecisionName
 
     }
 
 @Composable
 fun EnterDecisionScreen(
     newDecisionViewModel: NewDecisionViewModel,
+    productInformation: List<SubscriptionProduct>,
     modifier: Modifier = Modifier,
     onBackClicked: () -> Unit,
-    onContinueClicked: () -> Unit
+    onContinueClicked: (ErrorCodes) -> Unit
 ){
     val context =
         LocalContext.current
@@ -88,6 +101,14 @@ fun EnterDecisionScreen(
 
     val showNotAllowedScreen by newDecisionViewModel.showNotAllowedScreen.collectAsState()
     val showForbiddenInputScreen by newDecisionViewModel.showIsPromptScreen.collectAsState()
+    val showNoMoreUsagesScreen by newDecisionViewModel.showNoMoreUsagesScreen.collectAsStateWithLifecycle()
+    val analysisDone by newDecisionViewModel.analysisDone.collectAsStateWithLifecycle()
+    val showWaitingForAnalysisScreen by newDecisionViewModel.showWaitingForAnalysisScreen.collectAsStateWithLifecycle()
+
+    LaunchedEffect(analysisDone) {
+        if (analysisDone)
+            onContinueClicked(ErrorCodes.SUCCESS)
+    }
 
     LaunchedEffect(showNotAllowedScreen) {
         if (showNotAllowedScreen)
@@ -97,6 +118,16 @@ fun EnterDecisionScreen(
     LaunchedEffect(showForbiddenInputScreen) {
         if (showForbiddenInputScreen)
             currentScreen = DecisionScreen.ForbiddenInputScreen
+    }
+
+    LaunchedEffect(showNoMoreUsagesScreen) {
+        if (showNoMoreUsagesScreen)
+            currentScreen = DecisionScreen.NoMoreUsagesScreen
+    }
+
+    LaunchedEffect(showWaitingForAnalysisScreen) {
+        if (showWaitingForAnalysisScreen)
+            currentScreen = DecisionScreen.WaitingForAnalysisScreen
     }
 
     val draft by newDecisionViewModel.draft.collectAsState()
@@ -188,7 +219,6 @@ fun EnterDecisionScreen(
             if (nextOptionName == null) {
                 LaunchedEffect(Unit) {
                     newDecisionViewModel.onComparisonCompleted()
-                    onContinueClicked()
                 }
 
                 return
@@ -199,7 +229,7 @@ fun EnterDecisionScreen(
                 option = nextOptionName,
                 criteria = criteriaNames,
                 onBackClicked = {
-
+                    currentScreen = currentScreen.previous()
                 },
                 onNextClicked = { list ->
                     val listOfCriteria = list.map { (name, rating) ->
@@ -250,7 +280,7 @@ fun EnterDecisionScreen(
                 context = context,
                 onBackClicked = {
                     newDecisionViewModel.resetDraft()
-                    currentScreen = currentScreen.previous()
+                    currentScreen = DecisionScreen.EnterDecisionName
                 }
             )
         }
@@ -259,11 +289,32 @@ fun EnterDecisionScreen(
             ForbiddenInputDataScreen(
                 modifier = modifier
                     .fillMaxHeight(),
-                context = context,
                 onBackClicked = {
                     newDecisionViewModel.resetDraft()
-                    currentScreen = currentScreen.previous()
+                    currentScreen = DecisionScreen.EnterDecisionName
                 }
+            )
+        }
+
+        DecisionScreen.NoMoreUsagesScreen ->{
+            NoMoreUsagesScreen(
+                modifier = modifier
+                    .fillMaxHeight(),
+                productInformation = productInformation,
+                onAccepted = {
+                    onContinueClicked(ErrorCodes.NO_MORE_USAGES)
+                },
+                onDeclined = {
+                    onBackClicked()
+                }
+            )
+        }
+
+        DecisionScreen.WaitingForAnalysisScreen -> {
+            WaitingScreen(
+                modifier = modifier
+                    .fillMaxHeight(),
+                text = "Analyzing your decision...\n" + "This usually takes just a few seconds."
             )
         }
     }

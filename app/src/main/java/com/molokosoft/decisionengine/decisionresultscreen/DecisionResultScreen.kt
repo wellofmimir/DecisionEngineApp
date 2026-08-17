@@ -48,14 +48,6 @@ fun DecisionResultScreen(
         mutableStateOf<DecisionResultScreen>(RecommendedDecision)
     }
 
-    if (decisionAnalysisResult == null) {
-        WaitingScreen(
-            text = "Analyzing your decision...\n" + "This usually takes just a few seconds."
-        )
-
-        return
-    }
-
     when (currentScreen) {
         RecommendedDecision -> RecommendedChoiceScreen(
             modifier = modifier,

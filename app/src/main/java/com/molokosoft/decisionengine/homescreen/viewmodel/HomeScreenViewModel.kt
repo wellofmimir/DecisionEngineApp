@@ -130,7 +130,8 @@ class HomeScreenViewModel(
 
     fun getDailyArticle() {
         viewModelScope.launch {
-            val dailyArticle = articlesRepository.dailyArticle()
+            val dailyArticle =
+                articlesRepository.dailyArticle()
 
             if (dailyArticle == null)
                 return@launch

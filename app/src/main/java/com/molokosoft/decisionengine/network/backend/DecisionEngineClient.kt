@@ -12,16 +12,22 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.serialization.encodeToString
 import android.util.Log
+import com.molokosoft.decisionengine.AppEvent
+import com.molokosoft.decisionengine.network.backend.model.dto.billing.AccessStatus
 import com.molokosoft.decisionengine.network.backend.model.dto.security.requests.PromptReconnaissanceRequest
 import com.molokosoft.decisionengine.network.backend.model.dto.security.responses.PromptReconnaissanceResponse
 import com.molokosoft.decisionengine.network.backend.model.requests.billing.VerifyPurchaseRequest
 import com.molokosoft.decisionengine.network.backend.model.requests.decision.SafetyClassificationRequest
 import com.molokosoft.decisionengine.network.backend.model.responses.ApiResponse
+import com.molokosoft.decisionengine.network.backend.model.responses.billing.AccessStatusResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.billing.VerifyPurchaseResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.dailyarticle.DailyArticleResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.decision.CriteriaSuggestionResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.decision.SafetyClassificationResponse
+import com.molokosoft.decisionengine.network.backend.model.responses.health.HealthResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.quote.QuoteResponse
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import okio.IOException
 import org.json.JSONObject
 
@@ -44,7 +50,49 @@ class DecisionEngineClient(
     fun setInstallationId(id: String) {
         installationId = id
     }
+    
+    suspend fun getHealth(): HealthResponse? =
+        withContext(Dispatchers.IO) {
+            val request = Request.Builder()
+                .get()
+                .url("$baseUrl/health")
+                .build()
 
+            try {
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string() ?: ""
+                    val apiResponse = Json.decodeFromString<ApiResponse<HealthResponse>>(responseBody)
+                    return@withContext apiResponse.data
+                }
+            } catch (e: Exception) {
+                Log.e("DecisionEngine", "Network error", e)
+                e.printStackTrace()
+                null
+            }
+        }
+
+    suspend fun getRemainingUsages(): AccessStatusResponse? =
+        withContext(Dispatchers.IO) {
+            val request = Request.Builder()
+                .addHeader("X-Installation-ID", installationId)
+                .addHeader("Authorization", "Bearer $apiKey")
+                .get()
+                .url("$baseUrl/api/v1/billing/status")
+                .build()
+
+            try {
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string() ?: ""
+                    val apiResponse = Json.decodeFromString<ApiResponse<AccessStatusResponse>>(responseBody)
+                    return@withContext apiResponse.data
+                }
+            } catch (e: Exception) {
+                Log.e("DecisionEngine", "Network error", e)
+                Log.d("DecisionEngine", Json.encodeToString(AccessStatusResponse))
+                e.printStackTrace()
+                null
+            }
+        }
     suspend fun verifyPurchase(verifyPurchaseRequest: VerifyPurchaseRequest): VerifyPurchaseResponse? =
         withContext(Dispatchers.IO) {
             val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -92,7 +140,6 @@ class DecisionEngineClient(
                 }
             } catch (e: Exception) {
                 Log.e("DecisionEngine", "Network error", e)
-                Log.d("DecisionEngine", Json.encodeToString(DailyArticleResponse))
                 e.printStackTrace()
                 null
             }

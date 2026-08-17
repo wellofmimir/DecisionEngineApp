@@ -18,7 +18,7 @@ import com.molokosoft.decisionengine.paywall.one.FeaturesScreen
 import com.molokosoft.decisionengine.paywall.one.EnforceConversionScreen
 import com.molokosoft.decisionengine.paywall.one.FreeTrialScreen
 import com.molokosoft.decisionengine.paywall.one.OfferTilesScreen
-import com.molokosoft.decisionengine.commonclasses.SubscriptionTypes
+import com.molokosoft.decisionengine.commonclasses.ProductTypes
 import com.molokosoft.decisionengine.paywall.common.SubscriptionInformationDialog
 
 sealed class Paywall {
@@ -41,21 +41,26 @@ fun Paywall.next(): Paywall =
 fun PaywallScreen(
     modifier: Modifier = Modifier,
     subscriptionProducts: List<SubscriptionProduct>,
-    onContinueClicked: (subscriptionType: SubscriptionTypes, eMail: EMail?) -> Unit
+    onContinueClicked: (subscriptionType: ProductTypes, eMail: EMail?) -> Unit,
+    onBackClicked: () -> Unit,
+    showOnlyOffer: Boolean = false
 ){
     val notificationPermissionLauncher = rememberLauncherForActivityResult (
         contract = ActivityResultContracts.RequestPermission()
     ) {}
 
     var currentScreen by remember {
-        mutableStateOf<Paywall>(Paywall.Features)
+        mutableStateOf(if (showOnlyOffer)
+            Paywall.OfferTiles
+        else
+            Paywall.Features)
     }
 
     var hasError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("" to "") }
 
     var showSubscriptionInformation by remember { mutableStateOf(false) }
-    var subscriptionType: SubscriptionTypes by remember { mutableStateOf(SubscriptionTypes.Undefined) }
+    var subscriptionType: ProductTypes by remember { mutableStateOf(ProductTypes.Undefined) }
 
     when (currentScreen) {
         Paywall.Features -> FeaturesScreen(
@@ -72,19 +77,23 @@ fun PaywallScreen(
             }
         )
 
-        Paywall.OfferTiles -> OfferTilesScreen(
+        Paywall.OfferTiles -> com.molokosoft.decisionengine.paywall.two.OfferTilesScreen(
             modifier = modifier,
             subscriptionProducts = subscriptionProducts,
             onContinueClicked = { chosenSubscription ->
 
-                if (chosenSubscription == SubscriptionTypes.FreeTrial) {
+                if (chosenSubscription == ProductTypes.FreeTrial) {
                     currentScreen = currentScreen.next()
                     return@OfferTilesScreen
                 }
 
                 showSubscriptionInformation = true
                 subscriptionType = chosenSubscription
-            }
+            },
+            onBackClicked = {
+                onBackClicked()
+            },
+            showBackButton = showOnlyOffer
         )
 
         Paywall.FreeTrial -> FreeTrialScreen(
@@ -107,7 +116,7 @@ fun PaywallScreen(
                     notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
                 }
 
-                onContinueClicked(SubscriptionTypes.FreeTrial, EMail.tryCreate(eMailAddress))
+                onContinueClicked(ProductTypes.FreeTrial, EMail.tryCreate(eMailAddress))
             }
         )
     }

@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewModelScope
 import android.util.Log
+import com.android.billingclient.api.BillingClient
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.StateFlow
 import kotlin.collections.listOf
@@ -20,9 +21,11 @@ import kotlin.collections.listOf
 import com.android.billingclient.api.BillingResult
 import com.android.billingclient.api.Purchase
 import com.molokosoft.decisionengine.commonclasses.EMail
-import com.molokosoft.decisionengine.commonclasses.SubscriptionTypes
+import com.molokosoft.decisionengine.commonclasses.ProductTypes
 import com.molokosoft.decisionengine.billing.BillingManager
+import com.molokosoft.decisionengine.billing.model.BillingProduct
 import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
+import com.molokosoft.decisionengine.network.backend.DecisionEngineClient
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
 import com.molokosoft.decisionengine.network.backend.model.dto.security.dto.PromptReconnaissanceResult
@@ -30,17 +33,18 @@ import com.molokosoft.decisionengine.repositories.DecisionRepository
 import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
 import com.molokosoft.decisionengine.repositories.model.CriterionAnalysis
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
-import okhttp3.internal.wait
 import kotlin.String
 
 class NewDecisionViewModel(
     private val factorAnalysisRepository: FactorAnalysisRepository,
     private val userDataRepository: UserDataRepository,
     private val decisionRepository: DecisionRepository,
-    private val billingManager: BillingManager
+    private val billingManager: BillingManager,
+    private val decisionEngineClient: DecisionEngineClient
 ) : ViewModel() {
 
     private val _draft =
@@ -55,7 +59,11 @@ class NewDecisionViewModel(
     val subscriptionProducts =
         _subscriptionProducts.asStateFlow()
 
-    var isOnboarding: Boolean = true
+    fun startOnboarding() {
+        isOnboarding = true
+    }
+
+    var isOnboarding: Boolean = false
         private set
 
     val showNotAllowedScreen: StateFlow<Boolean> =
@@ -80,6 +88,24 @@ class NewDecisionViewModel(
                 false
             )
 
+    private val _showNoMoreUsagesScreen =
+        MutableStateFlow(false)
+
+    val showNoMoreUsagesScreen =
+        _showNoMoreUsagesScreen.asStateFlow()
+
+    private val _showWaitingForAnalysisScreen =
+        MutableStateFlow(false)
+
+    val showWaitingForAnalysisScreen =
+        _showWaitingForAnalysisScreen.asStateFlow()
+
+    private var _analysisDone =
+        MutableStateFlow(false)
+
+    val analysisDone =
+        _analysisDone.asStateFlow()
+
     val criteriaNames: StateFlow<List<String>> =
         draft
             .map { draft ->
@@ -96,8 +122,39 @@ class NewDecisionViewModel(
     fun resetDraft() {
         viewModelScope.launch {
             _draft.value = DecisionDraft()
+            _analysisDone.value = false
+            _showWaitingForAnalysisScreen.value = false
+            _showNoMoreUsagesScreen.value = false
         }
     }
+
+    suspend fun isInputHarmfulOrAPrompt(content: String): Boolean =
+        coroutineScope {
+            val safetyDeferred = async {
+                getSafetyClassification(content)
+            }
+
+            val reconnaissanceDeferred = async {
+                getPromptReconnaissance(content)
+            }
+
+            val safetyResult =
+                safetyDeferred.await()
+
+            val reconnaissanceResult =
+                reconnaissanceDeferred.await()
+
+            if (safetyResult == null || reconnaissanceResult == null)
+                return@coroutineScope true
+
+            if (safetyResult.classification == "NOT_ALLOWED")
+                return@coroutineScope true
+
+            if (reconnaissanceResult.isPrompt)
+                return@coroutineScope true
+
+            return@coroutineScope false
+        }
 
     suspend fun setDraftToOldDecision(oldDecisionID: Long) {
         resetDraft()
@@ -177,41 +234,19 @@ class NewDecisionViewModel(
     }
 
     fun setTitle(title: String) {
-        _draft.value.title.ifBlank {
+        if (_draft.value.title.isBlank()) {
             viewModelScope.launch {
-                val safetyDeferred = async {
-                    getSafetyClassification(title)
-                }
+                val isHarmful =
+                    isInputHarmfulOrAPrompt(title)
 
-                val reconnaissanceDeferred = async {
-                    getPromptReconnaissance(title)
-                }
-
-                val safetyResult =
-                    safetyDeferred.await()
-
-                val reconnaissanceResult =
-                    reconnaissanceDeferred.await()
-
-                if (safetyResult == null || reconnaissanceResult == null)
-                    return@launch
-
-                if (safetyResult.classification != "NOT_ALLOWED" && !reconnaissanceResult.isPrompt)
+                if (!isHarmful) {
                     getCriteriaSuggestions(title)
-            }
-        }
-
-        if (title != _draft.value.title && _draft.value.title.isNotBlank()) {
-            viewModelScope.launch {
-                getCriteriaSuggestions(title)
+                }
             }
         }
 
         _draft.update {
-            it.copy(
-                title =
-                    title
-            )
+            it.copy(title = title)
         }
     }
 
@@ -231,6 +266,10 @@ class NewDecisionViewModel(
         deleteOption("Default")
     }
     fun setOption(option: Option) {
+        viewModelScope.launch {
+            isInputHarmfulOrAPrompt(option.name)
+        }
+
         _draft.update {
             it.copy(
                 options =
@@ -250,6 +289,10 @@ class NewDecisionViewModel(
     }
 
     fun setCriteria(criterion: Criterion) {
+        viewModelScope.launch {
+            isInputHarmfulOrAPrompt(criterion.name)
+        }
+
         _draft.update {
             it.copy(
                 criteria =
@@ -264,23 +307,6 @@ class NewDecisionViewModel(
                 criteria = it.criteria.filter { criterion ->
                     criterion.name != name
                 }
-            )
-        }
-    }
-
-    fun deleteCriteriaSuggestions() {
-        _draft.update {
-            it.copy(
-                criteriaSuggestions =
-                    emptyList()
-            )
-        }
-    }
-    fun deleteCriteria() {
-        _draft.update {
-            it.copy(
-                criteria =
-                    emptyList()
             )
         }
     }
@@ -310,8 +336,28 @@ class NewDecisionViewModel(
     }
 
     fun onComparisonCompleted() {
-        if (!isOnboarding)
-            startAnalysis()
+        if (isOnboarding)
+            return
+
+        viewModelScope.launch {
+            _showWaitingForAnalysisScreen.update {
+                true
+            }
+
+            val remainingUsages =
+                decisionEngineClient.getRemainingUsages()
+
+            if (remainingUsages == null) {
+                //zeig irgendeinen fehlerscreen
+                return@launch
+            }
+
+            _showNoMoreUsagesScreen.value =
+                remainingUsages.accessStatus.remainingUsages == 0
+
+            if (remainingUsages.accessStatus.remainingUsages > 0)
+                startAnalysis()
+        }
     }
 
     fun getNextOption(): String? {
@@ -336,6 +382,9 @@ class NewDecisionViewModel(
                         factorAnalysisRepository.getAiAnalysis(it.optionAnalyses)
                 )
             }
+
+            _showWaitingForAnalysisScreen.value = false
+            _analysisDone.value = true
 
             saveDecision()
         }
@@ -398,12 +447,16 @@ class NewDecisionViewModel(
 
     private fun verifyPurchaseAndContinue(
         purchase: Purchase,
+        productId: String,
+        apiKey: String?,
         onSuccess: () -> Unit,
         onFailure: () -> Unit
     ) {
         viewModelScope.launch {
             val verified = userDataRepository.verifyPurchase(
-                purchase.purchaseToken
+                purchase.purchaseToken,
+                productId = productId,
+                apiKey = apiKey
             )
 
             if (verified) {
@@ -414,139 +467,159 @@ class NewDecisionViewModel(
         }
     }
 
-    fun checkSubscription(
-        onSuccess: () -> Unit,
-        onFailure: () -> Unit
+    fun checkAccess(
+        onAccessGranted: () -> Unit,
+        onAccessDenied: () -> Unit,
+        onReAccess: () -> Unit,
+        onError: () -> Unit
     ) {
         billingManager.clearListener()
 
         billingManager.setListener(object : BillingManager.Listener {
 
             override fun onBillingReady() {
-                Log.d("Billing", "Checking active subscriptions")
+                Log.d("Billing", "Checking active subscriptions.")
                 billingManager.queryActiveSubscriptions()
             }
 
-            override fun onActivePurchasesLoaded(
-                purchases: List<Purchase>
-            ) {
-                Log.d(
-                    "Billing",
-                    "Found ${purchases.size} purchases"
-                )
+            override fun onActivePurchasesLoaded(purchases: List<Purchase>) {
+                Log.d("Billing", "Found ${purchases.size} active subscriptions")
+
+                var hasSubscription =
+                    false
+
+                //If the user has an API Key, they already used
+                //DecisionEngine once and need to be shown a different screen
+
+                val hasApiKey =
+                    userDataRepository.apiKey().isNotBlank()
 
                 purchases.forEach {
-                    Log.d(
-                        "Billing",
-                        "Products = ${it.products}"
-                    )
+                    Log.d("Billing", "Products = ${it.products}")
+                    Log.d("Billing", "State = ${it.purchaseState}")
 
-                    Log.d(
-                        "Billing",
-                        "State = ${it.purchaseState}"
-                    )
+                    hasSubscription =
+                        purchases.any {
+                            it.purchaseState == Purchase.PurchaseState.PURCHASED
+                        }
+
+                    Log.d("Billing", "Has subscription = $hasSubscription")
                 }
 
-                val hasSubscription = purchases.any {
-                    it.purchaseState == Purchase.PurchaseState.PURCHASED
+                if (!hasApiKey) {
+                    onAccessDenied()
+                    return
                 }
-
-                Log.d(
-                    "Billing",
-                    "Has subscription = $hasSubscription"
-                )
-
-                billingManager.loadProducts(
-                    SubscriptionTypes.entries
-                        .filter {
-                            it != SubscriptionTypes.Undefined
-                        }
-                        .map {
-                            it.value
-                        }
-                )
 
                 if (hasSubscription) {
                     isOnboarding = false
-                    onSuccess()
+                    onAccessGranted()
                 } else {
-                    isOnboarding = true
-                    onFailure()
+                    checkCredits(
+                        onAccessGranted = {
+                            isOnboarding = false
+                            onAccessGranted()
+                        },
+                        onAccessDenied = {
+                            isOnboarding = userDataRepository.apiKey().isBlank()
+                            onReAccess()
+                        },
+                        onError = {
+                            onError()
+                        }
+                    )
                 }
             }
 
             override fun onProductsLoaded() {
-                val products = SubscriptionTypes.entries
-                    .filter {
-                        it != SubscriptionTypes.Undefined
-                    }
-                    .mapNotNull { type ->
-                        billingManager.getFormattedPrice(type.value)?.let { price ->
-                            SubscriptionProduct(
-                                productId = type.value,
-                                formattedPrice = price,
-                                hasFreeTrial = billingManager.hasFreeTrial(type.value)
-                            )
+                val products =
+                    ProductTypes.entries
+                        .filter {
+                            it != ProductTypes.Undefined && it.productType == BillingClient.ProductType.SUBS
                         }
-                    }
+                        .mapNotNull { type ->
+                            billingManager.getFormattedPrice(type.value)
+                                ?.let { price ->
+                                    SubscriptionProduct(
+                                        productId = type.value,
+                                        formattedPrice = price,
+                                        hasFreeTrial =
+                                            billingManager.hasFreeTrial(type.value)
+                                    )
+                                }
+                        }
 
-                Log.d(
-                    "Billing",
-                    "Subscription products: $products"
-                )
+                Log.d("Billing", "Subscription products: $products")
 
-                _subscriptionProducts.value = products
-
-                if (isOnboarding) {
-                    onFailure()
-                } else {
-                    onSuccess()
-                }
+                _subscriptionProducts.value =
+                    products
             }
 
-            override fun onPurchaseAcknowledged(
-                purchase: Purchase
-            ) {
-                // Nicht relevant für checkSubscription()
+            override fun onPurchaseAcknowledged(purchase: Purchase) {
             }
 
-            override fun onPurchaseFailure(
-                billingResult: BillingResult
-            ) {
-                Log.e(
-                    "Billing",
-                    "Purchase failure: " +
-                            "${billingResult.responseCode} " +
-                            billingResult.debugMessage
-                )
+            override fun onPurchaseFailure(billingResult: BillingResult) {
+                Log.e("Billing", "Purchase failure: " + "$billingResult.responseCode " + billingResult.debugMessage)
             }
 
-            override fun onError(
-                billingResult: BillingResult
-            ) {
-                Log.e(
-                    "Billing",
-                    "Subscription check error: " +
-                            "${billingResult.responseCode} " +
-                            billingResult.debugMessage
-                )
-
-                onFailure()
+            override fun onError(billingResult: BillingResult) {
+                Log.e("Billing", "Billing error: " + "${billingResult.responseCode} " + billingResult.debugMessage)
+                onAccessDenied()
             }
         })
 
         billingManager.connect()
     }
 
+    private fun checkCredits(
+        onAccessGranted: () -> Unit,
+        onAccessDenied: () -> Unit,
+        onError: () -> Unit
+    ) {
+        val apiKey =
+            userDataRepository.apiKey()
+
+        apiKey.ifBlank {
+            Log.d("Billing", "No API Key found")
+            onAccessDenied()
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                val result =
+                    decisionEngineClient.getRemainingUsages()
+
+                if (result == null) {
+                    Log.e("Billing", "Could not retrieve access status.")
+                    onError()
+                    return@launch
+                }
+
+                Log.d("Billing", "Remaining usages: ${result.accessStatus.remainingUsages}")
+
+                if (result.accessStatus.remainingUsages > 0) {
+                    onAccessGranted()
+                } else {
+                    onAccessDenied()
+                }
+            } catch (e: Exception) {
+                Log.e("Billing", "Credit check failed.", e)
+                onError()
+            }
+        }
+    }
+
     fun startBillingProcess(
-        subscriptionType: SubscriptionTypes,
+        productType: ProductTypes,
         activity: Activity,
         onSuccess: () -> Unit,
-        onFailure: () -> Unit
+        onFailure: () -> Unit,
+        apiKey: String?
     ) {
         Log.d(
             "Billing",
-            "START BILLING PROCESS: ${subscriptionType.value}"
+            "START BILLING PROCESS: ${productType.value}"
         )
 
         billingManager.clearListener()
@@ -554,22 +627,44 @@ class NewDecisionViewModel(
         billingManager.setListener(object: BillingManager.Listener {
             override fun onBillingReady() {
                 Log.d("Billing", "Billing ready")
-                billingManager.queryActiveSubscriptions()
+
+                if (productType.productType == BillingClient.ProductType.SUBS) {
+                    billingManager.queryActiveSubscriptions()
+                } else {
+                    Log.d(
+                        "Billing",
+                        "Consumable product: skipping subscription check."
+                    )
+
+                    billingManager.loadProducts(
+                        ProductTypes.entries
+                            .filter {
+                                it != ProductTypes.Undefined && it.productType == BillingClient.ProductType.INAPP
+                            }.map {
+                                BillingProduct(
+                                    it.value,
+                                    it.productType
+                                )
+                            }
+                    )
+                }
             }
 
             override fun onProductsLoaded() {
                 Log.d("Billing", "Products loaded")
-                Log.d("Billing", "Buying: ${subscriptionType.value}")
+                Log.d("Billing", "Buying: ${productType.value}")
 
-                billingManager.buySubscription(activity, subscriptionType.value)
+                billingManager.buyProduct(activity, productType.value)
             }
 
             override fun onPurchaseAcknowledged(purchase: Purchase) {
-                verifyPurchaseAndContinue(
-                    purchase,
-                    onSuccess,
-                    onFailure
-                )
+                viewModelScope.launch {
+                    userDataRepository.verifyPurchase(
+                        purchase.purchaseToken,
+                        productId = productType.value,
+                        apiKey = apiKey
+                    )
+                }
             }
 
             override fun onPurchaseFailure(billingResult: BillingResult) {
@@ -601,7 +696,7 @@ class NewDecisionViewModel(
 
                 val purchase = purchases.firstOrNull {
                     it.purchaseState == Purchase.PurchaseState.PURCHASED &&
-                    subscriptionType.value in it.products
+                            productType.value in it.products
                 }
 
                 if (purchase != null) {
@@ -609,21 +704,41 @@ class NewDecisionViewModel(
 
                     verifyPurchaseAndContinue(
                         purchase,
+                        productType.value,
+                        apiKey = apiKey,
                         onSuccess,
                         onFailure
                     )
                 } else {
                     Log.d("Billing", "No existing purchase, loading products")
 
-                    billingManager.loadProducts(
-                        SubscriptionTypes.entries
-                            .filter {
-                                it != SubscriptionTypes.Undefined
-                            }
-                            .map {
-                                it.value
-                            }
-                    )
+                    if (productType.productType == BillingClient.ProductType.SUBS) {
+                        billingManager.loadProducts(
+                            ProductTypes.entries
+                                .filter {
+                                    it != ProductTypes.Undefined && it.productType == BillingClient.ProductType.SUBS
+                                }
+                                .map {
+                                    BillingProduct(
+                                        it.value,
+                                        it.productType
+                                    )
+                                }
+                        )
+                    } else {
+                        billingManager.loadProducts(
+                            ProductTypes.entries
+                                .filter {
+                                    it != ProductTypes.Undefined && it.productType == BillingClient.ProductType.INAPP
+                                }
+                                .map {
+                                    BillingProduct(
+                                        it.value,
+                                        it.productType
+                                    )
+                                }
+                        )
+                    }
                 }
             }
         })

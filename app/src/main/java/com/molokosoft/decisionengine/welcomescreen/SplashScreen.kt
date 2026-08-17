@@ -1,5 +1,7 @@
 package com.molokosoft.decisionengine.welcomescreen
 
+import android.window.SplashScreen
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -14,10 +16,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
@@ -29,64 +36,27 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.molokosoft.decisionengine.R
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.draw.alpha
-import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 import kotlinx.coroutines.delay
 
-
 @Composable
-fun WelcomeScreen(
+fun SplashScreen(
     modifier: Modifier = Modifier,
-    onContinueClicked: () -> Unit
+    onDone: () -> Unit
 ) {
-    var showLogo by remember { mutableStateOf(false) }
     var shiftLogo by remember { mutableStateOf(false) }
-    var showWelcome by remember { mutableStateOf(false) }
-    var showButton by remember { mutableStateOf(false) }
-
-    val welcomeAlpha by animateFloatAsState(
-        if (showWelcome) 1f else 0f,
-        tween(3000),
-        label = ""
-    )
-
-    val buttonAlpha by animateFloatAsState(
-        if (showButton) 1f else 0f,
-        tween(2000),
-        label = ""
-    )
 
     val logoHeight by animateFloatAsState(
         (if (shiftLogo) 64 else 256).toFloat(),
-        tween(3000),
-        label = ""
-    )
-
-    val logoAlpha by animateFloatAsState(
-        if (showLogo) 1f else 0f,
-        tween(2000),
+        tween(1000),
         label = ""
     )
 
     LaunchedEffect(Unit) {
-        delay(250)
-        showLogo = true
-
-        delay(1000)
         shiftLogo = true
 
-        delay(1000)
-        showWelcome = true
-
-        delay(1000)
-        showButton = true
+        delay(1250)
+        onDone()
     }
 
     val typography = LocalAppTypography.current
@@ -111,7 +81,6 @@ fun WelcomeScreen(
             modifier = Modifier
                 .fillMaxWidth(0.5f)
                 .aspectRatio(1f)
-                .alpha(logoAlpha)
         )
 
         Spacer(
@@ -123,15 +92,6 @@ fun WelcomeScreen(
             text = buildAnnotatedString {
                 withStyle(
                     style = SpanStyle(
-                        fontSize = typography.titleLarge.fontSize * 1.25f,
-                        color = Color.Black
-                    )
-                ) {
-                    append("Welcome to\n")
-                }
-
-                withStyle(
-                    style = SpanStyle(
                         fontSize = typography.titleLarge.fontSize * 1.5f,
                         fontWeight = FontWeight.SemiBold,
                         color = Color.Black
@@ -141,32 +101,12 @@ fun WelcomeScreen(
                 }
             },
             textAlign = TextAlign.Center,
-            lineHeight = 40.sp,
-            modifier = Modifier
-                .alpha(welcomeAlpha)
+            lineHeight = 40.sp
         )
 
         Spacer(
             modifier = Modifier
                 .height(16.dp)
-        )
-
-        Text(
-            text = "Your second brain for",
-            textAlign = TextAlign.Center,
-            fontSize = typography.titleMedium.fontSize,
-            color = Color.Black,
-            modifier = Modifier
-                .alpha(welcomeAlpha)
-        )
-
-        Text(
-            text = "important decisions.",
-            textAlign = TextAlign.Center,
-            fontSize = typography.titleMedium.fontSize,
-            color = Color.Black,
-            modifier = Modifier
-                .alpha(welcomeAlpha)
         )
 
         Spacer(
@@ -178,33 +118,6 @@ fun WelcomeScreen(
             modifier = Modifier
                 .weight(1f)
         )
-
-        Box(
-            modifier = Modifier
-                .alpha(buttonAlpha)
-                .height(64.dp)
-                .fillMaxWidth(0.75f)
-                .border(
-                    width = 1.dp,
-                    color = DecisionBlue,
-                    shape = RoundedCornerShape(64.dp)
-                )
-                .background(
-                    color = DecisionBlue,
-                    shape = RoundedCornerShape(64.dp)
-                )
-
-                .clickable() {
-                    onContinueClicked()
-                },
-            contentAlignment = Alignment.Center
-        ){
-            Text(
-                text = "Get Started",
-                textAlign = TextAlign.Center,
-                color = Color.White
-            )
-        }
 
         Spacer(
             modifier = Modifier

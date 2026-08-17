@@ -14,7 +14,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import android.content.Context
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -113,7 +112,6 @@ fun ForbiddenRequestCard(
 @Composable
 fun ForbiddenInputDataScreen(
     modifier: Modifier = Modifier,
-    context: Context,
     onBackClicked: () -> Unit
 ) {
     val typography = LocalAppTypography.current
@@ -143,7 +141,7 @@ fun ForbiddenInputDataScreen(
         )
 
         Text(
-            text = "We cannot analyze process this data.",
+            text = "We cannot process this data.",
             textAlign = TextAlign.Center,
             fontSize = typography.titleMedium.fontSize,
             fontWeight = FontWeight.SemiBold,
