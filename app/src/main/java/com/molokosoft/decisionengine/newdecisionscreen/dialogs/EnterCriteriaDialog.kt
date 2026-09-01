@@ -77,7 +77,7 @@ fun EnterCriterionDialog(
                     shape = RoundedCornerShape(12.dp)
                 )
                 .background(
-                    color = DecisionBlueLight,
+                    color = Color.White,
                     shape = RoundedCornerShape(12.dp)
                 )
         ){
@@ -216,7 +216,7 @@ fun EnterCriterionDialog(
                     textAlign = TextAlign.Center,
                     fontSize = typography.titleSmall.fontSize,
                     color = Color.Black,
-                    fontWeight = FontWeight.ExtraLight
+                    fontWeight = FontWeight.SemiBold
                 )
 
                 Spacer(

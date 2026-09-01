@@ -28,9 +28,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.LocalContext
 import android.content.Context
 import android.content.Intent
-import com.molokosoft.decisionengine.settingsscreen.model.SettingsScreenViewModel
+import androidx.compose.runtime.LaunchedEffect
+import com.molokosoft.decisionengine.settingsscreen.viewmodel.SettingsScreenViewModel
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 import androidx.core.net.toUri
+import com.molokosoft.decisionengine.commonuielements.dialogs.RestoreKeyDialog
+import com.molokosoft.decisionengine.settingsscreen.dialogs.EnterFeedbackDialog
+import com.molokosoft.decisionengine.settingsscreen.dialogs.VersionDialog
+import com.molokosoft.decisionengine.settingsscreen.sections.AboutSection
+import com.molokosoft.decisionengine.settingsscreen.sections.AppInformationSection
+import com.molokosoft.decisionengine.settingsscreen.sections.ProfileSection
+import com.molokosoft.decisionengine.settingsscreen.sections.getAppVersionName
 
 fun openPlayStoreRating(context: Context) {
     val packageName = context.packageName
@@ -58,14 +66,31 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     settingsScreenViewModel: SettingsScreenViewModel,
 ) {
-    val context = LocalContext.current
-    val typography = LocalAppTypography.current
-    val verticalScroll = rememberScrollState()
-    val username by settingsScreenViewModel.username.collectAsState()
-    val feedbackLimitReached = settingsScreenViewModel.feedbackLimitReached()
+    val context =
+        LocalContext.current
 
-    var showFeedbackBox by remember { mutableStateOf(false) }
-    var showVersionInformationBox by remember { mutableStateOf(false) }
+    val typography =
+        LocalAppTypography.current
+
+    val verticalScroll =
+        rememberScrollState()
+
+    val username by settingsScreenViewModel.username.collectAsState()
+    val decisionsLeft by settingsScreenViewModel.decisionsLeft.collectAsState()
+    val apiKey by remember { mutableStateOf(settingsScreenViewModel.apiKey()) }
+
+    LaunchedEffect(Unit) {
+        settingsScreenViewModel.getDecisionsLeft()
+    }
+
+
+    val feedbackLimitReached =
+        settingsScreenViewModel.feedbackLimitReached()
+
+    var showFeedbackDialog by remember { mutableStateOf(false) }
+    var showVersionInformationDialog by remember { mutableStateOf(false) }
+    var showRestoreKeyDialog by remember { mutableStateOf(false) }
+
 
     Column(
         modifier = modifier
@@ -118,10 +143,15 @@ fun SettingsScreen(
                 .weight(1f)
         )
 
-        UsernameSection(
+        ProfileSection(
+            modifier = Modifier,
             username = username,
+            decisionsLeft = decisionsLeft,
             onNewUsernameEntered = {
                 settingsScreenViewModel.setUsername(it)
+            },
+            onShowRestoreKeyClicked = {
+                showRestoreKeyDialog = true
             }
         )
 
@@ -139,10 +169,10 @@ fun SettingsScreen(
 
         AppInformationSection(
             onSendFeedbackRequested = {
-                showFeedbackBox = true
+                showFeedbackDialog = true
             },
             onSeeVersionInformation = {
-                showVersionInformationBox = true
+                showVersionInformationDialog = true
             },
             onRateMyAppRequested = {
                 openPlayStoreRating(context)
@@ -160,14 +190,14 @@ fun SettingsScreen(
         )
     }
 
-    if (showFeedbackBox) {
-        EnterFeedbackBox(
+    if (showFeedbackDialog) {
+        EnterFeedbackDialog(
             feedbackLimitReached = feedbackLimitReached,
             onDismissRequest = {
-                showFeedbackBox = false
+                showFeedbackDialog = false
             },
             onSend = { feedback ->
-                showFeedbackBox = false
+                showFeedbackDialog = false
                 settingsScreenViewModel.saveFeedback(feedback)
             }
         )
@@ -175,14 +205,23 @@ fun SettingsScreen(
         return
     }
 
-    if (showVersionInformationBox) {
-        VersionBox(
+    if (showVersionInformationDialog) {
+        VersionDialog(
             onDismissRequest = {
-                showVersionInformationBox = false
+                showVersionInformationDialog = false
             },
             version = context.getAppVersionName()
         )
 
         return
+    }
+
+    if (showRestoreKeyDialog) {
+        RestoreKeyDialog(
+            onDismissRequest = {
+                showRestoreKeyDialog = false
+            },
+            restoreKey = apiKey
+        )
     }
 }

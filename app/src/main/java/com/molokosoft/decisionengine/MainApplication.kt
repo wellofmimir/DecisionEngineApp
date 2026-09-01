@@ -1,6 +1,7 @@
 package com.molokosoft.decisionengine
 
 import android.app.Activity
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,8 +25,12 @@ import com.molokosoft.decisionengine.homescreen.navigation.NavigationBar
 import com.molokosoft.decisionengine.homescreen.navigation.NavigationItem
 import com.molokosoft.decisionengine.newdecisionscreen.EnterDecisionScreen
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.NewDecisionViewModel
+
 import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+
 import com.molokosoft.decisionengine.commonclasses.ProductTypes
+import com.molokosoft.decisionengine.commonuielements.screens.WaitingScreen
 import com.molokosoft.decisionengine.decisionhistoryscreen.DecisionHistoryScreen
 import com.molokosoft.decisionengine.decisionhistoryscreen.viewmodel.DecisionHistoryViewModel
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
@@ -34,7 +39,8 @@ import com.molokosoft.decisionengine.paywall.PaywallScreen
 import com.molokosoft.decisionengine.repositories.BackendRepository
 import com.molokosoft.decisionengine.repositories.UserDataRepository
 import com.molokosoft.decisionengine.settingsscreen.SettingsScreen
-import com.molokosoft.decisionengine.settingsscreen.model.SettingsScreenViewModel
+import com.molokosoft.decisionengine.settingsscreen.viewmodel.SettingsScreenViewModel
+
 import kotlinx.coroutines.launch
 
 @Composable
@@ -51,6 +57,7 @@ fun MainApplication(
 ){
     val decisionDraft by newDecisionViewModel.draft.collectAsState()
     val subscriptionProducts by newDecisionViewModel.subscriptionProducts.collectAsState()
+    val showNoMoreUsagesScreen by newDecisionViewModel.showNoMoreUsagesScreen.collectAsStateWithLifecycle()
 
     val scope =
         rememberCoroutineScope()
@@ -58,7 +65,9 @@ fun MainApplication(
     var navigationItem by remember {
         mutableStateOf(
             value =
-                if (decisionDraft.optionAnalyses.isEmpty() || showMotivationalQuote)
+                if (showNoMoreUsagesScreen)
+                    NavigationItem.NEW_DECISION
+                else if (decisionDraft.optionAnalyses.isEmpty() || showMotivationalQuote)
                     NavigationItem.HOME
                 else
                     NavigationItem.SEE_DECISION
@@ -108,6 +117,7 @@ fun MainApplication(
                     .fillMaxHeight()
                     .padding(innerPadding),
                 onClicked = {
+                    Log.d("DecisionEngine", "resetDraft() in onClicked() HomeScreen")
                     newDecisionViewModel.resetDraft()
                     navigationItem = NavigationItem.NEW_DECISION
                 },
@@ -137,7 +147,7 @@ fun MainApplication(
                     onBackClicked = {
                         navigationItem = NavigationItem.HOME
                     },
-                    onContinueClicked = { errorType ->
+                    onContinueClicked = { errorType, productType ->
 
                         when (errorType) {
                             ErrorCodes.SUCCESS -> {
@@ -146,14 +156,16 @@ fun MainApplication(
 
                             ErrorCodes.NO_MORE_USAGES -> {
                                 newDecisionViewModel.startBillingProcess(
-                                    productType = ProductTypes.Usages15,
+                                    productType = productType,
                                     activity = activity,
                                     apiKey = userDataRepository.apiKey().ifBlank {
                                         null
                                     },
                                     onSuccess = {
-                                        newDecisionViewModel.onComparisonCompleted()
-                                        navigationItem = NavigationItem.SEE_DECISION
+                                        scope.launch {
+                                            newDecisionViewModel.onComparisonCompleted()
+                                            navigationItem = NavigationItem.SEE_DECISION
+                                        }
                                     },
                                     onFailure = {
                                         navigationItem = NavigationItem.HOME
@@ -189,6 +201,8 @@ fun MainApplication(
                     decisionAnalysisResult = decisionDraft.decisionAnalysisResult,
                     optionAnalyses = decisionDraft.optionAnalyses,
                     onContinueClicked = {
+                        Log.d("DecisionEngine", "resetDraft() in onContinueClicked() DecisionResultScreen")
+
                         newDecisionViewModel.resetDraft()
                         navigationItem = NavigationItem.HOME
                     }
@@ -209,7 +223,8 @@ fun MainApplication(
                     modifier = Modifier
                         .fillMaxHeight()
                         .padding(innerPadding),
-                    subscriptionProducts = subscriptionProducts,
+                    newDecisionViewModel = newDecisionViewModel,
+                    productInformation = subscriptionProducts,
                     onContinueClicked = { productType, eMail ->
 
                         newDecisionViewModel.startBillingProcess(
@@ -219,15 +234,22 @@ fun MainApplication(
                                 null
                             },
                             onSuccess = {
-                                newDecisionViewModel.onComparisonCompleted()
+                                scope.launch {
+                                    newDecisionViewModel.onComparisonCompleted()
+                                }
                             },
                             onFailure = {
                             }
                         )
                     },
                     onBackClicked = {
+                        Log.d("DecisionEngine", "resetDraft() in onBackClicked() in PaywallScreen")
+
                         newDecisionViewModel.resetDraft()
                         navigationItem = NavigationItem.HOME
+                    },
+                    onRestore = {
+
                     },
                     showOnlyOffer = true
                 )

@@ -53,8 +53,11 @@ fun EnterOptionDialog(
     onOptionEntered: (name: String, reversibility: Int) -> Unit,
     onDismissRequest: () -> Unit
 ){
-    val typography = LocalAppTypography.current
-    val focusManager = LocalFocusManager.current
+    val typography =
+        LocalAppTypography.current
+
+    val focusManager =
+        LocalFocusManager.current
 
     var optionName by remember { mutableStateOf("") }
     var score by remember { mutableFloatStateOf(5f) }
@@ -76,7 +79,7 @@ fun EnterOptionDialog(
                     shape = RoundedCornerShape(12.dp)
                 )
                 .background(
-                    color = DecisionBlueLight,
+                    color = Color.White,
                     shape = RoundedCornerShape(12.dp)
                 )
         ){
@@ -214,7 +217,7 @@ fun EnterOptionDialog(
                     text = "1 - Irreversible\n10 - Easy to reverse",
                     textAlign = TextAlign.Center,
                     fontSize = typography.titleSmall.fontSize,
-                    fontWeight = FontWeight.ExtraLight,
+                    fontWeight = FontWeight.SemiBold,
                     color = Color.Black
                 )
 

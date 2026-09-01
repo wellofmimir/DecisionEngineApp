@@ -99,7 +99,8 @@ class FactorAnalysisRepository(
                     "Start AI-Analysis (Attempt $attempt)"
                 )
 
-                val response = decisionEngineClient.analyze(decisionAnalysisRequest)
+                val response =
+                    decisionEngineClient.analyze(decisionAnalysisRequest)
 
                 if (response?.result != null)
                     return response.result

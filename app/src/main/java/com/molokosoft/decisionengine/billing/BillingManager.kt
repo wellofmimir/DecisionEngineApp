@@ -18,9 +18,10 @@ class BillingManager(context: Context) {
     interface Listener {
         fun onBillingReady()
         fun onProductsLoaded()
-        fun onPurchaseAcknowledged(purchase: Purchase)
-        fun onPurchaseFailure(billingResult: BillingResult)
 
+        fun onPurchaseReceived(purchase: Purchase)
+        fun onPurchaseCompleted(purchase: Purchase)
+        fun onPurchaseFailure(billingResult: BillingResult)
         fun onActivePurchasesLoaded(purchases: List<Purchase>)
         fun onError(billingResult: BillingResult)
     }
@@ -39,7 +40,11 @@ class BillingManager(context: Context) {
     private var isReady =
         false
 
-    private val productDetails = mutableMapOf<String, ProductDetails>()
+    private val productDetails =
+        mutableMapOf<String, ProductDetails>()
+
+    private val tokensInProcess =
+        mutableSetOf<String>()
 
     fun queryActiveSubscriptions() {
         if (!isReady)
@@ -64,7 +69,7 @@ class BillingManager(context: Context) {
         }
     }
 
-    private fun acknowledgePurchase(purchase: Purchase) {
+    private fun acknowledgePurchase(purchase: Purchase, productId: String) {
         val params =
             AcknowledgePurchaseParams
                 .newBuilder()
@@ -73,39 +78,76 @@ class BillingManager(context: Context) {
                 )
                 .build()
 
-        billingClient.acknowledgePurchase(params) { billingResult ->
-            Log.d("Billing", "acknowledge result = ${billingResult.responseCode}")
+        billingClient.acknowledgePurchase(params) {
+                billingResult ->
+
+            Log.d("Billing", "acknowledge result = " + "${billingResult.responseCode}")
 
             if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
                 listener?.onPurchaseFailure(billingResult)
                 return@acknowledgePurchase
             }
 
-            Log.d("Billing", "Calling listener onPurchaseAcknowledged")
-            listener?.onPurchaseAcknowledged(purchase)
+            Log.d("Billing", "Subscription $productId acknowledged")
+            listener?.onPurchaseCompleted(purchase)
+        }
+    }
+    private fun consumePurchase(purchase: Purchase, productId: String) {
+        val parameters =
+            ConsumeParams.newBuilder()
+                .setPurchaseToken(purchase.purchaseToken)
+                .build()
+
+        billingClient.consumeAsync(parameters) { billingResult, _ ->
+            Log.d("Billing", "consume result = " + "${billingResult.responseCode}, " + "message=${billingResult.debugMessage}")
+            tokensInProcess.remove(purchase.purchaseToken)
+
+            if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                listener?.onError(billingResult)
+                return@consumeAsync
+            }
+
+            Log.d("Billing", "Purchase of $productId consumed successfully")
+            listener?.onPurchaseCompleted(purchase)
         }
     }
 
+    fun completePurchaseAfterBackendVerification(purchase: Purchase, productType: String) {
+        if (!tokensInProcess.add(purchase.purchaseToken)) {
+            Log.d("Billing", "Purchase is already being processed.")
+            return
+        }
+
+        when (productType) {
+            BillingClient.ProductType.INAPP -> {
+                Log.d("Billing", "Backend verified INAPP purchase. Consuming.")
+                listener?.onPurchaseCompleted(purchase)
+            }
+
+            BillingClient.ProductType.SUBS -> {
+                Log.d("Billing", "Backend verified SUBS purchase.")
+
+                if (purchase.isAcknowledged) {
+                    listener?.onPurchaseCompleted(purchase)
+                } else {
+                    acknowledgePurchase(purchase = purchase, productId = purchase.products.first())
+                }
+            }
+        }
+    }
     private fun handlePurchase(purchase: Purchase) {
         Log.d("Billing", "handlePurchase")
 
-        if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED)
-            return
-
-        if (purchase.isAcknowledged) {
-            Log.d("Billing", "Already acknowledged")
-            listener?.onPurchaseAcknowledged(purchase)
+        if (purchase.purchaseState != Purchase.PurchaseState.PURCHASED) {
+            Log.d("Billing", "Purchase is not PURCHASED")
             return
         }
 
-        Log.d("Billing", "Calling acknowledgePurchase")
-        acknowledgePurchase(purchase)
+        Log.d("Billing", "Purchase received: " + "products=${purchase.products}, " + "token=${purchase.purchaseToken}")
+        listener?.onPurchaseReceived(purchase)
     }
 
-    private fun onPurchasesUpdated(
-        billingResult: BillingResult,
-        purchases: List<Purchase>?
-    ) {
+    private fun onPurchasesUpdated(billingResult: BillingResult, purchases: List<Purchase>?) {
         if (billingResult.responseCode != BillingClient.BillingResponseCode.OK)
             return
 
@@ -115,10 +157,7 @@ class BillingManager(context: Context) {
     }
 
     fun loadProducts(products: List<BillingProduct>) {
-        Log.d(
-            "Billing",
-            "loadProducts called with: $products"
-        )
+        Log.d("Billing", "loadProducts called with: $products")
 
         if (!isReady) {
             Log.e("Billing", "Cannot load products: Billing not ready")
@@ -136,78 +175,56 @@ class BillingManager(context: Context) {
                 it.productId.isNotEmpty()
             }
 
-        Log.d(
-            "Billing",
-            "Valid product IDs: $validProducts"
-        )
-
         if (validProducts.isEmpty()) {
-            Log.e(
-                "Billing",
-                "No valid product IDs supplied"
-            )
-
+            Log.e("Billing", "No valid product IDs supplied.")
             return
         }
 
-        Log.d(
-            "Billing",
-            "Valid product IDs: $validProducts"
-        )
+        val productsByType =
+            validProducts.groupBy { it.productType }
 
-        val query =
-            QueryProductDetailsParams
-                .newBuilder()
-                .setProductList(
-                    validProducts.map {
-                        QueryProductDetailsParams.Product
-                            .newBuilder()
-                            .setProductId(it.productId)
-                            .setProductType(
-                                it.productType
-                            )
-                            .build()
-                    }
-                )
-                .build()
+        productsByType.forEach { (productType, productsOfType) ->
 
-        billingClient.queryProductDetailsAsync(
-            query
-        ) { billingResult, result ->
+            val query =
+                QueryProductDetailsParams
+                    .newBuilder()
+                    .setProductList(
+                        productsOfType.map {
+                            QueryProductDetailsParams.Product
+                                .newBuilder()
+                                .setProductId(it.productId)
+                                .setProductType(productType)
+                                .build()
+                        }
+                    )
+                    .build()
 
-            Log.d(
-                "Billing",
-                "queryProductDetails: " +
-                        "code=${billingResult.responseCode}, " +
-                        "message=${billingResult.debugMessage}, " +
-                        "products=${result.productDetailsList.map {
-                            it.productId
-                        }}"
-            )
+            billingClient.queryProductDetailsAsync(
+                query
+            ) { billingResult, result ->
 
-            if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
-                listener?.onError(billingResult)
-                return@queryProductDetailsAsync
-            }
-
-            val products = result.productDetailsList
-
-            if (products.isEmpty()) {
-                Log.e(
+                Log.d(
                     "Billing",
-                    "Google Play returned no products"
+                    "queryProductDetails: " +
+                            "type=$productType, " +
+                            "code=${billingResult.responseCode}, " +
+                            "message=${billingResult.debugMessage}, " +
+                            "products=${result.productDetailsList.map {
+                                it.productId
+                            }}"
                 )
-                listener?.onError(billingResult)
-                return@queryProductDetailsAsync
+
+                if (billingResult.responseCode != BillingClient.BillingResponseCode.OK) {
+                    listener?.onError(billingResult)
+                    return@queryProductDetailsAsync
+                }
+
+                result.productDetailsList.forEach {
+                    productDetails[it.productId] = it
+                }
+
+                listener?.onProductsLoaded()
             }
-
-            productDetails.clear()
-
-            products.forEach {
-                productDetails[it.productId] = it
-            }
-
-            listener?.onProductsLoaded()
         }
     }
 
@@ -215,10 +232,7 @@ class BillingManager(context: Context) {
         BillingClient
             .newBuilder(context)
             .setListener { billingResult, purchases ->
-                onPurchasesUpdated(
-                    billingResult,
-                    purchases
-                )
+                onPurchasesUpdated(billingResult, purchases)
             }
             .enablePendingPurchases(
                 PendingPurchasesParams
@@ -230,19 +244,13 @@ class BillingManager(context: Context) {
             .build()
 
     fun connect() {
-        Log.d(
-            "Billing",
-            "connect(): " +
-                    "clientReady=${billingClient.isReady}, " +
-                    "isReady=$isReady"
-        )
+        Log.d("Billing", "connect(): " + "clientReady=${billingClient.isReady}, " + "isReady=$isReady")
 
         if (billingClient.isReady) {
             isReady = true
             listener?.onBillingReady()
             return
         }
-
 
         Log.d("Billing", "Starting billing connection")
 
@@ -252,12 +260,7 @@ class BillingManager(context: Context) {
                 override fun onBillingSetupFinished(
                     billingResult: BillingResult
                 ) {
-                    Log.d(
-                        "Billing",
-                        "Billing setup finished: " +
-                                "code=${billingResult.responseCode}, " +
-                                "message=${billingResult.debugMessage}"
-                    )
+                    Log.d("Billing", "Billing setup finished: " + "code=${billingResult.responseCode}, " + "message=${billingResult.debugMessage}")
 
                     if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
                         isReady = true
@@ -270,11 +273,7 @@ class BillingManager(context: Context) {
                 }
 
                 override fun onBillingServiceDisconnected() {
-                    Log.d(
-                        "Billing",
-                        "Billing service disconnected"
-                    )
-
+                    Log.d("Billing", "Billing service disconnected")
                     isReady = false
                 }
             }
@@ -282,16 +281,25 @@ class BillingManager(context: Context) {
     }
 
     fun getFormattedPrice(productId: String): String? {
-        val details =
-            productDetails[productId]
-                ?: return null
+        val details = productDetails[productId]
+            ?: return null
 
-        return details.subscriptionOfferDetails
-            ?.firstOrNull()
-            ?.pricingPhases
-            ?.pricingPhaseList
-            ?.firstOrNull()
-            ?.formattedPrice
+        return when (details.productType) {
+
+            BillingClient.ProductType.SUBS ->
+                details.subscriptionOfferDetails
+                    ?.firstOrNull()
+                    ?.pricingPhases
+                    ?.pricingPhaseList
+                    ?.firstOrNull()
+                    ?.formattedPrice
+
+            BillingClient.ProductType.INAPP ->
+                details.oneTimePurchaseOfferDetails
+                    ?.formattedPrice
+
+            else -> null
+        }
     }
 
     fun hasFreeTrial(productId: String): Boolean {
@@ -316,10 +324,7 @@ class BillingManager(context: Context) {
         productId: String
     ) {
         if (!billingClient.isReady) {
-            Log.e(
-                "Billing",
-                "Cannot launch billing flow: BillingClient is not ready"
-            )
+            Log.e("Billing", "Cannot launch billing flow: BillingClient is not ready")
 
             listener?.onError(
                 BillingResult.newBuilder()
@@ -339,10 +344,7 @@ class BillingManager(context: Context) {
             productDetails[productId]
 
         if (details == null) {
-            Log.e(
-                "Billing",
-                "Product not found: $productId"
-            )
+            Log.e("Billing", "Product not found: $productId")
 
             listener?.onError(
                 BillingResult.newBuilder()
@@ -363,24 +365,18 @@ class BillingManager(context: Context) {
                 .newBuilder()
                 .setProductDetails(details)
 
+
         if (details.productType == BillingClient.ProductType.SUBS) {
 
             val offer =
                 details.subscriptionOfferDetails?.firstOrNull()
 
             if (offer == null) {
-                Log.e(
-                    "Billing",
-                    "No subscription offer found: $productId"
-                )
-
+                Log.e("Billing", "No subscription offer found: $productId")
                 return
             }
 
-            Log.d(
-                "Billing",
-                "Using subscription offer: ${offer.offerToken}"
-            )
+            Log.d("Billing", "Using subscription offer: ${offer.offerToken}")
 
             productDetailsParams.setOfferToken(
                 offer.offerToken
@@ -419,6 +415,34 @@ class BillingManager(context: Context) {
 
         if (result.responseCode != BillingClient.BillingResponseCode.OK) {
             listener?.onPurchaseFailure(result)
+        }
+    }
+
+    fun queryActiveInAppPurchases() {
+        val params =
+            QueryPurchasesParams.newBuilder()
+                .setProductType(BillingClient.ProductType.INAPP)
+                .build()
+
+        billingClient.queryPurchasesAsync(params) { result, purchases ->
+            Log.d("Billing", "queryActiveInAppPurchases: " + "code=${result.responseCode}, " + "message=${result.debugMessage}, " + "count=${purchases.size}")
+            Log.d("Billing", "Active INAPP purchases: ${purchases.size}")
+
+            if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+                if (result.responseCode == BillingClient.BillingResponseCode.ERROR) {
+                    listener?.onPurchaseFailure(result)
+                    return@queryPurchasesAsync
+                }
+
+                listener?.onActivePurchasesLoaded(purchases)
+                return@queryPurchasesAsync
+            }
+
+            purchases.forEach { purchase ->
+                Log.d("Billing", "Found INAPP purchase: " + "products=${purchase.products}, " + "state=${purchase.purchaseState}, " + "acknowledged=${purchase.isAcknowledged}, " + "token=${purchase.purchaseToken}")
+            }
+
+            listener?.onActivePurchasesLoaded(purchases)
         }
     }
 }

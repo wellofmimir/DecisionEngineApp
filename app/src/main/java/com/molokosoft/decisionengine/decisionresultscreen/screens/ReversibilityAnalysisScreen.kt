@@ -58,63 +58,45 @@ fun ReversibilityExplanationCard(
     }
 
     Column(
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.Start,
         modifier = modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .background(
-                color = DecisionBlueLight,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .border(
-                width = 1.dp,
-                color = DecisionBlueLight,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .padding(top = 32.dp, start = 16.dp, end = 16.dp)
-    ){
-        Column(
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.Start,
+            .padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+    ) {
+        Text(
+            text = "Why is reversibility $title?",
+            textAlign = TextAlign.Left,
+            fontSize = typography.titleMedium.fontSize,
+            color = Color.Black,
+            lineHeight = 16.sp
+        )
+
+        Spacer(
             modifier = Modifier
-                .padding(start = 16.dp, end = 16.dp)
-        ){
-            Text(
-                text = "Why is reversibility $title?",
-                textAlign = TextAlign.Left,
-                fontSize = typography.titleMedium.fontSize,
-                color = Color.Black,
-                lineHeight = 16.sp
-            )
+                .height(16.dp)
+        )
 
-            Spacer(
-                modifier = Modifier
-                    .height(16.dp)
-            )
+        Text(
+            text = reversibilityAnalysisText,
+            textAlign = TextAlign.Left,
+            fontSize = typography.titleSmall.fontSize,
+            fontWeight = FontWeight.Normal,
+            color = Color.Black,
+            lineHeight = 16.sp,
+            modifier = Modifier
+                .verticalScroll(verticalScroll)
+        )
 
-            Text(
-                text = reversibilityAnalysisText,
-                textAlign = TextAlign.Left,
-                fontSize = typography.titleSmall.fontSize,
-                fontWeight = FontWeight.Normal,
-                color = Color.Black,
-                lineHeight = 16.sp,
-                modifier = Modifier
-                    .verticalScroll(verticalScroll)
-            )
-
-            Spacer(
-                modifier = Modifier
-                    .height(8.dp)
-            )
-        }
+        Spacer(
+            modifier = Modifier
+                .height(8.dp)
+        )
     }
 }
 @Composable
 fun ReversibilityCard(
     modifier: Modifier = Modifier,
+    decisionAnalysisResult: DecisionAnalysisResult?,
     optionAnalyses: List<OptionAnalysis>
 ){
     val typography = LocalAppTypography.current
@@ -240,7 +222,20 @@ fun ReversibilityCard(
 
         Spacer(
             modifier = Modifier
-                .weight(1f)
+                .height(16.dp)
+        )
+
+        ReversibilityExplanationCard(
+            modifier = Modifier
+                .padding(horizontal = 8.dp)
+                .weight(1f),
+            optionAnalyses = optionAnalyses,
+            reversibilityAnalysisText = decisionAnalysisResult?.reversibility ?: ""
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(16.dp)
         )
 
         Row(
@@ -281,67 +276,49 @@ fun ReversibilityAnalysisScreen(
     optionAnalyses: List<OptionAnalysis>,
     decisionAnalysisResult: DecisionAnalysisResult?,
     onContinueClicked: () -> Unit
-){
+) {
     val typography = LocalAppTypography.current
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(Color.White),
-        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
-    ){
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
+    ) {
+        Spacer(
             modifier = Modifier
-                .padding(horizontal = 8.dp)
-        ){
-            Spacer(
-                modifier = Modifier
-                    .height(32.dp)
-            )
+                .height(32.dp)
+        )
 
-            Text(
-                text = "Reversibility Analysis",
-                textAlign = TextAlign.Center,
-                fontSize = typography.titleLarge.fontSize,
-                fontWeight = FontWeight.SemiBold,
-                color = Color.Black,
-                lineHeight = 32.sp
-            )
+        Text(
+            text = "Reversibility Analysis",
+            textAlign = TextAlign.Center,
+            fontSize = typography.titleLarge.fontSize,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.Black,
+            lineHeight = 32.sp
+        )
 
-            Text(
-                text = "How easy would it be to reverse this decision\nif it doesn't work out?",
-                textAlign = TextAlign.Center,
-                fontSize = typography.titleSmall.fontSize,
-                color = Color.Black,
-                lineHeight = 16.sp
-            )
+        Text(
+            text = "How easy would it be to reverse this decision\nif it doesn't work out?",
+            textAlign = TextAlign.Center,
+            fontSize = typography.titleSmall.fontSize,
+            color = Color.Black,
+            lineHeight = 16.sp
+        )
 
-            Spacer(
-                modifier = Modifier
-                    .height(16.dp)
-            )
-
-            ReversibilityCard(
-                modifier = Modifier
-                    .fillMaxHeight(0.35f),
-                optionAnalyses = optionAnalyses
-            )
-
-            Spacer(
-                modifier = Modifier
-                    .height(16.dp)
-            )
-        }
-
-        ReversibilityExplanationCard(
+        Spacer(
             modifier = Modifier
-                .padding(horizontal = 8.dp)
-                .weight(1f),
+                .height(16.dp)
+        )
+
+        ReversibilityCard(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .padding(horizontal = 16.dp),
             optionAnalyses = optionAnalyses,
-            reversibilityAnalysisText = decisionAnalysisResult?.reversibility ?: ""
+            decisionAnalysisResult = decisionAnalysisResult
         )
 
         Spacer(
@@ -358,7 +335,6 @@ fun ReversibilityAnalysisScreen(
                     color = DecisionBlue,
                     shape = RoundedCornerShape(64.dp)
                 )
-
                 .background(
                     color = DecisionBlue,
                     shape = RoundedCornerShape(64.dp)

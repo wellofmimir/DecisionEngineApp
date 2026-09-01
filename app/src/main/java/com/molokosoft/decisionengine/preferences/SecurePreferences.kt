@@ -24,6 +24,56 @@ class SecurePreferences(
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
 
+    fun ratingInfoDialogSeen(): Boolean {
+        return securePreferences.getBoolean("ratingInfoDialogSeen", false)
+    }
+
+    fun setRatingInfoDialogSeen() {
+        securePreferences.edit {
+            putBoolean("ratingInfoDialogSeen", true)
+        }
+    }
+
+    fun importanceInfoDialogSeen(): Boolean {
+        return securePreferences.getBoolean("importanceInfoDialogSeen", false)
+    }
+
+    fun setImportanceInfoDialogSeen() {
+        securePreferences.edit {
+            putBoolean("importanceInfoDialogSeen", true)
+        }
+    }
+
+    fun optionInfoDialogSeen(): Boolean {
+        return securePreferences.getBoolean("optionInfoDialogSeen", false)
+    }
+
+    fun setOptionInfoDialogSeen() {
+        securePreferences.edit {
+            putBoolean("optionInfoDialogSeen", true)
+        }
+    }
+
+    fun decisionInfoDialogSeen(): Boolean {
+        return securePreferences.getBoolean("decisionInfoDialogSeen", false)
+    }
+
+    fun setDecisionInfoDialogSeen() {
+        securePreferences.edit {
+            putBoolean("decisionInfoDialogSeen", true)
+        }
+    }
+
+    fun restoreKeyInformationSeen(): Boolean {
+        return securePreferences.getBoolean("restoreKeyInformationSeen", false)
+    }
+
+    fun setRestoreKeyInformationSeen() {
+        securePreferences.edit {
+            putBoolean("restoreKeyInformationSeen", true)
+        }
+    }
+
     fun installationId(): String {
         return securePreferences.getString("installationId", "")
             ?: ""

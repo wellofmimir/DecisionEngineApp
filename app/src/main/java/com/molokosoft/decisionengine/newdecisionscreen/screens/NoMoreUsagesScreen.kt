@@ -2,17 +2,14 @@ package com.molokosoft.decisionengine.newdecisionscreen.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,17 +25,21 @@ import com.molokosoft.decisionengine.R
 import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
 import com.molokosoft.decisionengine.commonclasses.ProductTypes
 import com.molokosoft.decisionengine.paywall.offers.OfferCardFifteenDecisions
+import com.molokosoft.decisionengine.paywall.offers.OfferCardWeeklySubscription
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 
 @Composable
 fun NoMoreUsagesScreen(
     modifier: Modifier = Modifier,
     productInformation: List<SubscriptionProduct>,
-    onAccepted: () -> Unit,
+    onAccepted: (productType: ProductTypes) -> Unit,
     onDeclined: () -> Unit
 ) {
-    val typography = LocalAppTypography.current
-    val verticalScroll = rememberScrollState()
+    val typography =
+        LocalAppTypography.current
+
+    val verticalScroll =
+        rememberScrollState()
 
     Column(
         modifier = modifier
@@ -88,17 +89,36 @@ fun NoMoreUsagesScreen(
                 .height(16.dp)
         )
 
-        OfferCardFifteenDecisions(
-            price = productInformation.find {
-                it.productId == ProductTypes.Usages15.value
-            }?.formattedPrice ?: "",
-            offerText = "One-time purchase.",
-            offerMarketingText = "15 analyses.\nNo expiration.",
-            modifier = Modifier
-                .clickable {
-                    onAccepted()
-                }
-        )
+        Column{
+            OfferCardWeeklySubscription(
+                price = productInformation.find {
+                    it.productId == ProductTypes.Weekly.value
+                }?.formattedPrice ?: "",
+                offerText = "Weekly billing.",
+                offerMarketingText = "20 analyses per week.",
+                modifier = Modifier
+                    .clickable {
+                        onAccepted(ProductTypes.Weekly)
+                    }
+            )
+
+            Spacer(
+                modifier = Modifier
+                    .height(4.dp)
+            )
+
+            OfferCardFifteenDecisions(
+                price = productInformation.find {
+                    it.productId == ProductTypes.Usages15.value
+                }?.formattedPrice ?: "",
+                offerText = "One-time purchase.",
+                offerMarketingText = "15 analyses.\nNo expiration.",
+                modifier = Modifier
+                    .clickable {
+                        onAccepted(ProductTypes.Usages15)
+                    }
+            )
+        }
 
         Spacer(
             modifier = Modifier

@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.molokosoft.decisionengine.R
 import com.molokosoft.decisionengine.commonclasses.DecisionCategory
 import com.molokosoft.decisionengine.commonclasses.getDecisionCategory
-import com.molokosoft.decisionengine.commonuielements.DecisionButton
+import com.molokosoft.decisionengine.commonuielements.buttons.DecisionButton
 import java.time.YearMonth
 
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
@@ -107,7 +107,9 @@ fun DecisionsInAMonthSection(
                 DecisionButton(
                     decisionTitle = it.decision.title,
                     amountOfOptionsText = it.options.size.toString(),
-                    score = "100",
+                    score = it.options.maxOfOrNull() { it ->
+                        it.option.confidence
+                    }.toString(),
                     color = getColorToLogo(decisionCategory = getDecisionCategory(it.decision.category)),
                     decisionButtonLogo = getLogo(decisionCategory = getDecisionCategory(it.decision.category)),
                     onClicked = {

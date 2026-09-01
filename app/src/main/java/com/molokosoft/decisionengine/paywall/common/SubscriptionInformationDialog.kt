@@ -32,16 +32,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import com.molokosoft.decisionengine.R
 import com.molokosoft.decisionengine.commonclasses.ProductTypes
 import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 import kotlinx.coroutines.delay
+import androidx.compose.ui.text.SpanStyle
 
 @Composable
 fun SubscriptionInformationDialog(
     modifier: Modifier = Modifier,
     subscriptionType: ProductTypes,
+    price: String,
     onDismissRequest: () -> Unit,
     onAcceptedOffer: () -> Unit
 ) {
@@ -51,6 +55,9 @@ fun SubscriptionInformationDialog(
 
         ProductTypes.Yearly ->
             "Yearly Plan"
+
+        ProductTypes.Usages15 ->
+            "One Time Purchase"
 
         else ->
             ""
@@ -69,22 +76,22 @@ fun SubscriptionInformationDialog(
 
     val subTitle = when (subscriptionType) {
         ProductTypes.Weekly ->
-            "Get 100 decision analyses every week with the Weekly subscription plan.\n\n" +
+            "Get 20 decision analyses every week with the Weekly subscription plan.\n\n" +
             "This plan is ideal if you use Decision Engine regularly and prefer a flexible subscription with a short billing period."
 
-        ProductTypes.Yearly ->
-            "Get 5000 decision analyses every week with the Yearly subscription plan.\n\n" +
-            "This plan is ideal for frequent users who want a large decision allowance and the convenience of a yearly subscription."
+        ProductTypes.Usages15 ->
+            "Get 15 decision analyses with no expiration." +
+            "This offer is ideal for occasional users who don't need a subscription and want the flexibility to use their decision analyses whenever they need them."
 
         else -> ""
     }
 
     val howManyDecisionsText = when (subscriptionType) {
         ProductTypes.Weekly ->
-            "You can analyze up to 100 decisions per week."
+            "You can analyze up to 20 decisions per week."
 
-        ProductTypes.Yearly ->
-            "You can analyze up to 5,000 decisions per year."
+        ProductTypes.Usages15 ->
+            "You can analyze 15 decisions. No expiration."
 
         else ->
             ""
@@ -92,30 +99,95 @@ fun SubscriptionInformationDialog(
 
     val whenDoDecisionsResetText = when (subscriptionType) {
         ProductTypes.Weekly ->
-            "Your 100 decisions are renewed at the beginning of each new weekly subscription period."
+            "Your 20 decisions are renewed at the beginning of each new weekly subscription period."
 
-        ProductTypes.Yearly ->
-            "Your 5,000 decisions are renewed at the beginning of each new yearly subscription period."
+        ProductTypes.Usages15 ->
+            "Your 15 decisions never expire and do not reset. They remain available until you use them."
 
         else ->
             ""
     }
 
-    val carryOverText =
-        "No. Unused decisions do not carry over to the next subscription period."
-
-    val cancelText =
-        "Yes. You can cancel your subscription at any time. You will continue to have access to your subscription benefits until the end of the current subscription period."
-
-    val whoForText = when (subscriptionType) {
+    val carryOverTitle = when (subscriptionType) {
         ProductTypes.Weekly ->
-            "The Weekly plan is a good choice if you want to use Decision Engine regularly without committing to a yearly subscription."
+            "Do unused decisions carry over?"
 
-        ProductTypes.Yearly ->
-            "The Yearly plan is a good choice if you use Decision Engine frequently and want a generous decision allowance without having to renew your subscription every week."
+        ProductTypes.Usages15 ->
+            "Do usages expire?"
 
         else ->
             ""
+    }
+
+    val carryOverText = when (subscriptionType) {
+        ProductTypes.Weekly ->
+            "No. Unused decisions do not carry over to the next subscription period."
+
+        ProductTypes.Usages15 ->
+            "Usages do not expire."
+
+        else ->
+            ""
+    }
+
+    val cancelText = when (subscriptionType) {
+        ProductTypes.Weekly ->
+            "Yes. You can cancel your subscription at any time. You will continue to have access to your subscription benefits until the end of the current subscription period."
+
+        ProductTypes.Usages15 ->
+            "There is no expiration date. You can use your 15 decision analyses whenever you need them."
+
+        else ->
+            ""
+    }
+
+    val whoForTitleText = when (subscriptionType) {
+        ProductTypes.Weekly ->
+            "Who is the Weekly plan for?"
+
+        ProductTypes.Usages15 ->
+            "Who is this offer for?"
+
+        else ->
+            ""
+    }
+
+    val whoForText = when (subscriptionType) {
+        ProductTypes.Weekly ->
+            "The Weekly plan is a good choice if you want to use Decision Engine regularly."
+
+        ProductTypes.Usages15 ->
+            "This offer is a good choice if you use Decision Engine occasionally and want the flexibility to use your 15 decision analyses whenever you need them, without a subscription."
+
+        else ->
+            ""
+    }
+
+    val priceTitle =
+        "How much does it cost?"
+
+    val priceText = if (price.isBlank()) {
+        """
+        Sorry, the price information is currently unavailable\n.
+        Tap “Accept” to continue to Google Play, where the current price will be displayed before you complete the purchase.\n
+        You will not be charged until you confirm the purchase in Google Play.\n
+    """.trimIndent()
+    } else {
+        val temporary = buildAnnotatedString {
+            withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                append(price)
+            }
+
+            append(
+                when (subscriptionType) {
+                    ProductTypes.Weekly -> " per week."
+                    ProductTypes.Usages15 -> " once."
+                    else -> ""
+                }
+            )
+        }
+
+        temporary
     }
 
     val typography = LocalAppTypography.current
@@ -241,7 +313,7 @@ fun SubscriptionInformationDialog(
             )
 
             Text(
-                text = "Do unused decisions carry over?",
+                text = carryOverTitle,
                 textAlign = TextAlign.Center,
                 fontSize = typography.titleSmall.fontSize,
                 color = Color.Black,
@@ -299,7 +371,7 @@ fun SubscriptionInformationDialog(
             )
 
             Text(
-                text = "Who is the Yearly plan for?",
+                text = whoForTitleText,
                 textAlign = TextAlign.Center,
                 fontSize = typography.titleSmall.fontSize,
                 color = Color.Black,
@@ -314,6 +386,35 @@ fun SubscriptionInformationDialog(
 
             Text(
                 text = whoForText,
+                textAlign = TextAlign.Center,
+                fontSize = typography.titleSmall.fontSize,
+                color = Color.Black,
+                fontWeight = FontWeight.Light,
+                modifier = Modifier
+                    .padding(horizontal = 4.dp)
+            )
+
+            Spacer(
+                modifier = Modifier
+                    .height(16.dp)
+            )
+
+            Text(
+                text = priceTitle,
+                textAlign = TextAlign.Center,
+                fontSize = typography.titleSmall.fontSize,
+                color = Color.Black,
+                fontWeight = FontWeight.SemiBold
+            )
+
+            HorizontalDivider(
+                modifier = Modifier
+                    .fillMaxWidth(0.8f),
+                color = DecisionBlue
+            )
+
+            Text(
+                text = priceText.toString(),
                 textAlign = TextAlign.Center,
                 fontSize = typography.titleSmall.fontSize,
                 color = Color.Black,

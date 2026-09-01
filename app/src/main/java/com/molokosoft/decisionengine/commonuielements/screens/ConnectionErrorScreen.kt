@@ -1,6 +1,5 @@
-package com.molokosoft.decisionengine.commonuielements
+package com.molokosoft.decisionengine.commonuielements.screens
 
-import android.content.Intent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -10,7 +9,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Text
@@ -23,11 +21,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import com.molokosoft.decisionengine.R
-import com.molokosoft.decisionengine.newdecisionscreen.screens.NotAllowedRequestsCard
-import com.molokosoft.decisionengine.newdecisionscreen.screens.SuicidePreventionHotline
-import com.molokosoft.decisionengine.newdecisionscreen.screens.WeCareAboutYouCard
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 
 @Composable

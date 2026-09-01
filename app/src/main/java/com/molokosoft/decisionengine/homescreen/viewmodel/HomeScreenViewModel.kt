@@ -29,24 +29,24 @@ class HomeScreenViewModel(
     private val quoteRepository: QuoteRepository
 ) : ViewModel() {
 
+    val restoreKeyInformationSeen =
+        userDataRepository.restoreKeyInformationSeen
+
+    fun setRestoreKeyInformationSeen() {
+        userDataRepository.setRestoreKeyInformationSeen()
+    }
+
     private val _article =
         MutableStateFlow(Article())
 
     val article =
         _article.asStateFlow()
-    private val _username =
-        MutableStateFlow(username())
 
-    val username =
-        _username.asStateFlow()
+     val username =
+         userDataRepository.username
 
     fun setUsername(username: String) {
         userDataRepository.setUsername(username)
-        _username.value = username
-    }
-
-    private fun username(): String {
-        return userDataRepository.username()
     }
 
     val averageOptionsPerDecision: StateFlow<Int> =
@@ -153,4 +153,7 @@ class HomeScreenViewModel(
 
     fun motivationalQuote(): Pair<String, String> =
         quoteRepository.motivationalQuote()
+
+    fun apiKey(): String =
+        userDataRepository.apiKey()
 }

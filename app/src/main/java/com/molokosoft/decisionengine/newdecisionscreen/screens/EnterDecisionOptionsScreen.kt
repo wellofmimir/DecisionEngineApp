@@ -22,6 +22,10 @@ import androidx.compose.foundation.gestures.detectTapGestures
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,6 +37,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import com.molokosoft.decisionengine.R
+import com.molokosoft.decisionengine.newdecisionscreen.dialogs.OptionInputInfoDialog
 import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 
@@ -45,9 +50,13 @@ fun EnterDecisionOptionsScreen(
     onEnterOptionClicked: () -> Unit,
     onDeleteOption: (name: String) -> Unit,
     onBackClicked: () -> Unit,
-    onNextClicked: () -> Unit
+    onNextClicked: () -> Unit,
+    showOptionInfoDialog: Boolean
 ){
-    val typography = LocalAppTypography.current
+    val typography =
+        LocalAppTypography.current
+
+    var showInfoDialog by remember { mutableStateOf(false) }
 
     Column(
         modifier = modifier
@@ -101,6 +110,11 @@ fun EnterDecisionOptionsScreen(
             modifier = Modifier
                 .size(48.dp, 48.dp)
                 .clickable() {
+                    if (showOptionInfoDialog) {
+                        showInfoDialog = true
+                        return@clickable
+                    }
+
                     onEnterOptionClicked()
                 }
         )
@@ -222,6 +236,15 @@ fun EnterDecisionOptionsScreen(
         Spacer(
             modifier = Modifier
                 .height(16.dp)
+        )
+    }
+
+    if (showInfoDialog) {
+        OptionInputInfoDialog(
+            onDismissRequest = {
+                showInfoDialog = false
+                onEnterOptionClicked()
+            }
         )
     }
 }

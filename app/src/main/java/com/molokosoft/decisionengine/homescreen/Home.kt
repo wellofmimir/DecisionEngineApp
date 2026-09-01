@@ -1,5 +1,6 @@
 package com.molokosoft.decisionengine.homescreen
 
+import android.Manifest
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -42,11 +43,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.style.TextAlign
+import com.molokosoft.decisionengine.commonuielements.dialogs.RestoreKeyDialog
 import com.molokosoft.decisionengine.database.relation.DecisionCompleteRelation
 
 
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 import com.molokosoft.decisionengine.homescreen.buttons.NewDecisionButton
+import com.molokosoft.decisionengine.homescreen.dialogs.EnterUsernameDialog
+import com.molokosoft.decisionengine.homescreen.dialogs.MotivationalQuoteDialog
+import com.molokosoft.decisionengine.homescreen.dialogs.ReadArticleDialog
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 
@@ -63,16 +68,19 @@ fun Home(
     val typography = LocalAppTypography.current
     val verticalScroll = rememberScrollState()
 
+    val restoreKey by remember { mutableStateOf(homeScreenViewModel.apiKey()) }
     val article by homeScreenViewModel.article.collectAsState()
     val decisionHistory by homeScreenViewModel.historyItems.collectAsState()
     val username by homeScreenViewModel.username.collectAsState()
     val averageConfidence by homeScreenViewModel.averageConfidence.collectAsState()
     val amountOfDecisions by homeScreenViewModel.amountOfDecisions.collectAsState()
     val averageOptionsPerDecision by homeScreenViewModel.averageOptionsPerDecision.collectAsState()
+    var motivationalQuote by remember { mutableStateOf("" to "") }
 
     var showUsernameEntryBox by remember { mutableStateOf(false) }
     var showMotivationalQuoteBox by remember { mutableStateOf(false) }
     var readArticleBoxExpanded by remember { mutableStateOf(false) }
+    val restoreKeyInformationSeen by homeScreenViewModel.restoreKeyInformationSeen.collectAsState()
 
     val listOfGreetings = listOf(
         "Hey there,\n$username.",
@@ -106,7 +114,12 @@ fun Home(
         "Happy to see you back, $username!"
     )
 
-    val greetingText by rememberSaveable { mutableStateOf(if (username.isBlank()) "Welcome, Stranger!" else listOfGreetings.random()) }
+    var greetingText by rememberSaveable { mutableStateOf(if (username.isBlank()) "Welcome, Stranger!" else listOfGreetings.random()) }
+
+    LaunchedEffect(username) {
+        if (username.isNotBlank() && greetingText.contains("Stranger"))
+            greetingText = "Welcome,\n$username!"
+    }
 
     val notificationPermissionLauncher = rememberLauncherForActivityResult (
         contract = ActivityResultContracts.RequestPermission()
@@ -114,6 +127,7 @@ fun Home(
 
     LaunchedEffect(Unit) {
         homeScreenViewModel.getDailyArticle()
+        motivationalQuote = homeScreenViewModel.motivationalQuote()
 
         if (username.isBlank()) {
             delay(1000)
@@ -277,8 +291,8 @@ fun Home(
         )
     }
 
-    if (showUsernameEntryBox) {
-        EnterUsernameBox(
+    if (showUsernameEntryBox && restoreKeyInformationSeen) {
+        EnterUsernameDialog(
             onDismissRequest = {
                 showUsernameEntryBox = false
             },
@@ -287,14 +301,16 @@ fun Home(
                 homeScreenViewModel.setUsername(newUsername)
 
                 if (Build.VERSION.SDK_INT >= 33) {
-                    notificationPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                 }
             }
         )
+
+        return
     }
 
     if (readArticleBoxExpanded) {
-        ReadArticleBox(
+        ReadArticleDialog(
             title = article.title,
             text = article.content,
             modifier = modifier,
@@ -307,14 +323,25 @@ fun Home(
     }
 
     if (showMotivationalQuoteBox) {
-        val motivationalQuote = homeScreenViewModel.motivationalQuote()
-
-        MotivationalQuoteBox(
+        MotivationalQuoteDialog(
             quote = motivationalQuote.first,
             person = motivationalQuote.second,
             onDismissRequest = {
                 showMotivationalQuoteBox = false
             }
         )
+
+        return
+    }
+
+    if (!restoreKeyInformationSeen) {
+        RestoreKeyDialog(
+            restoreKey = restoreKey,
+            onDismissRequest = {
+                homeScreenViewModel.setRestoreKeyInformationSeen()
+            }
+        )
+
+        return
     }
 }

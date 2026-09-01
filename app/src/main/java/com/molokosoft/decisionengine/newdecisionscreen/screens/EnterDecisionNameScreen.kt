@@ -31,17 +31,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextDecoration
 
 import com.molokosoft.decisionengine.R
+import com.molokosoft.decisionengine.newdecisionscreen.dialogs.DecisionInputInfoDialog
 import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.LocalAppTypography
@@ -51,14 +53,24 @@ fun EnterDecisionNameScreen(
     modifier: Modifier = Modifier,
     currentDecisionText: String,
     yesOrNoDecision: Boolean,
+    showDecisionInfoDialog: Boolean,
     onBackClicked: () -> Unit,
     onNextClicked: (name: String, yesOrNoDecision: Boolean) -> Unit
 ){
-    val typography = LocalAppTypography.current
-    val focusManager = LocalFocusManager.current
+    val typography =
+        LocalAppTypography.current
+
+    val focusManager =
+        LocalFocusManager.current
+
+    val keyboardController =
+        LocalSoftwareKeyboardController.current
 
     var decisionText by remember { mutableStateOf(currentDecisionText) }
     var checked by remember { mutableStateOf(yesOrNoDecision) }
+    var inputTextFieldFocused by remember { mutableStateOf(false) }
+    var showInfoDialog by remember { mutableStateOf(showDecisionInfoDialog) }
+    var isReadyToContinue by remember { mutableStateOf(!showDecisionInfoDialog) }
 
     Column(
         modifier = modifier
@@ -155,6 +167,12 @@ fun EnterDecisionNameScreen(
                     color = DecisionBlueLight,
                     shape = RoundedCornerShape(12.dp)
                 )
+                .onFocusChanged { focusState ->
+                    if (focusState.isFocused && !inputTextFieldFocused) {
+                        inputTextFieldFocused = true
+                        keyboardController?.hide()
+                    }
+                }
         )
 
         Spacer(
@@ -207,7 +225,9 @@ fun EnterDecisionNameScreen(
                     shape = RoundedCornerShape(64.dp)
                 )
                 .clickable() {
-                    onNextClicked(decisionText, checked)
+                    if (isReadyToContinue) {
+                        onNextClicked(decisionText, checked)
+                    }
                 },
             contentAlignment = Alignment.Center
         ){
@@ -238,6 +258,15 @@ fun EnterDecisionNameScreen(
         Spacer(
             modifier = Modifier
                 .height(16.dp)
+        )
+    }
+
+    if (showInfoDialog && inputTextFieldFocused) {
+        DecisionInputInfoDialog(
+            onDismissRequest = {
+                showInfoDialog = false
+                isReadyToContinue = true
+            }
         )
     }
 }

@@ -1,7 +1,5 @@
-package com.molokosoft.decisionengine.settingsscreen.model
+package com.molokosoft.decisionengine.settingsscreen.viewmodel
 
-import android.content.Context
-import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.molokosoft.decisionengine.repositories.UserDataRepository
@@ -15,7 +13,14 @@ class SettingsScreenViewModel(
     private val userDataRepository: UserDataRepository
 ) : ViewModel() {
 
-    val username = userDataRepository.username
+    val username =
+        userDataRepository.username
+
+    private val _decisionsLeft =
+        MutableStateFlow("")
+
+    val decisionsLeft =
+        _decisionsLeft.asStateFlow()
 
     fun setUsername(username: String) {
         userDataRepository.setUsername(username)
@@ -34,5 +39,16 @@ class SettingsScreenViewModel(
 
     fun resetFeedbackLimitReached() {
         return userDataRepository.resetFeedbackLimitReached()
+    }
+
+    fun getDecisionsLeft() {
+        viewModelScope.launch {
+            _decisionsLeft.value =
+                userDataRepository.decisionsLeft()
+        }
+    }
+
+    fun apiKey(): String {
+        return userDataRepository.apiKey()
     }
 }

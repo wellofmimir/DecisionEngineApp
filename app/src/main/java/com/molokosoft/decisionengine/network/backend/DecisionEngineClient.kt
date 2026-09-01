@@ -3,6 +3,8 @@ package com.molokosoft.decisionengine.network.backend
 import com.molokosoft.decisionengine.BuildConfig
 import com.molokosoft.decisionengine.network.backend.model.requests.decision.DecisionAnalysisRequest
 import com.molokosoft.decisionengine.network.backend.model.responses.decision.DecisionAnalysisResponse
+import com.molokosoft.decisionengine.network.backend.model.responses.ApiError
+import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
@@ -12,8 +14,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import kotlinx.serialization.encodeToString
 import android.util.Log
-import com.molokosoft.decisionengine.AppEvent
-import com.molokosoft.decisionengine.network.backend.model.dto.billing.AccessStatus
 import com.molokosoft.decisionengine.network.backend.model.dto.security.requests.PromptReconnaissanceRequest
 import com.molokosoft.decisionengine.network.backend.model.dto.security.responses.PromptReconnaissanceResponse
 import com.molokosoft.decisionengine.network.backend.model.requests.billing.VerifyPurchaseRequest
@@ -26,8 +26,6 @@ import com.molokosoft.decisionengine.network.backend.model.responses.decision.Cr
 import com.molokosoft.decisionengine.network.backend.model.responses.decision.SafetyClassificationResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.health.HealthResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.quote.QuoteResponse
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
 import okio.IOException
 import org.json.JSONObject
 
@@ -50,7 +48,29 @@ class DecisionEngineClient(
     fun setInstallationId(id: String) {
         installationId = id
     }
-    
+
+    suspend fun getAuthenticatedHealth(apiKey: String): HealthResponse? =
+        withContext(Dispatchers.IO) {
+            val request = Request.Builder()
+                .addHeader("Authorization", "Bearer $apiKey")
+                .get()
+                .url("$baseUrl/health/authenticated")
+                .build()
+
+            try {
+                client.newCall(request).execute().use { response ->
+                    val responseBody = response.body?.string() ?: ""
+                    val apiResponse = Json.decodeFromString<ApiResponse<HealthResponse>>(responseBody)
+                    return@withContext apiResponse.data
+                }
+            } catch (e: Exception) {
+                Log.e("DecisionEngine", "Network error", e)
+                e.printStackTrace()
+                null
+            }
+        }
+
+
     suspend fun getHealth(): HealthResponse? =
         withContext(Dispatchers.IO) {
             val request = Request.Builder()
@@ -71,8 +91,12 @@ class DecisionEngineClient(
             }
         }
 
-    suspend fun getRemainingUsages(): AccessStatusResponse? =
-        withContext(Dispatchers.IO) {
+    suspend fun getRemainingUsages(): AccessStatusResponse? {
+        Log.d("DecisionEngine", "START getRemainingUsages()")
+
+        return withContext(Dispatchers.IO) {
+            Log.d("DecisionEngine", "ENTER IO context")
+
             val request = Request.Builder()
                 .addHeader("X-Installation-ID", installationId)
                 .addHeader("Authorization", "Bearer $apiKey")
@@ -80,19 +104,93 @@ class DecisionEngineClient(
                 .url("$baseUrl/api/v1/billing/status")
                 .build()
 
+            val json = Json {
+                ignoreUnknownKeys = true
+            }
+
             try {
-                client.newCall(request).execute().use { response ->
-                    val responseBody = response.body?.string() ?: ""
-                    val apiResponse = Json.decodeFromString<ApiResponse<AccessStatusResponse>>(responseBody)
-                    return@withContext apiResponse.data
+                Log.d("DecisionEngine", "BEFORE execute()")
+
+                val response = client.newCall(request).execute()
+
+                Log.d(
+                    "DecisionEngine",
+                    "AFTER execute(): ${response.code}"
+                )
+
+                val responseBody = response.body?.string().orEmpty()
+
+                Log.d(
+                    "DecisionEngine",
+                    "BODY: $responseBody"
+                )
+
+                if (!response.isSuccessful) {
+                    try {
+                        val errorResponse =
+                            json.decodeFromString<ApiResponse<ApiError>>(
+                                responseBody
+                            )
+
+                        val error = errorResponse.data
+
+                        Log.e(
+                            "DecisionEngine",
+                            "API error ${response.code}: ${error?.code} - ${error?.message}"
+                        )
+                    } catch (e: Exception) {
+                        Log.e(
+                            "DecisionEngine",
+                            "Could not parse error response",
+                            e
+                        )
+                    }
+
+                    response.close()
+
+                    Log.d(
+                        "DecisionEngine",
+                        "RETURNING NULL"
+                    )
+
+                    return@withContext null
                 }
+
+                val apiResponse =
+                    json.decodeFromString<ApiResponse<AccessStatusResponse>>(
+                        responseBody
+                    )
+
+                response.close()
+
+                Log.d(
+                    "DecisionEngine",
+                    "RETURNING SUCCESS: ${apiResponse.data}"
+                )
+
+                apiResponse.data
+
+            } catch (e: CancellationException) {
+                Log.e(
+                    "DecisionEngine",
+                    "COROUTINE CANCELLED",
+                    e
+                )
+
+                throw e
+
             } catch (e: Exception) {
-                Log.e("DecisionEngine", "Network error", e)
-                Log.d("DecisionEngine", Json.encodeToString(AccessStatusResponse))
-                e.printStackTrace()
+                Log.e(
+                    "DecisionEngine",
+                    "EXCEPTION",
+                    e
+                )
+
                 null
             }
         }
+    }
+
     suspend fun verifyPurchase(verifyPurchaseRequest: VerifyPurchaseRequest): VerifyPurchaseResponse? =
         withContext(Dispatchers.IO) {
             val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -117,7 +215,6 @@ class DecisionEngineClient(
                 }
             } catch (e: Exception) {
                 Log.e("DecisionEngine", "Network error", e)
-                Log.d("DecisionEngine", Json.encodeToString(VerifyPurchaseRequest))
                 e.printStackTrace()
                 null
             }
@@ -127,7 +224,6 @@ class DecisionEngineClient(
         withContext(Dispatchers.IO) {
             val request = Request.Builder()
                 .addHeader("X-Installation-ID", installationId)
-                .addHeader("Authorization", "Bearer $apiKey")
                 .get()
                 .url("$baseUrl/api/v1/articles/daily")
                 .build()
@@ -193,7 +289,6 @@ class DecisionEngineClient(
                 }
             } catch (e: Exception) {
                 Log.e("DecisionEngine", "Network error", e)
-                Log.d("DecisionEngine", Json.encodeToString(decisionAnalysisRequest))
 
                 Log.e(
                     "DecisionEngine",
@@ -349,7 +444,6 @@ class DecisionEngineClient(
                 }
             } catch (e: Exception) {
                 Log.e("DecisionEngine", "Network error", e)
-                Log.d("DecisionEngine", Json.encodeToString(DailyArticleResponse))
                 e.printStackTrace()
                 null
             }

@@ -44,14 +44,17 @@ import com.molokosoft.decisionengine.theme.FreeTrialPink
 import com.molokosoft.decisionengine.theme.MostChosenGreen
 import com.molokosoft.decisionengine.commonclasses.ProductTypes
 import com.molokosoft.decisionengine.paywall.offers.OfferCardFifteenDecisions
+import com.molokosoft.decisionengine.paywall.offers.OfferCardWeeklySubscription
 
 @Composable
 fun OfferTilesScreen(
     modifier: Modifier = Modifier,
-    subscriptionProducts: List<SubscriptionProduct>,
+    productInformation: List<SubscriptionProduct>,
     onContinueClicked: (offerType: ProductTypes) -> Unit,
     onBackClicked: () -> Unit,
-    showBackButton: Boolean = false
+    onRestore: () -> Unit,
+    showBackButton: Boolean = false,
+    showRestorageButton: Boolean = false
 ){
     val typography = LocalAppTypography.current
 
@@ -120,8 +123,58 @@ fun OfferTilesScreen(
 
         Spacer(
             modifier = Modifier
-                .height(16.dp)
+                .height(48.dp)
         )
+
+        Column{
+            OfferCardWeeklySubscription(
+                price = productInformation.find {
+                    it.productId == ProductTypes.Weekly.value
+                }?.formattedPrice ?: "",
+                offerText = "Weekly billing.",
+                offerMarketingText = "20 analyses per week.",
+                modifier = Modifier
+                    .clickable {
+                        onContinueClicked(ProductTypes.Weekly)
+                    }
+            )
+
+            Spacer(
+                modifier = Modifier
+                    .height(4.dp)
+            )
+
+            OfferCardFifteenDecisions(
+                price = productInformation.find {
+                    it.productId == ProductTypes.Usages15.value
+                }?.formattedPrice ?: "",
+                offerText = "One-time purchase.",
+                offerMarketingText = "15 analyses.\nNo expiration.",
+                modifier = Modifier
+                    .clickable {
+                        onContinueClicked(ProductTypes.Usages15)
+                    }
+            )
+        }
+
+        if (showRestorageButton) {
+            Spacer(
+                modifier = Modifier
+                    .height(32.dp)
+            )
+
+            Text(
+                text = "I have a Restore Key",
+                textAlign = TextAlign.Center,
+                color = Color.Black,
+                fontSize = typography.titleSmall.fontSize,
+                textDecoration = TextDecoration.Underline,
+                modifier = Modifier
+                    .clickable {
+                        onRestore()
+                    }
+            )
+        }
 
         Spacer(
             modifier = Modifier

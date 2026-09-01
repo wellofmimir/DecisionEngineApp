@@ -3,22 +3,26 @@ package com.molokosoft.decisionengine.paywall
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
 
-import com.molokosoft.decisionengine.commonuielements.ErrorDialog
+import com.molokosoft.decisionengine.commonuielements.dialogs.ErrorDialog
 import com.molokosoft.decisionengine.commonclasses.EMail
 
 import com.molokosoft.decisionengine.paywall.one.FeaturesScreen
 import com.molokosoft.decisionengine.paywall.one.EnforceConversionScreen
 import com.molokosoft.decisionengine.paywall.one.FreeTrialScreen
-import com.molokosoft.decisionengine.paywall.one.OfferTilesScreen
 import com.molokosoft.decisionengine.commonclasses.ProductTypes
+import com.molokosoft.decisionengine.commonuielements.screens.WaitingScreen
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.NewDecisionViewModel
 import com.molokosoft.decisionengine.paywall.common.SubscriptionInformationDialog
 
 sealed class Paywall {
@@ -40,10 +44,13 @@ fun Paywall.next(): Paywall =
 @Composable
 fun PaywallScreen(
     modifier: Modifier = Modifier,
-    subscriptionProducts: List<SubscriptionProduct>,
+    newDecisionViewModel: NewDecisionViewModel,
+    productInformation: List<SubscriptionProduct>,
     onContinueClicked: (subscriptionType: ProductTypes, eMail: EMail?) -> Unit,
     onBackClicked: () -> Unit,
-    showOnlyOffer: Boolean = false
+    onRestore: () -> Unit,
+    showOnlyOffer: Boolean = false,
+    showRestorage: Boolean = false
 ){
     val notificationPermissionLauncher = rememberLauncherForActivityResult (
         contract = ActivityResultContracts.RequestPermission()
@@ -62,6 +69,10 @@ fun PaywallScreen(
     var showSubscriptionInformation by remember { mutableStateOf(false) }
     var subscriptionType: ProductTypes by remember { mutableStateOf(ProductTypes.Undefined) }
 
+    val showWaitingForAnalysisScreen by newDecisionViewModel.showWaitingForAnalysisScreen.collectAsStateWithLifecycle()
+    var price by remember { mutableStateOf("") }
+    val products by newDecisionViewModel.subscriptionProducts.collectAsState()
+
     when (currentScreen) {
         Paywall.Features -> FeaturesScreen(
             modifier = modifier,
@@ -79,7 +90,7 @@ fun PaywallScreen(
 
         Paywall.OfferTiles -> com.molokosoft.decisionengine.paywall.two.OfferTilesScreen(
             modifier = modifier,
-            subscriptionProducts = subscriptionProducts,
+            productInformation = productInformation,
             onContinueClicked = { chosenSubscription ->
 
                 if (chosenSubscription == ProductTypes.FreeTrial) {
@@ -87,13 +98,25 @@ fun PaywallScreen(
                     return@OfferTilesScreen
                 }
 
+                if (chosenSubscription == ProductTypes.Usages15) {
+                    price = products.find {
+                        it.productId == ProductTypes.Usages15.value
+                    }?.formattedPrice ?: ""
+                } else if (chosenSubscription == ProductTypes.Weekly) {
+                    price = products.find {
+                        it.productId == ProductTypes.Weekly.value
+                    }?.formattedPrice ?: ""
+                }
+
                 showSubscriptionInformation = true
                 subscriptionType = chosenSubscription
             },
-            onBackClicked = {
-                onBackClicked()
+            onBackClicked = onBackClicked,
+            onRestore = {
+                onRestore()
             },
-            showBackButton = showOnlyOffer
+            showBackButton = showOnlyOffer,
+            showRestorageButton = showRestorage
         )
 
         Paywall.FreeTrial -> FreeTrialScreen(
@@ -139,6 +162,7 @@ fun PaywallScreen(
     if (showSubscriptionInformation) {
         SubscriptionInformationDialog(
             subscriptionType = subscriptionType,
+            price = price,
             onDismissRequest = {
                 showSubscriptionInformation = false
             },
@@ -146,6 +170,16 @@ fun PaywallScreen(
                 showSubscriptionInformation = false
                 onContinueClicked(subscriptionType, null)
             }
+        )
+
+        return
+    }
+
+    if (showWaitingForAnalysisScreen) {
+        WaitingScreen(
+            modifier = modifier
+                .fillMaxHeight(),
+            text = "Analyzing your decision...\n" + "This usually takes just a few seconds."
         )
 
         return

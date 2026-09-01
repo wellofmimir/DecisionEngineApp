@@ -51,136 +51,6 @@ import com.molokosoft.decisionengine.theme.MostChosenGreen
 import com.molokosoft.decisionengine.theme.VeryEasyReverseGreen
 
 @Composable
-fun OptionBreakdownCard(
-    modifier: Modifier = Modifier,
-    iconResource: Int,
-    optionName: String,
-    optionScore: Double
-){
-    val typography = LocalAppTypography.current
-
-    val impactText = when {
-        optionScore <= 10.0f -> "Minor impact"
-        optionScore <= 25.0f -> "Moderate impact"
-        optionScore <= 50.0f -> "Significant impact"
-        optionScore <= 100.0f -> "Very strong impact"
-        else -> "Critical impact"
-    }
-
-    val impactColor = when (optionScore) {
-        in 1.0f..10.0f -> HardReverseRed
-        in 11.0f..25.0f -> MediumReverseOrange
-        in 26.0f..50.0f -> EasyReverseGreen
-        in 51.0f..100.0f -> VeryEasyReverseGreen
-        else -> VeryEasyReverseGreen
-    }
-
-    Row(
-        modifier = modifier
-            .background(
-                color = DecisionBlueLight,
-                shape = RoundedCornerShape(12.dp)
-            )
-            .fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ){
-        Box(
-            modifier = Modifier
-                .padding(horizontal = 8.dp)
-                .size(64.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        color = MostChosenGreen,
-                        shape = RoundedCornerShape(6.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = iconResource),
-                    contentDescription = null,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-
-        Column(
-            modifier = Modifier
-                .padding(bottom = 8.dp, end = 16.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ){
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ){
-                Text(
-                    text = optionName,
-                    textAlign = TextAlign.Left,
-                    fontSize = typography.titleMedium.fontSize * 0.8f,
-                    fontWeight = FontWeight.Normal,
-                    color = Color.Black,
-
-                    modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                )
-
-                Text(
-                    text = "$optionScore%",
-                    textAlign = TextAlign.End,
-                    fontSize = typography.titleMedium.fontSize * 0.8f,
-                    fontWeight = FontWeight.Normal,
-                    color = Color.Black,
-                    modifier = Modifier
-                        .weight(1f)
-                )
-            }
-
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ){
-                Text(
-                    text = "Score: ${optionScore.toFloat()}",
-                    textAlign = TextAlign.Left,
-                    fontSize = LocalAppTypography.current.titleSmall.fontSize,
-                    fontWeight = FontWeight.Light,
-                    color = Color.Black
-                )
-
-                Text(
-                    text = impactText,
-                    textAlign = TextAlign.End,
-                    fontSize = LocalAppTypography.current.titleSmall.fontSize,
-                    fontWeight = FontWeight.Light,
-                    color = Color.Black
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .height(8.dp)
-                    .fillMaxWidth(optionScore.toFloat() / 100f)
-                    .background(
-                        color = impactColor,
-                        shape = RoundedCornerShape(24.dp)
-                    )
-                    .align(Alignment.Start)
-            )
-        }
-    }
-}
-
-@Composable
 fun OptionsDifferenceCard(
     modifier: Modifier = Modifier,
     difference: Int,
@@ -302,7 +172,7 @@ fun OptionComparisonScreen(
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .padding(horizontal = 8.dp)
+                .padding(horizontal = 16.dp)
                 .verticalScroll(verticalScroll)
                 .padding(bottom = 96.dp)
 

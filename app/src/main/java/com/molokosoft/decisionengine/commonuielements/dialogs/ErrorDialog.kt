@@ -1,4 +1,4 @@
-package com.molokosoft.decisionengine.commonuielements
+package com.molokosoft.decisionengine.commonuielements.dialogs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,10 +22,12 @@ fun ErrorDialog(
     errorTitle: String,
     errorMessage: String,
     errorButtonText: String = "Okay",
+    dismissButtonText: String = "",
     onDismissRequest: () -> Unit,
     onAcceptRequest: () -> Unit
 ){
-    val typography = LocalAppTypography.current
+    val typography =
+        LocalAppTypography.current
 
     AlertDialog (
         modifier = Modifier
@@ -66,6 +68,31 @@ fun ErrorDialog(
             ) {
                 Text (
                     text = errorButtonText,
+                    color = Color.White
+                )
+            }
+        },
+        dismissButton = {
+            if (dismissButtonText.isBlank())
+                return@AlertDialog
+
+            TextButton (
+                modifier = Modifier
+                    .border (
+                        width = 1.dp,
+                        color = Color.White,
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                    .background (
+                        color = DecisionBlue,
+                        shape = RoundedCornerShape(12.dp)
+                    ),
+                onClick = {
+                    onDismissRequest()
+                }
+            ) {
+                Text (
+                    text = dismissButtonText,
                     color = Color.White
                 )
             }

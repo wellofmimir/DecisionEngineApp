@@ -23,10 +23,8 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
 
 import androidx.compose.material3.Text
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
+import kotlin.math.roundToInt
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateMapOf
 
 import androidx.compose.ui.Alignment
@@ -43,11 +41,14 @@ import androidx.compose.ui.text.buildAnnotatedString
 
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.lerp
 
 import com.molokosoft.decisionengine.R
+import com.molokosoft.decisionengine.newdecisionscreen.dialogs.CriteriaRatingInfoDialog
 import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.LocalAppTypography
+import com.molokosoft.decisionengine.theme.*
 
 @Composable
 fun CriteriaWithSlider(
@@ -56,8 +57,43 @@ fun CriteriaWithSlider(
     score: Float,
     onValueChange: (Float) -> Unit
 ){
-    val typography = LocalAppTypography.current
-    var newScore by remember { mutableFloatStateOf(score) }
+    val typography =
+        LocalAppTypography.current
+
+
+    val scoreColor = when {
+        score <= 2f -> {
+            lerp(
+                ImpossibleReverseRed,
+                HardReverseRed,
+                ((score - 1f) / 1f).coerceIn(0f, 1f)
+            )
+        }
+
+        score <= 4f -> {
+            lerp(
+                HardReverseRed,
+                MediumReverseOrange,
+                ((score - 2f) / 2f).coerceIn(0f, 1f)
+            )
+        }
+
+        score <= 7f -> {
+            lerp(
+                MediumReverseOrange,
+                EasyReverseGreen,
+                ((score - 4f) / 3f).coerceIn(0f, 1f)
+            )
+        }
+
+        else -> {
+            lerp(
+                EasyReverseGreen,
+                VeryEasyReverseGreen,
+                ((score - 7f) / 3f).coerceIn(0f, 1f)
+            )
+        }
+    }
 
     Row(
         modifier = modifier
@@ -103,21 +139,19 @@ fun CriteriaWithSlider(
             horizontalAlignment = Alignment.CenterHorizontally
         ){
             Slider(
-                modifier = Modifier
-                    .fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth(),
                 value = score,
-                onValueChange = {
-                    newScore = it
-                    onValueChange(newScore)
+                onValueChange = { value ->
+                    onValueChange(value.roundToInt().toFloat())
                 },
                 valueRange = 1f..10f,
                 steps = 8,
                 colors = SliderDefaults.colors(
-                    thumbColor = DecisionBlue,
-                    activeTrackColor = DecisionBlue,
-                    inactiveTrackColor = DecisionBlueLight,
+                    thumbColor = scoreColor,
+                    activeTrackColor = scoreColor,
+                    inactiveTrackColor = scoreColor,
                     activeTickColor = Color.White,
-                    inactiveTickColor = DecisionBlue
+                    inactiveTickColor = scoreColor
                 )
             )
 
@@ -164,7 +198,8 @@ fun CriteriaWithSlider(
                     text = score.toInt().toString(),
                     textAlign = TextAlign.Center,
                     color = Color.Black,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = typography.titleSmall.fontSize * 1.25f
                 )
 
                 Text(
@@ -207,12 +242,15 @@ fun CriteriaWithSlider(
 @Composable
 fun RateComparisonCriteriaScreen(
     modifier: Modifier = Modifier,
+    showRatingInfoDialog: Boolean,
+    onInfoDialogClicked: () -> Unit,
     option: String,
     criteria: List<String>,
     onBackClicked: () -> Unit,
     onNextClicked: (criteriaToRating: List<Pair<String, Float>>) -> Unit
 ){
-    val typography = LocalAppTypography.current
+    val typography =
+        LocalAppTypography.current
 
     val ratings = remember(criteria) {
         mutableStateMapOf<String, Float>().apply {
@@ -220,6 +258,14 @@ fun RateComparisonCriteriaScreen(
                 put(criterion, 5f)
             }
         }
+    }
+
+    if (showRatingInfoDialog) {
+        CriteriaRatingInfoDialog(
+            onDismissRequest = {
+                onInfoDialogClicked()
+            }
+        )
     }
 
     Column(

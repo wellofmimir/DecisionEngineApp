@@ -8,4 +8,8 @@ class BackendRepository(
     suspend fun checkAvailability(): Boolean {
         return decisionEngineClient.getHealth() != null
     }
+
+    suspend fun checkAuthentication(apiKey: String): Boolean {
+        return decisionEngineClient.getAuthenticatedHealth(apiKey) != null
+    }
 }

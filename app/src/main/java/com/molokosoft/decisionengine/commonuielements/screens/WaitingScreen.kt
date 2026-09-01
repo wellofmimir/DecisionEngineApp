@@ -1,4 +1,4 @@
-package com.molokosoft.decisionengine.commonuielements
+package com.molokosoft.decisionengine.commonuielements.screens
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background

@@ -1,4 +1,4 @@
-package com.molokosoft.decisionengine.settingsscreen
+package com.molokosoft.decisionengine.settingsscreen.buttons
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
@@ -19,6 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -36,7 +37,8 @@ fun SettingsSectionButton(
     subtitle: String,
     @DrawableRes logo: Int,
     color: Color,
-    onClicked: () -> Unit
+    onClicked: () -> Unit,
+    showArrow: Boolean = true
 ) {
     val typography = LocalAppTypography.current
 
@@ -55,7 +57,6 @@ fun SettingsSectionButton(
     ){
         Box(
             modifier = Modifier
-                .padding(horizontal = 8.dp)
                 .size(64.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -124,6 +125,7 @@ fun SettingsSectionButton(
             contentDescription = null,
             modifier = Modifier
                 .size(16.dp, 16.dp)
+                .alpha(if (showArrow) 1.0f else 0f)
         )
 
         Spacer(

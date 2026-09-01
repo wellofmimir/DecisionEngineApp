@@ -19,11 +19,9 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,14 +37,17 @@ import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 
-import com.molokosoft.decisionengine.commonuielements.ErrorDialog
-import com.molokosoft.decisionengine.commonuielements.WaitingScreen
+import com.molokosoft.decisionengine.commonuielements.dialogs.ErrorDialog
+import com.molokosoft.decisionengine.commonuielements.screens.WaitingScreen
 import com.molokosoft.decisionengine.newdecisionscreen.dialogs.EnterCriterionImportanceDialog
+import com.molokosoft.decisionengine.newdecisionscreen.dialogs.ImportanceInfoDialog
 
 @Composable
 fun ChooseComparisonCriteriaScreen(
     criterionAndDescription: List<Pair<String, String>>,
     alreadySelectedCriteria: List<String>,
+    showImportanceInfoDialog: Boolean,
+    onImportanceDialogClicked: () -> Unit,
     onCriterionClicked: (name: String, importance: Int) -> Unit,
     onCriterionDeleted: (name: String) -> Unit,
     onBackClicked: () -> Unit,
@@ -61,25 +62,25 @@ fun ChooseComparisonCriteriaScreen(
         return
     }
 
-    val typography = LocalAppTypography.current
+    val typography =
+        LocalAppTypography.current
 
-    var showInfoDialog by remember { mutableStateOf(false) }
+    var showExplanationDialog by remember { mutableStateOf(false) }
     var showEnterCriterionDialog by remember { mutableStateOf(false) }
     var criterionToAdd by remember { mutableStateOf<String?>(null) }
     var infoTextAndDescription by remember { mutableStateOf("" to "") }
     var criterionToImportance by remember { mutableStateOf("" to 5) }
+    var selectedCriteria by remember { mutableStateOf(setOf<String>()) }
+    var showInfoDialog by remember { mutableStateOf(showImportanceInfoDialog) }
 
-    var selectedCriteria by remember {
-        mutableStateOf(setOf<String>())
-    }
-
-    if (showInfoDialog) //ErrorDialog wird hier als InfoDialog verwendet
+    if (showExplanationDialog) //ErrorDialog wird hier als InfoDialog verwendet
         ErrorDialog(
             errorTitle = infoTextAndDescription.first,
             errorMessage = infoTextAndDescription.second,
             errorButtonText = "Add",
+            dismissButtonText = "Cancel",
             onDismissRequest = {
-                showInfoDialog = false
+                showExplanationDialog = false
                 criterionToAdd = null
             },
             onAcceptRequest = {
@@ -90,26 +91,36 @@ fun ChooseComparisonCriteriaScreen(
                     }
                 }
 
-                showInfoDialog = false
+                showExplanationDialog = false
                 showEnterCriterionDialog = true
                 criterionToAdd = null
             }
         )
 
-    if (showEnterCriterionDialog)
-        EnterCriterionImportanceDialog(
-            criterionName = criterionToImportance.first,
-            onCriterionEntered = { name, importance ->
-                criterionToImportance = name to importance
-                showEnterCriterionDialog = false
-                onCriterionClicked(criterionToImportance.first, criterionToImportance.second)
-            },
-            onDismissRequest = {
-                showEnterCriterionDialog = false
-                selectedCriteria = selectedCriteria - criterionToImportance.first
-                onCriterionDeleted(criterionToImportance.first)
-            }
-        )
+    if (showEnterCriterionDialog) {
+        if (showInfoDialog) {
+            ImportanceInfoDialog(
+                onDismissRequest = {
+                    showInfoDialog = false
+                    onImportanceDialogClicked()
+                }
+            )
+        } else {
+            EnterCriterionImportanceDialog(
+                criterionName = criterionToImportance.first,
+                onCriterionEntered = { name, importance ->
+                    criterionToImportance = name to importance
+                    showEnterCriterionDialog = false
+                    onCriterionClicked(criterionToImportance.first, criterionToImportance.second)
+                },
+                onDismissRequest = {
+                    showEnterCriterionDialog = false
+                    selectedCriteria = selectedCriteria - criterionToImportance.first
+                    onCriterionDeleted(criterionToImportance.first)
+                }
+            )
+        }
+    }
 
     Column(
         modifier = modifier
@@ -160,7 +171,7 @@ fun ChooseComparisonCriteriaScreen(
 
             Text(
                 text = "Tap to add a criterion." +
-                        "\nDouble Tap to remove a criterion",
+                        "\nDouble Tap to remove a criterion.",
                 textAlign = TextAlign.Center,
                 fontSize = typography.titleSmall.fontSize,
                 color = Color.Black
@@ -219,7 +230,7 @@ fun ChooseComparisonCriteriaScreen(
                                     if (!isSelected) {
                                         criterionToAdd = criterion.first
                                         infoTextAndDescription = criterion.first to criterion.second
-                                        showInfoDialog = true
+                                        showExplanationDialog = true
                                     }
                                 },
                                 onDoubleTap = {

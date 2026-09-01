@@ -1,6 +1,7 @@
 package com.molokosoft.decisionengine.newdecisionscreen
 
 
+import android.util.Log
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.ui.Modifier
 
@@ -11,9 +12,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
+import com.molokosoft.decisionengine.commonclasses.ProductTypes
 
 import com.molokosoft.decisionengine.newdecisionscreen.dialogs.EnterOptionDialog
 import com.molokosoft.decisionengine.newdecisionscreen.dialogs.EnterCriterionDialog
@@ -25,12 +28,13 @@ import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.NewDecisionView
 import com.molokosoft.decisionengine.newdecisionscreen.screens.ChooseComparisonCriteriaScreen
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Criterion
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Option
-import com.molokosoft.decisionengine.commonuielements.ErrorDialog
-import com.molokosoft.decisionengine.commonuielements.WaitingScreen
+import com.molokosoft.decisionengine.commonuielements.dialogs.ErrorDialog
+import com.molokosoft.decisionengine.commonuielements.screens.WaitingScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.ForbiddenInputDataScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.NoMoreUsagesScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.NotAllowedScreen
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.ErrorCodes
+import kotlinx.coroutines.launch
 
 sealed class DecisionScreen {
     data object EnterDecisionName : DecisionScreen()
@@ -85,13 +89,31 @@ fun EnterDecisionScreen(
     productInformation: List<SubscriptionProduct>,
     modifier: Modifier = Modifier,
     onBackClicked: () -> Unit,
-    onContinueClicked: (ErrorCodes) -> Unit
+    onContinueClicked: (ErrorCodes, ProductTypes) -> Unit
 ){
     val context =
         LocalContext.current
 
+    val scope =
+        rememberCoroutineScope()
+
+    val showNotAllowedScreen by newDecisionViewModel.showNotAllowedScreen.collectAsStateWithLifecycle()
+    val showForbiddenInputScreen by newDecisionViewModel.showIsPromptScreen.collectAsStateWithLifecycle()
+    val showNoMoreUsagesScreen by newDecisionViewModel.showNoMoreUsagesScreen.collectAsStateWithLifecycle()
+    val analysisDone by newDecisionViewModel.analysisDone.collectAsStateWithLifecycle()
+    val showWaitingForAnalysisScreen by newDecisionViewModel.showWaitingForAnalysisScreen.collectAsStateWithLifecycle()
+    val decisionInfoDialogSeen by newDecisionViewModel.decisionInfoDialogSeen.collectAsStateWithLifecycle()
+    val optionInfoDialogSeen by newDecisionViewModel.optionInfoDialogSeen.collectAsStateWithLifecycle()
+    val importanceInfoDialogSeen by newDecisionViewModel.importanceInfoDialogSeen.collectAsStateWithLifecycle()
+    val ratingInfoDialogSeen by newDecisionViewModel.ratingInfoDialogSeen.collectAsStateWithLifecycle()
+
     var currentScreen by remember {
-        mutableStateOf<DecisionScreen>(DecisionScreen.EnterDecisionName)
+        mutableStateOf(
+            value = if (showNoMoreUsagesScreen)
+                DecisionScreen.NoMoreUsagesScreen
+            else
+                DecisionScreen.EnterDecisionName
+        )
     }
 
     var enterOptionDialogOpen by remember { mutableStateOf(false) }
@@ -99,15 +121,9 @@ fun EnterDecisionScreen(
     var errorMessageDialogOpen by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("" to "") }
 
-    val showNotAllowedScreen by newDecisionViewModel.showNotAllowedScreen.collectAsState()
-    val showForbiddenInputScreen by newDecisionViewModel.showIsPromptScreen.collectAsState()
-    val showNoMoreUsagesScreen by newDecisionViewModel.showNoMoreUsagesScreen.collectAsStateWithLifecycle()
-    val analysisDone by newDecisionViewModel.analysisDone.collectAsStateWithLifecycle()
-    val showWaitingForAnalysisScreen by newDecisionViewModel.showWaitingForAnalysisScreen.collectAsStateWithLifecycle()
-
     LaunchedEffect(analysisDone) {
         if (analysisDone)
-            onContinueClicked(ErrorCodes.SUCCESS)
+            onContinueClicked(ErrorCodes.SUCCESS, ProductTypes.Undefined)
     }
 
     LaunchedEffect(showNotAllowedScreen) {
@@ -126,17 +142,18 @@ fun EnterDecisionScreen(
     }
 
     LaunchedEffect(showWaitingForAnalysisScreen) {
-        if (showWaitingForAnalysisScreen)
+        if (showWaitingForAnalysisScreen && !showNoMoreUsagesScreen)
             currentScreen = DecisionScreen.WaitingForAnalysisScreen
     }
 
     val draft by newDecisionViewModel.draft.collectAsState()
 
-    val optionNames = remember(draft.options) {
-        draft.options.map {
-            it.name
+    val optionNames =
+        remember(draft.options) {
+            draft.options.map {
+               it.name
+            }
         }
-    }
 
     val criteriaNames by newDecisionViewModel.criteriaNames.collectAsState()
 
@@ -148,10 +165,14 @@ fun EnterDecisionScreen(
 
     when (currentScreen) {
         DecisionScreen.EnterDecisionName -> EnterDecisionNameScreen(
-            modifier = modifier,
+            modifier = modifier
+                .fillMaxHeight(),
             currentDecisionText = draft.title,
             yesOrNoDecision = yesOrNoDecision,
+            showDecisionInfoDialog = !decisionInfoDialogSeen,
             onBackClicked = {
+                Log.d("DecisionEngine", "resetDraft() in onBackClicked() in EnterDecisionNameScreen")
+
                 newDecisionViewModel.resetDraft()
                 onBackClicked()
             },
@@ -164,20 +185,26 @@ fun EnterDecisionScreen(
 
                 newDecisionViewModel.setTitle(name)
                 newDecisionViewModel.setDecisionType(yesOrNoDecision)
+                newDecisionViewModel.setDecisionInfoDialogSeen()
+
                 currentScreen = currentScreen.next(yesOrNoDecision)
             }
         )
 
         DecisionScreen.EnterDecisionOptions -> EnterDecisionOptionsScreen(
-            modifier = modifier,
+            modifier = modifier
+                .fillMaxHeight(),
             options = optionNames,
             onEnterOptionClicked = {
                 enterOptionDialogOpen = true
+                newDecisionViewModel.setOptionInfoDialogSeen()
             },
             onDeleteOption = {
                 newDecisionViewModel.deleteOption(it)
             },
             onBackClicked = {
+                Log.d("DecisionEngine", "resetDraft() in onBackClicked() in EnterDecisionOptionsScreen")
+
                 newDecisionViewModel.resetDraft()
                 currentScreen = currentScreen.previous(yesOrNoDecision)
             },
@@ -189,11 +216,13 @@ fun EnterDecisionScreen(
                 }
 
                 currentScreen = currentScreen.next()
-            }
+            },
+            showOptionInfoDialog = !optionInfoDialogSeen
         )
 
         DecisionScreen.EnterDecisionCriteria -> EnterComparisonCriteriaScreen(
-            modifier = modifier,
+            modifier = modifier
+                .fillMaxHeight(),
             criteria = criteriaNames,
             onEnterCriteriaClicked = {
                 enterCriterionDialogOpen = true
@@ -218,14 +247,26 @@ fun EnterDecisionScreen(
         DecisionScreen.RateComparisonCriteria -> {
             if (nextOptionName == null) {
                 LaunchedEffect(Unit) {
-                    newDecisionViewModel.onComparisonCompleted()
+                    if (newDecisionViewModel.isOnboarding) {
+                        onContinueClicked(ErrorCodes.SUCCESS, ProductTypes.Undefined)
+                        return@LaunchedEffect
+                    }
+
+                    scope.launch {
+                        newDecisionViewModel.onComparisonCompleted()
+                    }
                 }
 
                 return
             }
 
             RateComparisonCriteriaScreen(
-                modifier = modifier,
+                modifier = modifier
+                    .fillMaxHeight(),
+                showRatingInfoDialog = !ratingInfoDialogSeen,
+                onInfoDialogClicked = {
+                    newDecisionViewModel.setRatingInfoDialogSeen()
+                },
                 option = nextOptionName,
                 criteria = criteriaNames,
                 onBackClicked = {
@@ -252,10 +293,15 @@ fun EnterDecisionScreen(
 
         DecisionScreen.ChooseDecisionCriteria -> {
             ChooseComparisonCriteriaScreen(
-                modifier = modifier,
+                modifier = modifier
+                    .fillMaxHeight(),
                 alreadySelectedCriteria = criteriaNames,
                 criterionAndDescription = draft.criteriaSuggestions.map {
                     it.name to it.description
+                },
+                showImportanceInfoDialog = !importanceInfoDialogSeen,
+                onImportanceDialogClicked = {
+                    newDecisionViewModel.setImportanceInfoDialogSeen()
                 },
                 onCriterionClicked = { name, importance ->
                     newDecisionViewModel.setCriteria(Criterion(name, importance))
@@ -264,6 +310,8 @@ fun EnterDecisionScreen(
                     newDecisionViewModel.deleteCriterion(name)
                 },
                 onBackClicked = {
+                    Log.d("DecisionEngine", "resetDraft() in onBackClicked() in ChooseComparisonCriteriaScreen")
+
                     newDecisionViewModel.resetDraft()
                     currentScreen = currentScreen.previous()
                 },
@@ -279,6 +327,8 @@ fun EnterDecisionScreen(
                     .fillMaxHeight(),
                 context = context,
                 onBackClicked = {
+                    Log.d("DecisionEngine", "resetDraft() in onBackClicked() in NotAllowedScreen")
+
                     newDecisionViewModel.resetDraft()
                     currentScreen = DecisionScreen.EnterDecisionName
                 }
@@ -290,6 +340,8 @@ fun EnterDecisionScreen(
                 modifier = modifier
                     .fillMaxHeight(),
                 onBackClicked = {
+                    Log.d("DecisionEngine", "resetDraft() in onBackClicked() in ForbiddenInputDataScreen")
+
                     newDecisionViewModel.resetDraft()
                     currentScreen = DecisionScreen.EnterDecisionName
                 }
@@ -301,10 +353,13 @@ fun EnterDecisionScreen(
                 modifier = modifier
                     .fillMaxHeight(),
                 productInformation = productInformation,
-                onAccepted = {
-                    onContinueClicked(ErrorCodes.NO_MORE_USAGES)
+                onAccepted = { productType ->
+                    onContinueClicked(ErrorCodes.NO_MORE_USAGES, productType)
                 },
                 onDeclined = {
+                    Log.d("DecisionEngine", "resetDraft() in onDeclined() in NoMoreUsagesScreen")
+
+                    newDecisionViewModel.resetDraft()
                     onBackClicked()
                 }
             )
@@ -322,13 +377,13 @@ fun EnterDecisionScreen(
     if (enterOptionDialogOpen)
         EnterOptionDialog(
             onOptionEntered = { name, reversibility ->
-                newDecisionViewModel.setOption(
-                    Option(
-                        name = name,
-                        reversibility = reversibility
-                    )
-                )
+                if (name.isBlank()) {
+                    errorMessage = "A bit more please..." to "Please enter an option name."
+                    errorMessageDialogOpen = true
+                    return@EnterOptionDialog
+                }
 
+                newDecisionViewModel.setOption(Option(name = name, reversibility = reversibility))
                 enterOptionDialogOpen = false
             },
             onDismissRequest = {
@@ -338,13 +393,13 @@ fun EnterDecisionScreen(
     else if (enterCriterionDialogOpen)
         EnterCriterionDialog(
             onCriterionEntered = { name, importance ->
-                newDecisionViewModel.setCriteria(
-                    Criterion(
-                        name = name,
-                        importance = importance
-                    )
-                )
+                if (name.isBlank()) {
+                    errorMessage = "A bit more please..." to "Please enter an criterion name."
+                    errorMessageDialogOpen = true
+                    return@EnterCriterionDialog
+                }
 
+                newDecisionViewModel.setCriteria(Criterion(name = name, importance = importance))
                 enterCriterionDialogOpen = false
             },
             onDismissRequest = {

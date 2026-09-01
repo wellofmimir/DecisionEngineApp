@@ -1,4 +1,4 @@
-package com.molokosoft.decisionengine.homescreen
+package com.molokosoft.decisionengine.homescreen.dialogs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,7 +37,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 
 @Composable
-fun EnterUsernameBox(
+fun EnterUsernameDialog(
     modifier: Modifier = Modifier,
     onDismissRequest: () -> Unit,
     onAdd: (username: String) -> Unit

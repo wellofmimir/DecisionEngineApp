@@ -46,7 +46,8 @@ fun EnterComparisonCriteriaScreen(
     onBackClicked: () -> Unit,
     onNextClicked: () -> Unit
 ){
-    val typography = LocalAppTypography.current
+    val typography =
+        LocalAppTypography.current
 
     Column(
         modifier = modifier

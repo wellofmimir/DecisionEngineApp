@@ -1,4 +1,4 @@
-package com.molokosoft.decisionengine.settingsscreen
+package com.molokosoft.decisionengine.settingsscreen.sections
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,6 +22,9 @@ import com.molokosoft.decisionengine.theme.Orange
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 import androidx.compose.ui.platform.LocalContext
 import android.content.Context
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import com.molokosoft.decisionengine.settingsscreen.buttons.SettingsSectionButton
 
 fun Context.getAppVersionName(): String {
     return try {
@@ -65,8 +68,10 @@ fun AppInformationSection(
             text = "App Information",
             fontSize = typography.titleMedium.fontSize * 0.75f,
             color = Color.Black,
+            fontWeight = FontWeight.SemiBold,
+            textAlign = TextAlign.Center,
             modifier = Modifier
-                .padding(top = 4.dp, bottom = 0.dp, start = 8.dp, end = 8.dp)
+                .padding(top = 4.dp, bottom = 0.dp, start = 16.dp, end = 8.dp)
         )
 
         HorizontalDivider(

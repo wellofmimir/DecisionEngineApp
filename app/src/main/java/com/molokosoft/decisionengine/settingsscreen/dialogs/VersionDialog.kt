@@ -1,4 +1,4 @@
-package com.molokosoft.decisionengine.settingsscreen
+package com.molokosoft.decisionengine.settingsscreen.dialogs
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -6,14 +6,12 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material3.Icon
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -28,12 +26,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
 import com.molokosoft.decisionengine.R
-import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 
 @Composable
-fun VersionBox(
+fun VersionDialog(
     modifier: Modifier = Modifier,
     version: String,
     onDismissRequest: () -> Unit
@@ -49,7 +46,7 @@ fun VersionBox(
             modifier = modifier
                 .border(
                     width = 1.dp,
-                    color = DecisionBlueLight,
+                    color = Color.White,
                     shape = RoundedCornerShape(12.dp)
                 )
                 .shadow(
@@ -57,7 +54,7 @@ fun VersionBox(
                     shape = RoundedCornerShape(12.dp)
                 )
                 .background(
-                    color = DecisionBlueLight,
+                    color = Color.White,
                     shape = RoundedCornerShape(12.dp)
                 )
         ) {
@@ -67,21 +64,15 @@ fun VersionBox(
                     .padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Box(
+                Image(
+                    painter = painterResource(
+                        id = R.drawable.decisionenginelogonew
+                    ),
+                    contentDescription = null,
                     modifier = Modifier
-                        .size(48.dp)
-                        .background(
-                            color = DecisionBlueLight,
-                            shape = RoundedCornerShape(6.dp)
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Image(
-                        painter = painterResource(R.drawable.layers_foreground),
-                        contentDescription = null,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                        .fillMaxWidth(0.5f)
+                        .aspectRatio(1f)
+                )
 
                 Spacer(
                     Modifier

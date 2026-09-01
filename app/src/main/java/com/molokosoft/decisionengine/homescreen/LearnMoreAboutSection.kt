@@ -102,6 +102,10 @@ fun LearnMoreAboutSection(
                 modifier = Modifier
                     .padding(horizontal = 8.dp)
                     .clickable() {
+                        shortText.ifBlank {
+                            return@clickable
+                        }
+
                         onReadArticleClicked()
                     }
             )

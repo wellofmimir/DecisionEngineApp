@@ -1,4 +1,4 @@
-package com.molokosoft.decisionengine.homescreen
+package com.molokosoft.decisionengine.homescreen.dialogs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,7 +25,7 @@ import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 
 @Composable
-fun ReadArticleBox(
+fun ReadArticleDialog(
     title: String,
     text: String,
     onCloseArticleClicked: () -> Unit,

@@ -35,24 +35,22 @@ import com.molokosoft.decisionengine.repositories.DecisionRepository
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import com.molokosoft.decisionengine.commonuielements.ConnectionErrorScreen
-import com.molokosoft.decisionengine.commonuielements.ErrorDialog
-import kotlinx.coroutines.async
+import androidx.lifecycle.lifecycleScope
+import com.molokosoft.decisionengine.commonuielements.screens.ConnectionErrorScreen
+import com.molokosoft.decisionengine.commonuielements.dialogs.ErrorDialog
+import com.molokosoft.decisionengine.homescreen.dialogs.EnterRestoreKeyDialog
 import java.util.UUID
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel
 import com.molokosoft.decisionengine.repositories.ArticlesRepository
 import com.molokosoft.decisionengine.repositories.BackendRepository
 import com.molokosoft.decisionengine.repositories.QuoteRepository
-import com.molokosoft.decisionengine.settingsscreen.model.SettingsScreenViewModel
+import com.molokosoft.decisionengine.settingsscreen.viewmodel.SettingsScreenViewModel
 import com.molokosoft.decisionengine.welcomescreen.SplashScreen
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-sealed interface AppEvent {
-    data class ConnectionError(
-        val message: String? = null
-    ) : AppEvent
-}
+
 sealed class AppState {
     data object Loading: AppState()
     data object Welcome : AppState()
@@ -78,8 +76,10 @@ fun AppState.next(): AppState =
 
 class MainActivity : ComponentActivity() {
 
-    private val _showMotivationalQuote = MutableStateFlow(false)
-    val showMotivationalQuote = _showMotivationalQuote.asStateFlow()
+    private val _showMotivationalQuote =
+        MutableStateFlow(false)
+    val showMotivationalQuote =
+        _showMotivationalQuote.asStateFlow()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -91,7 +91,6 @@ class MainActivity : ComponentActivity() {
                     installationId().ifBlank {
                         setInstallationId(UUID.randomUUID().toString())
                     }
-                    setApiKey("leckmich")
                 }
             }
 
@@ -181,29 +180,18 @@ class MainActivity : ComponentActivity() {
 
             manager.createNotificationChannel(NotificationChannel("motivationalQuote", "motivationalQuote", NotificationManager.IMPORTANCE_HIGH))
 
-            val showQuote by
-                showMotivationalQuote.collectAsState()
+            val showQuote by showMotivationalQuote.collectAsState()
+            val subscriptionProducts by newDecisionViewModel.subscriptionProducts.collectAsState()
 
-            val subscriptionProducts by
-                newDecisionViewModel.subscriptionProducts.collectAsState()
-
-            var appState by remember {
-                mutableStateOf<AppState>(Loading)
-            }
-
-            var hasAccess by remember {
-                mutableStateOf(false)
-            }
-
-            var hasError by remember {
-                mutableStateOf(false)
-            }
-
-            var errorMessage by remember {
-                mutableStateOf("" to "")
-            }
+            var appState by remember { mutableStateOf<AppState>(Loading) }
+            var hasAccess by remember { mutableStateOf(false) }
+            var hasError by remember { mutableStateOf(false) }
+            var showEnterRestoreKeyDialog by remember { mutableStateOf(false) }
+            var errorMessage by remember { mutableStateOf("" to "") }
 
             LaunchedEffect(Unit) {
+                newDecisionViewModel.loadProducts()
+
                 userDataRepository.apiKey().ifBlank {
                     appState = Welcome
                     return@LaunchedEffect
@@ -230,10 +218,15 @@ class MainActivity : ComponentActivity() {
                 )
             }
 
+            LaunchedEffect(appState) {
+                if (appState == Onboarding)
+                    newDecisionViewModel.startOnboarding()
+            }
+
             DecisionEngineTheme {
                 when (appState) {
-
-                    Loading -> {}
+                    Loading ->
+                        {}
 
                     Splash -> SplashScreen(
                         onDone = {
@@ -256,12 +249,13 @@ class MainActivity : ComponentActivity() {
                         onBackClicked = {
                             appState = Welcome
                         },
-                        onContinueClicked = {
+                        onContinueClicked = { errorType, productType  ->
                             appState = appState.next()
                         }
                     )
 
                     Paywall -> PaywallScreen(
+                        newDecisionViewModel = newDecisionViewModel,
                         onContinueClicked = { productType, eMail ->
 
                             newDecisionViewModel.startBillingProcess(
@@ -271,11 +265,13 @@ class MainActivity : ComponentActivity() {
                                     null
                                 },
                                 onSuccess = {
-                                    appState = appState.next()
-                                    newDecisionViewModel.finishOnboarding()
+                                    lifecycleScope.launch {
+                                        newDecisionViewModel.finishOnboarding()
+                                        appState = MainApp
 
-                                    if (eMail != null)
-                                        newDecisionViewModel.saveEMail(eMail)
+                                        if (eMail != null)
+                                            newDecisionViewModel.saveEMail(eMail)
+                                    }
                                 },
                                 onFailure = {
                                     errorMessage =
@@ -288,7 +284,11 @@ class MainActivity : ComponentActivity() {
                         onBackClicked = {
 
                         },
-                        subscriptionProducts = subscriptionProducts
+                        onRestore = {
+                            showEnterRestoreKeyDialog = true
+                        },
+                        productInformation = subscriptionProducts,
+                        showRestorage = true
                     )
 
                     MainApp -> {
@@ -327,6 +327,36 @@ class MainActivity : ComponentActivity() {
                         },
                         onAcceptRequest = {
                             hasError = false
+                        }
+                    )
+
+                    return@DecisionEngineTheme
+                }
+
+                if (showEnterRestoreKeyDialog) {
+                    EnterRestoreKeyDialog(
+                        onDismissRequest = {
+                            showEnterRestoreKeyDialog = false
+                        },
+                        onRestoreKeyEntered = { restoreKey ->
+                            showEnterRestoreKeyDialog = false
+
+                            lifecycleScope.launch {
+
+                                val isValid =
+                                    backendRepository.checkAuthentication(restoreKey)
+
+                                if (isValid) {
+                                    securePreferences.setApiKey(restoreKey)
+                                    decisionEngineClient.setApiKey(restoreKey)
+                                    newDecisionViewModel.finishRestore()
+                                    appState = MainApp
+                                } else {
+                                    hasError = true
+                                    errorMessage = "Unknown Restore-Key" to "Please enter another Restore-Key.\nIf the error sustains, please reach out to our support."
+                                    showEnterRestoreKeyDialog = false
+                                }
+                            }
                         }
                     )
                 }

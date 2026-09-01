@@ -1,4 +1,4 @@
-package com.molokosoft.decisionengine.commonuielements
+package com.molokosoft.decisionengine.commonuielements.buttons
 
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 import com.molokosoft.decisionengine.R
@@ -30,8 +30,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
-
-import com.molokosoft.decisionengine.theme.MostChosenGreen
 
 
 @Composable

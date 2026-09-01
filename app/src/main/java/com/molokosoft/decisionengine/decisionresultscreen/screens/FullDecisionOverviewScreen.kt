@@ -1,5 +1,6 @@
 package com.molokosoft.decisionengine.decisionresultscreen.screens
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -70,6 +71,13 @@ fun PagerIndicator(
     }
 }
 
+data class Page(
+    val title: String,
+    val content: String,
+    val background: Color,
+    @DrawableRes val logo: Int
+)
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnalysisPager(
@@ -77,25 +85,29 @@ fun AnalysisPager(
     decisionAnalysisResult: DecisionAnalysisResult
 ){
     val pages = listOf(
-        Triple(
+        Page(
             "Summary",
             decisionAnalysisResult.summary,
-            SummaryBackground
+            background = SummaryBackground,
+            R.drawable.diagnosis_foreground
         ),
-        Triple(
+        Page(
             "Potential Blind Spots",
             decisionAnalysisResult.blindSpots,
-            BlindSpotBackground
+            BlindSpotBackground,
+            R.drawable.eye_foreground
         ),
-        Triple(
+        Page(
             "Roadmap to Success",
             decisionAnalysisResult.roadmapToSuccess,
-            OutlookBackground
+            OutlookBackground,
+            R.drawable.upwards_trend_file_foreground
         ),
-        Triple(
+        Page(
             "Conclusion",
             decisionAnalysisResult.conclusion,
-            InsightBackground
+            InsightBackground,
+            R.drawable.document_foreground
         )
     )
 
@@ -118,10 +130,10 @@ fun AnalysisPager(
             AnalysisPage(
                 modifier = Modifier
                     .padding(16.dp),
-                title = pages[page].first,
-                description = pages[page].second,
-                iconResource = R.drawable.star_blue_foreground,
-                backgroundColor = pages[page].third
+                title = pages[page].title,
+                description = pages[page].content,
+                iconResource = pages[page].logo,
+                backgroundColor = pages[page].background
             )
         }
 
@@ -147,7 +159,8 @@ fun AnalysisPage(
     backgroundColor: Color,
     modifier: Modifier = Modifier
 ) {
-    val typography = LocalAppTypography.current
+    val typography =
+        LocalAppTypography.current
 
     Column(
         modifier = modifier
@@ -188,7 +201,7 @@ fun AnalysisPage(
             fontSize = typography.titleLarge.fontSize,
             fontWeight = FontWeight.Bold,
             color = Color.Black,
-            textAlign = TextAlign.Justify
+            textAlign = TextAlign.Center
         )
 
         Spacer(
@@ -212,7 +225,8 @@ fun AnalysisPage(
                 .weight(1f)
                 .fillMaxWidth()
         ) {
-            val scrollState = rememberScrollState()
+            val scrollState =
+                rememberScrollState()
 
             Column(
                 modifier = Modifier
@@ -236,7 +250,8 @@ fun FullDecisionOverviewScreen(
     decisionAnalysisResult: DecisionAnalysisResult?,
     onContinueClicked: () -> Unit
 ){
-    val typography = LocalAppTypography.current
+    val typography =
+        LocalAppTypography.current
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -244,7 +259,7 @@ fun FullDecisionOverviewScreen(
         modifier = modifier
             .fillMaxSize()
             .background(
-                color = DecisionBlueLight
+                color = Color.White
             )
     ) {
         Spacer(
