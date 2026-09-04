@@ -5,5 +5,6 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class DecisionAnalysisResponse(
-    val result: DecisionAnalysisResult
+    val result: DecisionAnalysisResult?,
+    val errorMessage: String?
 )

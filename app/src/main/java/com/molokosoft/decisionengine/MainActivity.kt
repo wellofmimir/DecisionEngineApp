@@ -35,6 +35,9 @@ import com.molokosoft.decisionengine.repositories.DecisionRepository
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import com.molokosoft.decisionengine.commonuielements.screens.ConnectionErrorScreen
 import com.molokosoft.decisionengine.commonuielements.dialogs.ErrorDialog
@@ -85,6 +88,17 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         handleIntent(intent = intent)
         enableEdgeToEdge()
+
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        val controller =
+            WindowCompat.getInsetsController(window, window.decorView)
+
+        controller.hide(WindowInsetsCompat.Type.navigationBars())
+
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+
         setContent {
             val securePreferences = remember {
                 SecurePreferences(applicationContext).apply {

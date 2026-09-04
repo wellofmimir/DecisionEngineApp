@@ -30,6 +30,7 @@ import com.molokosoft.decisionengine.network.backend.DecisionEngineClient
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
 import com.molokosoft.decisionengine.network.backend.model.dto.security.dto.PromptReconnaissanceResult
+import com.molokosoft.decisionengine.repositories.AiAnalysisResult
 import com.molokosoft.decisionengine.repositories.DecisionRepository
 import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
 import com.molokosoft.decisionengine.repositories.model.CriterionAnalysis
@@ -62,6 +63,7 @@ class NewDecisionViewModel(
 
     val ratingInfoDialogSeen =
         userDataRepository.ratingInfoDialogSeen
+
     val importanceInfoDialogSeen =
         userDataRepository.importanceInfoDialogSeen
 
@@ -77,6 +79,12 @@ class NewDecisionViewModel(
 
     var isOnboarding: Boolean = false
         private set
+
+    private val _showAnalysisErrorScreen =
+        MutableStateFlow(false)
+
+    val showAnalysisErrorScreen =
+        _showAnalysisErrorScreen.asStateFlow()
 
     val showNotAllowedScreen: StateFlow<Boolean> =
         draft
@@ -149,6 +157,7 @@ class NewDecisionViewModel(
             _analysisDone.value = false
             _showWaitingForAnalysisScreen.value = false
             _showNoMoreUsagesScreen.value = false
+            _showAnalysisErrorScreen.value = false
         }
     }
 
@@ -400,9 +409,9 @@ class NewDecisionViewModel(
             return
         }
 
-        _showWaitingForAnalysisScreen.value = true
-
         Log.d("Billing", "BEFORE getRemainingUsages()")
+
+        _showWaitingForAnalysisScreen.value = true
 
         val remainingUsages =
             decisionEngineClient.getRemainingUsages()
@@ -423,9 +432,8 @@ class NewDecisionViewModel(
 
         _showNoMoreUsagesScreen.value = remaining == 0
 
-        if (remaining > 0) {
+        if (remaining > 0)
             startAnalysis()
-        }
     }
 
     fun getNextOption(): String? {
@@ -445,32 +453,43 @@ class NewDecisionViewModel(
             )
         }
 
-        _draft.update {
-            it.copy(
-                decisionAnalysisResult =
-                    factorAnalysisRepository.getAiAnalysis(it.optionAnalyses)
-            )
+        val analysisResult =
+            factorAnalysisRepository.getAiAnalysis(_draft.value.optionAnalyses)
+
+        when (analysisResult) {
+            is AiAnalysisResult.Success -> {
+                _draft.update {
+                    it.copy(
+                        decisionAnalysisResult = analysisResult.result
+                    )
+                }
+
+                _showWaitingForAnalysisScreen.value = false
+                _analysisDone.value = true
+
+                saveDecision()
+                Log.d("NewDecisionViewModel", "Analysis is finished.")
+            }
+
+            is AiAnalysisResult.Error -> {
+                _draft.update {
+                    it.copy(
+                        errorMessage = analysisResult.message
+                    )
+                }
+
+                _showAnalysisErrorScreen.value = true
+            }
         }
-
-        _showWaitingForAnalysisScreen.value = false
-        _analysisDone.value = true
-
-        saveDecision()
-        Log.d("NewDecisionViewModel", "Analysis is finished.")
     }
 
     fun saveEMail(eMail: EMail) {
         viewModelScope.launch {
-          //"Save the E-Mail in case the sendEmail-Method fails.")
-
-            val success =
-                userDataRepository.sendEmail(eMail.toString())
-
-            //"If the sendEMail-Method fails, try it again, until it doesn't fail anymore")
+            userDataRepository.sendEmail(eMail.toString())
         }
     }
-    suspend fun getSafetyClassification(title: String): SafetyClassification? {
 
+    suspend fun getSafetyClassification(title: String): SafetyClassification? {
         val result =
             factorAnalysisRepository.safetyClassification(title)
 

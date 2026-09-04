@@ -58,6 +58,11 @@ fun Option.analyze(): OptionAnalysis {
     )
 }
 
+sealed interface AiAnalysisResult {
+    data class Success(val result: DecisionAnalysisResult) : AiAnalysisResult
+    data class Error(val message: String) : AiAnalysisResult
+}
+
 class FactorAnalysisRepository(
     private val decisionEngineClient: DecisionEngineClient
 ){
@@ -69,7 +74,7 @@ class FactorAnalysisRepository(
         }
     }
 
-    suspend fun getAiAnalysis(analysisResult: List<OptionAnalysis>): DecisionAnalysisResult? {
+    suspend fun getAiAnalysis(analysisResult: List<OptionAnalysis>): AiAnalysisResult {
 
         val optionList: List<DecisionOption> = analysisResult.map { option ->
             DecisionOption(
@@ -103,7 +108,10 @@ class FactorAnalysisRepository(
                     decisionEngineClient.analyze(decisionAnalysisRequest)
 
                 if (response?.result != null)
-                    return response.result
+                    return AiAnalysisResult.Success(response.result)
+
+                if (response?.errorMessage != null)
+                    return AiAnalysisResult.Error(response.errorMessage)
 
                 Log.e(
                     "DecisionEngine",
@@ -120,7 +128,7 @@ class FactorAnalysisRepository(
                 )
 
                 if (attempt == 3)
-                    return null
+                    return AiAnalysisResult.Error("Our server has a tiny problem.\nPlease try again later.")
 
             } catch (e: ServerResponseException) {
                 Log.e(
@@ -131,7 +139,7 @@ class FactorAnalysisRepository(
 
                 // Bei 5xx erneut versuchen
                 if (attempt == 3)
-                    return null
+                    return AiAnalysisResult.Error("Our server has a tiny problem.\nPlease try again later.")
 
             } catch (e: IOException) {
                 Log.e(
@@ -141,23 +149,17 @@ class FactorAnalysisRepository(
                 )
 
                 if (attempt == 3)
-                    return null
+                    return AiAnalysisResult.Error("Our server has a tiny problem.\nPlease try again later.")
 
             } catch (e: Exception) {
-                Log.e(
-                    "DecisionEngine",
-                    "Unexpected error (Attempt $attempt)",
-                    e
-                )
-                return null
+                Log.e("DecisionEngine", "Unexpected error (Attempt $attempt)", e)
+                return AiAnalysisResult.Error("Our server has a tiny problem.\nPlease try again later.")
             }
 
             delay(1500)
         }
 
-        return null
-
-        return null
+        return AiAnalysisResult.Error("Our server has a tiny problem.\nPlease try again later.")
     }
 
     suspend fun getCriteriaSuggestions(decisionTitle: String): List<CriterionSuggestion> {

@@ -1,5 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.DecisionEngine" parent="android:Theme.Material.Light.NoActionBar" />
+    <!-- Normal application theme -->
+    <style name="Theme.DecisionEngine"
+        parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Android 12+ starting theme -->
+    <style name="Theme.DecisionEngine.Starting"
+        parent="Theme.SplashScreen">
+
+        <!-- Background of the Android system splash -->
+        <item name="windowSplashScreenBackground">@color/white</item>
+
+        <!-- Icon shown during Android startup -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/decisionenginelogonew</item>
+
+        <!-- Theme used after the system splash -->
+        <item name="postSplashScreenTheme">@style/Theme.DecisionEngine</item>
+
+    </style>
+
 </resources>

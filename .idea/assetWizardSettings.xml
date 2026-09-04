@@ -79,7 +79,8 @@
                                             <option name="values">
                                               <map>
                                                 <entry key="color" value="000000" />
-                                                <entry key="imagePath" value="C:\Users\pmlec\Desktop\DecisionEngine\nomore.png" />
+                                                <entry key="imagePath" value="C:\Users\pmlec\Desktop\DecisionEngine\finalicon.png" />
+                                                <entry key="scalingPercent" value="64" />
                                               </map>
                                             </option>
                                           </PersistentState>
@@ -111,7 +112,7 @@
                                   </option>
                                   <option name="values">
                                     <map>
-                                      <entry key="outputName" value="nomoreusages" />
+                                      <entry key="outputName" value="decisionengineiconlogo" />
                                     </map>
                                   </option>
                                 </PersistentState>
@@ -288,6 +289,11 @@
                 </map>
               </option>
             </PersistentState>
+          </value>
+        </entry>
+        <entry key="vectorWizard">
+          <value>
+            <PersistentState />
           </value>
         </entry>
       </map>

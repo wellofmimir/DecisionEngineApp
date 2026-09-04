@@ -33,6 +33,7 @@ import com.molokosoft.decisionengine.commonuielements.screens.WaitingScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.ForbiddenInputDataScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.NoMoreUsagesScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.NotAllowedScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.AnalysisErrorScreen
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.ErrorCodes
 import kotlinx.coroutines.launch
 
@@ -48,6 +49,8 @@ sealed class DecisionScreen {
     data object NoMoreUsagesScreen : DecisionScreen()
 
     data object WaitingForAnalysisScreen : DecisionScreen()
+
+    data object AnalysisErrorScreen : DecisionScreen()
 }
 
 fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
@@ -67,6 +70,7 @@ fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
         DecisionScreen.ForbiddenInputScreen -> DecisionScreen.EnterDecisionName
         DecisionScreen.NoMoreUsagesScreen -> DecisionScreen.EnterDecisionName
         DecisionScreen.WaitingForAnalysisScreen -> DecisionScreen.EnterDecisionName
+        DecisionScreen.AnalysisErrorScreen -> DecisionScreen.EnterDecisionName
     }
 
 fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
@@ -80,7 +84,7 @@ fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
         DecisionScreen.ForbiddenInputScreen -> DecisionScreen.EnterDecisionName
         DecisionScreen.NoMoreUsagesScreen -> DecisionScreen.EnterDecisionName
         DecisionScreen.WaitingForAnalysisScreen -> DecisionScreen.EnterDecisionName
-
+        DecisionScreen.AnalysisErrorScreen -> DecisionScreen.EnterDecisionName
     }
 
 @Composable
@@ -97,6 +101,7 @@ fun EnterDecisionScreen(
     val scope =
         rememberCoroutineScope()
 
+    val showAnalysisErrorScreen by newDecisionViewModel.showAnalysisErrorScreen.collectAsStateWithLifecycle()
     val showNotAllowedScreen by newDecisionViewModel.showNotAllowedScreen.collectAsStateWithLifecycle()
     val showForbiddenInputScreen by newDecisionViewModel.showIsPromptScreen.collectAsStateWithLifecycle()
     val showNoMoreUsagesScreen by newDecisionViewModel.showNoMoreUsagesScreen.collectAsStateWithLifecycle()
@@ -144,6 +149,11 @@ fun EnterDecisionScreen(
     LaunchedEffect(showWaitingForAnalysisScreen) {
         if (showWaitingForAnalysisScreen && !showNoMoreUsagesScreen)
             currentScreen = DecisionScreen.WaitingForAnalysisScreen
+    }
+
+    LaunchedEffect(showAnalysisErrorScreen) {
+        if (showAnalysisErrorScreen)
+            currentScreen = DecisionScreen.AnalysisErrorScreen
     }
 
     val draft by newDecisionViewModel.draft.collectAsState()
@@ -268,9 +278,15 @@ fun EnterDecisionScreen(
                     newDecisionViewModel.setRatingInfoDialogSeen()
                 },
                 option = nextOptionName,
-                criteria = criteriaNames,
+                criterionAndDescription = draft.criteriaSuggestions
+                    .filter {
+                        it.name in criteriaNames
+                    }
+                    .map {
+                        it.name to it.description
+                    },
                 onBackClicked = {
-                    currentScreen = currentScreen.previous()
+                    currentScreen = DecisionScreen.ChooseDecisionCriteria
                 },
                 onNextClicked = { list ->
                     val listOfCriteria = list.map { (name, rating) ->
@@ -348,7 +364,7 @@ fun EnterDecisionScreen(
             )
         }
 
-        DecisionScreen.NoMoreUsagesScreen ->{
+        DecisionScreen.NoMoreUsagesScreen -> {
             NoMoreUsagesScreen(
                 modifier = modifier
                     .fillMaxHeight(),
@@ -361,6 +377,18 @@ fun EnterDecisionScreen(
 
                     newDecisionViewModel.resetDraft()
                     onBackClicked()
+                }
+            )
+        }
+
+        DecisionScreen.AnalysisErrorScreen -> {
+            AnalysisErrorScreen(
+                modifier = modifier
+                    .fillMaxHeight(),
+                errorMessage = draft.errorMessage.toString(),
+                onDismiss = {
+                    newDecisionViewModel.resetDraft()
+                    currentScreen = DecisionScreen.EnterDecisionName
                 }
             )
         }

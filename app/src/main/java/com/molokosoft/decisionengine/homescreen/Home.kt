@@ -154,7 +154,7 @@ fun Home(
     ) {
         Spacer(
             modifier = Modifier
-                .height(16.dp)
+                .height(32.dp)
         )
 
         Row(

@@ -6,6 +6,14 @@ import com.molokosoft.decisionengine.network.backend.model.dto.decision.Criterio
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
 import com.molokosoft.decisionengine.network.backend.model.dto.security.dto.PromptReconnaissanceResult
 
+fun DecisionDraft.decisionAnalysisResultFailed(): Boolean {
+    return title.isNotBlank() &&
+            options.isNotEmpty() &&
+            criteria.isNotEmpty() &&
+            criteriaSuggestions.isNotEmpty() &&
+            optionAnalyses.isNotEmpty() &&
+            decisionAnalysisResult == null
+}
 data class DecisionDraft(
     val title: String = "",
     val yesOrNoDecision: Boolean = false,
@@ -15,5 +23,6 @@ data class DecisionDraft(
     val optionAnalyses: List<OptionAnalysis> = emptyList(),
     val decisionAnalysisResult: DecisionAnalysisResult? = null,
     val safetyClassification: SafetyClassification? = null,
-    val promptReconnaissanceResult: PromptReconnaissanceResult? = null
+    val promptReconnaissanceResult: PromptReconnaissanceResult? = null,
+    val errorMessage: String? = null
 )

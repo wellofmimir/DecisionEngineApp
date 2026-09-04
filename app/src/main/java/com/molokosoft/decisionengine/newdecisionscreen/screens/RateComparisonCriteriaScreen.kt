@@ -24,6 +24,7 @@ import androidx.compose.material3.SliderDefaults
 
 import androidx.compose.material3.Text
 import kotlin.math.roundToInt
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateMapOf
 
@@ -35,6 +36,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -44,6 +51,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.lerp
 
 import com.molokosoft.decisionengine.R
+import com.molokosoft.decisionengine.commonuielements.dialogs.ErrorDialog
 import com.molokosoft.decisionengine.newdecisionscreen.dialogs.CriteriaRatingInfoDialog
 import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
@@ -55,34 +63,42 @@ fun CriteriaWithSlider(
     modifier: Modifier = Modifier,
     criteria: String,
     score: Float,
-    onValueChange: (Float) -> Unit
+    onValueChange: (Float) -> Unit,
+    onInfoButtonClicked: () -> Unit
 ){
     val typography =
         LocalAppTypography.current
 
+    fun smoothStep(t: Float): Float {
+        val x = t.coerceIn(0f, 1f)
+        return x * x * (3f - 2f * x)
+    }
+
+    val normalizedScore =
+        ((score - 1f) / 9f).coerceIn(0f, 1f)
 
     val scoreColor = when {
-        score <= 2f -> {
+        normalizedScore < 0.25f -> {
             lerp(
                 ImpossibleReverseRed,
                 HardReverseRed,
-                ((score - 1f) / 1f).coerceIn(0f, 1f)
+                smoothStep(normalizedScore / 0.25f)
             )
         }
 
-        score <= 4f -> {
+        normalizedScore < 0.5f -> {
             lerp(
                 HardReverseRed,
                 MediumReverseOrange,
-                ((score - 2f) / 2f).coerceIn(0f, 1f)
+                smoothStep((normalizedScore - 0.25f) / 0.25f)
             )
         }
 
-        score <= 7f -> {
+        normalizedScore < 0.75f -> {
             lerp(
                 MediumReverseOrange,
                 EasyReverseGreen,
-                ((score - 4f) / 3f).coerceIn(0f, 1f)
+                smoothStep((normalizedScore - 0.5f) / 0.25f)
             )
         }
 
@@ -90,10 +106,18 @@ fun CriteriaWithSlider(
             lerp(
                 EasyReverseGreen,
                 VeryEasyReverseGreen,
-                ((score - 7f) / 3f).coerceIn(0f, 1f)
+                smoothStep((normalizedScore - 0.75f) / 0.25f)
             )
         }
     }
+
+    val animatedScoreColor by animateColorAsState(
+        targetValue = scoreColor,
+        animationSpec = tween(
+            durationMillis = 300
+        ),
+        label = "scoreColor"
+    )
 
     Row(
         modifier = modifier
@@ -120,17 +144,41 @@ fun CriteriaWithSlider(
                 .width(8.dp)
         )
 
+        Box(
+            modifier = Modifier
+                .size(22.dp)
+                .background(
+                    color = Color.Transparent,
+                    shape = CircleShape
+                )
+                .clickable {
+                    onInfoButtonClicked()
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Image(
+                painter = painterResource(R.drawable.information_foreground),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        Spacer(
+            modifier = Modifier
+                .width(8.dp)
+        )
+
         Text(
             text = criteria,
             textAlign = TextAlign.Left,
             color = Color.Black,
             modifier = Modifier
-                .weight(2f)
+                .weight(1.75f)
         )
 
         Spacer(
             modifier = Modifier
-                .width(8.dp)
+                .width(16.dp)
         )
 
         Column(
@@ -147,11 +195,11 @@ fun CriteriaWithSlider(
                 valueRange = 1f..10f,
                 steps = 8,
                 colors = SliderDefaults.colors(
-                    thumbColor = scoreColor,
-                    activeTrackColor = scoreColor,
-                    inactiveTrackColor = scoreColor,
+                    thumbColor = animatedScoreColor,
+                    activeTrackColor = animatedScoreColor,
+                    inactiveTrackColor = animatedScoreColor,
                     activeTickColor = Color.White,
-                    inactiveTickColor = scoreColor
+                    inactiveTickColor = animatedScoreColor
                 )
             )
 
@@ -199,7 +247,7 @@ fun CriteriaWithSlider(
                     textAlign = TextAlign.Center,
                     color = Color.Black,
                     fontWeight = FontWeight.SemiBold,
-                    fontSize = typography.titleSmall.fontSize * 1.25f
+                    fontSize = typography.titleSmall.fontSize * 1.15f
                 )
 
                 Text(
@@ -245,12 +293,16 @@ fun RateComparisonCriteriaScreen(
     showRatingInfoDialog: Boolean,
     onInfoDialogClicked: () -> Unit,
     option: String,
-    criteria: List<String>,
+    criterionAndDescription: List<Pair<String, String>>,
     onBackClicked: () -> Unit,
     onNextClicked: (criteriaToRating: List<Pair<String, Float>>) -> Unit
 ){
     val typography =
         LocalAppTypography.current
+
+    val criteria = criterionAndDescription.map { it ->
+        it.first
+    }
 
     val ratings = remember(criteria) {
         mutableStateMapOf<String, Float>().apply {
@@ -260,10 +312,27 @@ fun RateComparisonCriteriaScreen(
         }
     }
 
+    var showExplanationDialog by remember { mutableStateOf(false) }
+    var infoTextAndDescription by remember { mutableStateOf("" to "") }
+
     if (showRatingInfoDialog) {
         CriteriaRatingInfoDialog(
             onDismissRequest = {
                 onInfoDialogClicked()
+            }
+        )
+    } else if (showExplanationDialog) {
+        //ErrorDialog wird hier als InfoDialog verwendet
+        ErrorDialog(
+            errorTitle = infoTextAndDescription.first,
+            errorMessage = infoTextAndDescription.second,
+            errorButtonText = "Okay",
+            dismissButtonText = "",
+            onDismissRequest = {
+                showExplanationDialog = false
+            },
+            onAcceptRequest = {
+                showExplanationDialog = false
             }
         )
     }
@@ -329,6 +398,17 @@ fun RateComparisonCriteriaScreen(
                     score = ratings[criterion] ?: 5f,
                     onValueChange = { newValue ->
                         ratings[criterion] = newValue
+                    },
+                    onInfoButtonClicked = {
+                        val description = criterionAndDescription.find {
+                            it.first == criterion
+                        }
+
+                        if (description == null)
+                            return@CriteriaWithSlider
+
+                        infoTextAndDescription = Pair(first = criterion, second = description.second)
+                        showExplanationDialog = true
                     }
                 )
 

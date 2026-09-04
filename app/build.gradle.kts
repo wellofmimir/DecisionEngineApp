@@ -14,8 +14,8 @@ android {
         applicationId = "com.molokosoft.decisionengine"
         minSdk = 26
         targetSdk = 36
-        versionCode = 582
-        versionName = "1.81"
+        versionCode = 585
+        versionName = "1.84"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -102,7 +102,7 @@ dependencies {
 
     //Notifications & Work
     implementation("androidx.work:work-runtime-ktx:2.11.0")
-
+    implementation("androidx.core:core-splashscreen:1.2.0")
     // Tests
     testImplementation(libs.junit)
 

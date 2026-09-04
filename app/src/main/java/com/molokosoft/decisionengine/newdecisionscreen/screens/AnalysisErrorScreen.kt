@@ -1,0 +1,138 @@
+package com.molokosoft.decisionengine.newdecisionscreen.screens
+
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.dp
+import com.molokosoft.decisionengine.R
+import com.molokosoft.decisionengine.theme.LocalAppTypography
+
+@Composable
+fun AnalysisErrorScreen(
+    modifier: Modifier = Modifier,
+    errorMessage: String,
+    onDismiss: () -> Unit
+) {
+    val typography =
+        LocalAppTypography.current
+
+    val verticalScroll =
+        rememberScrollState()
+
+    Column(
+        modifier = modifier
+            .verticalScroll(verticalScroll)
+            .background(
+                color = Color.White
+            )
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.Top,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Spacer(
+            modifier = Modifier
+                .height(64.dp)
+        )
+
+        Image(
+            painter = painterResource(id = R.drawable.analysiserror),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxWidth(0.5f)
+                .aspectRatio(1f)
+        )
+
+        Text(
+            text = "Analysis Failed",
+            textAlign = TextAlign.Center,
+            fontSize = typography.titleMedium.fontSize,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.Black
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(16.dp)
+        )
+
+        Text(
+            text = "We couldn't complete the analysis for\nyour decision right now.",
+            textAlign = TextAlign.Center,
+            fontSize = typography.titleSmall.fontSize,
+            color = Color.Black
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(16.dp)
+        )
+
+        Text(
+            text = "Reason:",
+            textAlign = TextAlign.Center,
+            fontSize = typography.titleMedium.fontSize,
+            color = Color.Black
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(8.dp)
+        )
+
+        Text(
+            text = errorMessage,
+            textAlign = TextAlign.Center,
+            fontSize = typography.titleSmall.fontSize,
+            color = Color.Black
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(16.dp)
+        )
+
+        Spacer(
+            modifier = Modifier
+                .weight(1f)
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(16.dp)
+        )
+
+        Text(
+            text = "Back",
+            textAlign = TextAlign.Center,
+            color = Color.Black,
+            fontSize = typography.titleSmall.fontSize,
+            textDecoration = TextDecoration.Underline,
+            modifier = Modifier
+                .clickable() {
+                    onDismiss()
+                }
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(16.dp)
+        )
+    }
+}

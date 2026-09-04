@@ -270,10 +270,47 @@ class DecisionEngineClient(
                         "Response received: ${response.code} ${response.message}"
                     )
 
-                    if (!response.isSuccessful)
-                        throw IOException("HTTP ${response.code}: ${response.message}")
-
                     val responseBody = response.body?.string() ?: ""
+
+                    val json = Json {
+                        ignoreUnknownKeys = true
+                    }
+
+                    var error: ApiError? = null
+
+                    if (!response.isSuccessful) {
+                        try {
+                            val errorResponse =
+                                json.decodeFromString<ApiResponse<ApiError>>(
+                                    responseBody
+                                )
+
+                            error = errorResponse.data
+
+                            Log.e(
+                                "DecisionEngine",
+                                "API error ${response.code}: ${error?.code} - ${error?.message}"
+                            )
+                        } catch (e: Exception) {
+                            Log.e(
+                                "DecisionEngine",
+                                "Could not parse error response",
+                                e
+                            )
+                        }
+
+                        response.close()
+
+                        Log.d(
+                            "DecisionEngine",
+                            "RETURNING NULL"
+                        )
+
+                        return@withContext DecisionAnalysisResponse(
+                            result = null,
+                            errorMessage = error?.message
+                        )
+                    }
 
                     Log.d(
                         "DecisionEngine",
