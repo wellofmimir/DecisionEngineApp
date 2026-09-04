@@ -51,16 +51,21 @@ class DecisionEngineClient(
 
     suspend fun getAuthenticatedHealth(apiKey: String): HealthResponse? =
         withContext(Dispatchers.IO) {
-            val request = Request.Builder()
-                .addHeader("Authorization", "Bearer $apiKey")
-                .get()
-                .url("$baseUrl/health/authenticated")
-                .build()
+            val request =
+                Request.Builder()
+                    .addHeader("Authorization", "Bearer $apiKey")
+                    .get()
+                    .url("$baseUrl/health/authenticated")
+                    .build()
 
             try {
                 client.newCall(request).execute().use { response ->
-                    val responseBody = response.body?.string() ?: ""
-                    val apiResponse = Json.decodeFromString<ApiResponse<HealthResponse>>(responseBody)
+                    val responseBody =
+                        response.body?.string() ?: ""
+
+                    val apiResponse =
+                        Json.decodeFromString<ApiResponse<HealthResponse>>(responseBody)
+
                     return@withContext apiResponse.data
                 }
             } catch (e: Exception) {
@@ -73,15 +78,21 @@ class DecisionEngineClient(
 
     suspend fun getHealth(): HealthResponse? =
         withContext(Dispatchers.IO) {
-            val request = Request.Builder()
-                .get()
-                .url("$baseUrl/health")
-                .build()
+            val request =
+                Request.Builder()
+                    .get()
+                    .url("$baseUrl/health")
+                    .build()
 
             try {
                 client.newCall(request).execute().use { response ->
-                    val responseBody = response.body?.string() ?: ""
-                    val apiResponse = Json.decodeFromString<ApiResponse<HealthResponse>>(responseBody)
+
+                    val responseBody =
+                        response.body?.string() ?: ""
+
+                    val apiResponse =
+                        Json.decodeFromString<ApiResponse<HealthResponse>>(responseBody)
+
                     return@withContext apiResponse.data
                 }
             } catch (e: Exception) {
@@ -97,12 +108,13 @@ class DecisionEngineClient(
         return withContext(Dispatchers.IO) {
             Log.d("DecisionEngine", "ENTER IO context")
 
-            val request = Request.Builder()
-                .addHeader("X-Installation-ID", installationId)
-                .addHeader("Authorization", "Bearer $apiKey")
-                .get()
-                .url("$baseUrl/api/v1/billing/status")
-                .build()
+            val request =
+                Request.Builder()
+                    .addHeader("X-Installation-ID", installationId)
+                    .addHeader("Authorization", "Bearer $apiKey")
+                    .get()
+                    .url("$baseUrl/api/v1/billing/status")
+                    .build()
 
             val json = Json {
                 ignoreUnknownKeys = true
@@ -111,19 +123,15 @@ class DecisionEngineClient(
             try {
                 Log.d("DecisionEngine", "BEFORE execute()")
 
-                val response = client.newCall(request).execute()
+                val response =
+                    client.newCall(request).execute()
 
-                Log.d(
-                    "DecisionEngine",
-                    "AFTER execute(): ${response.code}"
-                )
+                Log.d("DecisionEngine", "AFTER execute(): ${response.code}")
 
-                val responseBody = response.body?.string().orEmpty()
+                val responseBody =
+                    response.body?.string().orEmpty()
 
-                Log.d(
-                    "DecisionEngine",
-                    "BODY: $responseBody"
-                )
+                Log.d("DecisionEngine", "BODY: $responseBody")
 
                 if (!response.isSuccessful) {
                     try {
@@ -132,60 +140,33 @@ class DecisionEngineClient(
                                 responseBody
                             )
 
-                        val error = errorResponse.data
+                        val error =
+                            errorResponse.data
 
-                        Log.e(
-                            "DecisionEngine",
-                            "API error ${response.code}: ${error?.code} - ${error?.message}"
-                        )
+                        Log.e("DecisionEngine", "API error ${response.code}: ${error?.code} - ${error?.message}")
                     } catch (e: Exception) {
-                        Log.e(
-                            "DecisionEngine",
-                            "Could not parse error response",
-                            e
-                        )
+                        Log.e("DecisionEngine", "Could not parse error response", e)
                     }
 
                     response.close()
-
-                    Log.d(
-                        "DecisionEngine",
-                        "RETURNING NULL"
-                    )
-
+                    Log.d("DecisionEngine", "RETURNING NULL")
                     return@withContext null
                 }
 
                 val apiResponse =
-                    json.decodeFromString<ApiResponse<AccessStatusResponse>>(
-                        responseBody
-                    )
+                    json.decodeFromString<ApiResponse<AccessStatusResponse>>(responseBody)
 
                 response.close()
 
-                Log.d(
-                    "DecisionEngine",
-                    "RETURNING SUCCESS: ${apiResponse.data}"
-                )
-
+                Log.d("DecisionEngine", "RETURNING SUCCESS: ${apiResponse.data}")
                 apiResponse.data
 
             } catch (e: CancellationException) {
-                Log.e(
-                    "DecisionEngine",
-                    "COROUTINE CANCELLED",
-                    e
-                )
-
+                Log.e("DecisionEngine", "COROUTINE CANCELLED", e)
                 throw e
 
             } catch (e: Exception) {
-                Log.e(
-                    "DecisionEngine",
-                    "EXCEPTION",
-                    e
-                )
-
+                Log.e("DecisionEngine", "EXCEPTION", e)
                 null
             }
         }
@@ -193,15 +174,21 @@ class DecisionEngineClient(
 
     suspend fun verifyPurchase(verifyPurchaseRequest: VerifyPurchaseRequest): VerifyPurchaseResponse? =
         withContext(Dispatchers.IO) {
-            val mediaType = "application/json; charset=utf-8".toMediaType()
-            val json = Json.encodeToString(verifyPurchaseRequest)
-            val requestBody = json.toRequestBody(mediaType)
+            val mediaType =
+                "application/json; charset=utf-8".toMediaType()
 
-            val request = Request.Builder()
-                .addHeader("X-Installation-ID", installationId)
-                .post(requestBody)
-                .url("$baseUrl/api/v1/billing/verify")
-                .build()
+            val json =
+                Json.encodeToString(verifyPurchaseRequest)
+
+            val requestBody =
+                json.toRequestBody(mediaType)
+
+            val request =
+                Request.Builder()
+                    .addHeader("X-Installation-ID", installationId)
+                    .post(requestBody)
+                    .url("$baseUrl/api/v1/billing/verify")
+                    .build()
 
             try {
                 client.newCall(request).execute().use { response ->
@@ -209,8 +196,12 @@ class DecisionEngineClient(
                     if (!response.isSuccessful)
                         throw IOException("HTTP ${response.code}: ${response.message}")
 
-                    val responseBody = response.body?.string() ?: ""
-                    val apiResponse = Json.decodeFromString<ApiResponse<VerifyPurchaseResponse>>(responseBody)
+                    val responseBody =
+                        response.body?.string() ?: ""
+
+                    val apiResponse =
+                        Json.decodeFromString<ApiResponse<VerifyPurchaseResponse>>(responseBody)
+
                     return@withContext apiResponse.data
                 }
             } catch (e: Exception) {
@@ -222,16 +213,21 @@ class DecisionEngineClient(
 
     suspend fun dailyArticle(): DailyArticleResponse? =
         withContext(Dispatchers.IO) {
-            val request = Request.Builder()
-                .addHeader("X-Installation-ID", installationId)
-                .get()
-                .url("$baseUrl/api/v1/articles/daily")
-                .build()
+            val request =
+                Request.Builder()
+                    .addHeader("X-Installation-ID", installationId)
+                    .get()
+                    .url("$baseUrl/api/v1/articles/daily")
+                    .build()
 
             try {
                 client.newCall(request).execute().use { response ->
-                    val responseBody = response.body?.string() ?: ""
-                    val apiResponse = Json.decodeFromString<ApiResponse<DailyArticleResponse>>(responseBody)
+                    val responseBody =
+                        response.body?.string() ?: ""
+
+                    val apiResponse =
+                        Json.decodeFromString<ApiResponse<DailyArticleResponse>>(responseBody)
+
                     return@withContext apiResponse.data
                 }
             } catch (e: Exception) {
@@ -243,16 +239,22 @@ class DecisionEngineClient(
 
     suspend fun analyze(decisionAnalysisRequest: DecisionAnalysisRequest): DecisionAnalysisResponse? =
         withContext(Dispatchers.IO) {
-            val mediaType = "application/json; charset=utf-8".toMediaType()
-            val json = Json.encodeToString(decisionAnalysisRequest)
-            val requestBody = json.toRequestBody(mediaType)
+            val mediaType =
+                "application/json; charset=utf-8".toMediaType()
 
-            val request = Request.Builder()
-                .addHeader("X-Installation-ID", installationId)
-                .addHeader("Authorization", "Bearer $apiKey")
-                .post(requestBody)
-                .url("$baseUrl/api/v1/decision/analyze")
-                .build()
+            val json =
+                Json.encodeToString(decisionAnalysisRequest)
+
+            val requestBody =
+                json.toRequestBody(mediaType)
+
+            val request =
+                Request.Builder()
+                    .addHeader("X-Installation-ID", installationId)
+                    .addHeader("Authorization", "Bearer $apiKey")
+                    .post(requestBody)
+                    .url("$baseUrl/api/v1/decision/analyze")
+                    .build()
 
             Log.d("DecisionEngine", "========== ANALYZE START ==========")
             Log.d("DecisionEngine", "URL: ${request.url}")
@@ -270,7 +272,8 @@ class DecisionEngineClient(
                         "Response received: ${response.code} ${response.message}"
                     )
 
-                    val responseBody = response.body?.string() ?: ""
+                    val responseBody =
+                        response.body?.string() ?: ""
 
                     val json = Json {
                         ignoreUnknownKeys = true
@@ -285,26 +288,16 @@ class DecisionEngineClient(
                                     responseBody
                                 )
 
-                            error = errorResponse.data
+                            error =
+                                errorResponse.data
 
-                            Log.e(
-                                "DecisionEngine",
-                                "API error ${response.code}: ${error?.code} - ${error?.message}"
-                            )
+                            Log.e("DecisionEngine", "API error ${response.code}: ${error?.code} - ${error?.message}")
                         } catch (e: Exception) {
-                            Log.e(
-                                "DecisionEngine",
-                                "Could not parse error response",
-                                e
-                            )
+                            Log.e("DecisionEngine", "Could not parse error response", e)
                         }
 
                         response.close()
-
-                        Log.d(
-                            "DecisionEngine",
-                            "RETURNING NULL"
-                        )
+                        Log.d("DecisionEngine", "RETURNING NULL")
 
                         return@withContext DecisionAnalysisResponse(
                             result = null,
@@ -312,12 +305,10 @@ class DecisionEngineClient(
                         )
                     }
 
-                    Log.d(
-                        "DecisionEngine",
-                        "Response body: $responseBody"
-                    )
+                    Log.d("DecisionEngine", "Response body: $responseBody")
 
-                    val apiResponse = Json.decodeFromString<ApiResponse<DecisionAnalysisResponse>>(responseBody)
+                    val apiResponse =
+                        Json.decodeFromString<ApiResponse<DecisionAnalysisResponse>>(responseBody)
 
                     Log.d("DecisionEngine", "Response parsed successfully")
                     Log.d("DecisionEngine", "========== ANALYZE SUCCESS ==========")
@@ -326,30 +317,11 @@ class DecisionEngineClient(
                 }
             } catch (e: Exception) {
                 Log.e("DecisionEngine", "Network error", e)
-
-                Log.e(
-                    "DecisionEngine",
-                    "Network request failed",
-                    e
-                )
-
-                Log.e(
-                    "DecisionEngine",
-                    "Exception type: ${e::class.java.name}"
-                )
-
-                Log.e(
-                    "DecisionEngine",
-                    "Exception message: ${e.message}"
-                )
-
-                Log.e(
-                    "DecisionEngine",
-                    "Request body was: $json"
-                )
-
+                Log.e("DecisionEngine", "Network request failed", e)
+                Log.e("DecisionEngine", "Exception type: ${e::class.java.name}")
+                Log.e("DecisionEngine", "Exception message: ${e.message}")
+                Log.e("DecisionEngine", "Request body was: $json")
                 Log.d("DecisionEngine", "========== ANALYZE FAILED ==========")
-
                 e.printStackTrace()
                 null
             }
@@ -357,22 +329,31 @@ class DecisionEngineClient(
 
     suspend fun sendEmail(eMail: String): Boolean =
         withContext(Dispatchers.IO) {
-            val mediaType = "application/json; charset=utf-8".toMediaType()
-            val json = JSONObject()
-                .put("eMail", eMail)
+            val mediaType =
+                "application/json; charset=utf-8".toMediaType()
 
-            val requestBody = json.toString().toRequestBody(mediaType)
+            val json =
+                JSONObject()
+                    .put("eMail", eMail)
 
-            val request = Request.Builder()
-                .addHeader("X-Installation-ID", installationId)
-                .post(requestBody)
-                .url("$baseUrl/api/v1/email")
-                .build()
+            val requestBody =
+                json.toString().toRequestBody(mediaType)
+
+            val request =
+                Request.Builder()
+                    .addHeader("X-Installation-ID", installationId)
+                    .post(requestBody)
+                    .url("$baseUrl/api/v1/email")
+                    .build()
 
             try {
                 client.newCall(request).execute().use { response ->
-                    val responseBody = response.body?.string() ?: ""
-                    val apiResponse = Json.decodeFromString<ApiResponse<Unit>>(responseBody)
+                    val responseBody =
+                        response.body?.string() ?: ""
+
+                    val apiResponse =
+                        Json.decodeFromString<ApiResponse<Unit>>(responseBody)
+
                     return@withContext apiResponse.success
                 }
             } catch (e: Exception) {
@@ -384,23 +365,32 @@ class DecisionEngineClient(
 
     suspend fun sendFeedback(feedback: String): Boolean =
         withContext(Dispatchers.IO) {
-            val mediaType = "application/json; charset=utf-8".toMediaType()
-            val json = JSONObject()
-                .put("feedback", feedback)
+            val mediaType =
+                "application/json; charset=utf-8".toMediaType()
 
-            val requestBody = json.toString().toRequestBody(mediaType)
+            val json =
+                JSONObject()
+                    .put("feedback", feedback)
 
-            val request = Request.Builder()
-                .addHeader("X-Installation-ID", installationId)
-                .addHeader("Authorization", "Bearer $apiKey")
-                .post(requestBody)
-                .url("$baseUrl/api/v1/feedback/send")
-                .build()
+            val requestBody =
+                json.toString().toRequestBody(mediaType)
+
+            val request =
+                Request.Builder()
+                    .addHeader("X-Installation-ID", installationId)
+                    .addHeader("Authorization", "Bearer $apiKey")
+                    .post(requestBody)
+                    .url("$baseUrl/api/v1/feedback/send")
+                    .build()
 
             try {
                 client.newCall(request).execute().use { response ->
-                    val responseBody = response.body?.string() ?: ""
-                    val apiResponse = Json.decodeFromString<ApiResponse<Unit>>(responseBody)
+                    val responseBody =
+                        response.body?.string() ?: ""
+
+                    val apiResponse =
+                        Json.decodeFromString<ApiResponse<Unit>>(responseBody)
+
                     return@withContext apiResponse.success
                 }
             } catch (e: Exception) {
@@ -412,22 +402,31 @@ class DecisionEngineClient(
 
     suspend fun getCriteriaSuggestions(decisionTitle: String): CriteriaSuggestionResponse? =
         withContext(Dispatchers.IO) {
-            val mediaType = "application/json; charset=utf-8".toMediaType()
-            val json = JSONObject()
-                .put("decisionTitle", decisionTitle)
+            val mediaType =
+                "application/json; charset=utf-8".toMediaType()
 
-            val requestBody = json.toString().toRequestBody(mediaType)
+            val json =
+                JSONObject()
+                    .put("decisionTitle", decisionTitle)
 
-            val request = Request.Builder()
-                .addHeader("X-Installation-ID", installationId)
-                .post(requestBody)
-                .url("$baseUrl/api/v1/criteria/suggest")
-                .build()
+            val requestBody =
+                json.toString().toRequestBody(mediaType)
+
+            val request =
+                Request.Builder()
+                    .addHeader("X-Installation-ID", installationId)
+                    .post(requestBody)
+                    .url("$baseUrl/api/v1/criteria/suggest")
+                    .build()
 
             try {
                 client.newCall(request).execute().use { response ->
-                    val responseBody = response.body?.string() ?: ""
-                    val apiResponse = Json.decodeFromString<ApiResponse<CriteriaSuggestionResponse>>(responseBody)
+                    val responseBody =
+                        response.body?.string() ?: ""
+
+                    val apiResponse =
+                        Json.decodeFromString<ApiResponse<CriteriaSuggestionResponse>>(responseBody)
+
                     return@withContext apiResponse.data
                 }
             } catch (e: Exception) {
@@ -439,22 +438,31 @@ class DecisionEngineClient(
 
     suspend fun safetyClassification(safetyClassificationRequest: SafetyClassificationRequest): SafetyClassificationResponse? =
         withContext(Dispatchers.IO) {
-            val mediaType = "application/json; charset=utf-8".toMediaType()
-            val json = JSONObject()
-                .put("title", safetyClassificationRequest.title)
+            val mediaType =
+                "application/json; charset=utf-8".toMediaType()
 
-            val requestBody = json.toString().toRequestBody(mediaType)
+            val json =
+                JSONObject()
+                    .put("title", safetyClassificationRequest.title)
 
-            val request = Request.Builder()
-                .addHeader("X-Installation-ID", installationId)
-                .post(requestBody)
-                .url("$baseUrl/api/v1/decision/safetyClassification")
-                .build()
+            val requestBody =
+                json.toString().toRequestBody(mediaType)
+
+            val request =
+                    Request.Builder()
+                    .addHeader("X-Installation-ID", installationId)
+                    .post(requestBody)
+                    .url("$baseUrl/api/v1/decision/safetyClassification")
+                    .build()
 
             try {
                 client.newCall(request).execute().use { response ->
-                    val responseBody = response.body?.string() ?: ""
-                    val apiResponse = Json.decodeFromString<ApiResponse<SafetyClassificationResponse>>(responseBody)
+                    val responseBody =
+                        response.body?.string() ?: ""
+
+                    val apiResponse =
+                        Json.decodeFromString<ApiResponse<SafetyClassificationResponse>>(responseBody)
+
                     return@withContext apiResponse.data
                 }
             } catch (e: Exception) {
@@ -466,17 +474,22 @@ class DecisionEngineClient(
 
     suspend fun getQuote(): QuoteResponse? =
         withContext(Dispatchers.IO) {
-            val request = Request.Builder()
-                .addHeader("X-Installation-ID", installationId)
-                .addHeader("Authorization", "Bearer $apiKey")
-                .get()
-                .url("$baseUrl/api/v1/quotes/daily")
-                .build()
+            val request =
+                Request.Builder()
+                    .addHeader("X-Installation-ID", installationId)
+                    .addHeader("Authorization", "Bearer $apiKey")
+                    .get()
+                    .url("$baseUrl/api/v1/quotes/daily")
+                    .build()
 
             try {
                 client.newCall(request).execute().use { response ->
-                    val responseBody = response.body?.string() ?: ""
-                    val apiResponse = Json.decodeFromString<ApiResponse<QuoteResponse>>(responseBody)
+                    val responseBody =
+                        response.body?.string() ?: ""
+
+                    val apiResponse =
+                        Json.decodeFromString<ApiResponse<QuoteResponse>>(responseBody)
+
                     return@withContext apiResponse.data
                 }
             } catch (e: Exception) {

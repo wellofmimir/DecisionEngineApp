@@ -79,8 +79,9 @@
                                             <option name="values">
                                               <map>
                                                 <entry key="color" value="000000" />
-                                                <entry key="imagePath" value="C:\Users\pmlec\Desktop\DecisionEngine\finalicon.png" />
-                                                <entry key="scalingPercent" value="64" />
+                                                <entry key="imagePath" value="C:\Users\pmlec\Desktop\DecisionEngine\decisionengineicon.png" />
+                                                <entry key="scalingPercent" value="98" />
+                                                <entry key="trimmed" value="true" />
                                               </map>
                                             </option>
                                           </PersistentState>
@@ -112,7 +113,9 @@
                                   </option>
                                   <option name="values">
                                     <map>
-                                      <entry key="outputName" value="decisionengineiconlogo" />
+                                      <entry key="backgroundAssetType" value="COLOR" />
+                                      <entry key="backgroundColor" value="ffffff" />
+                                      <entry key="outputName" value="decisionengineicon" />
                                     </map>
                                   </option>
                                 </PersistentState>

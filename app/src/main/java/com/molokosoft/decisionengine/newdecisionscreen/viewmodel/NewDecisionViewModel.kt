@@ -272,9 +272,8 @@ class NewDecisionViewModel(
                 val isHarmful =
                     isInputHarmfulOrAPrompt(title)
 
-                if (!isHarmful) {
+                if (!isHarmful)
                     getCriteriaSuggestions(title)
-                }
             }
         }
 
