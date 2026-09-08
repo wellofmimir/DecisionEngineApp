@@ -30,9 +30,9 @@ import okio.IOException
 import org.json.JSONObject
 
 val baseUrl = if (BuildConfig.DEBUG)
-    "https://greeen-app.com/dec"
+    "https://decision-engine-app.com/"
 else
-    "https://greeen-app.com/dec"
+    "https://decision-engine-app.com/"
 
 class DecisionEngineClient(
     private val client: OkHttpClient
@@ -55,7 +55,7 @@ class DecisionEngineClient(
                 Request.Builder()
                     .addHeader("Authorization", "Bearer $apiKey")
                     .get()
-                    .url("$baseUrl/health/authenticated")
+                    .url("$baseUrl/api/v1/health/authenticated")
                     .build()
 
             try {
@@ -81,7 +81,7 @@ class DecisionEngineClient(
             val request =
                 Request.Builder()
                     .get()
-                    .url("$baseUrl/health")
+                    .url("$baseUrl/api/v1/health")
                     .build()
 
             try {
@@ -242,11 +242,11 @@ class DecisionEngineClient(
             val mediaType =
                 "application/json; charset=utf-8".toMediaType()
 
-            val json =
+            val jsonRequest =
                 Json.encodeToString(decisionAnalysisRequest)
 
             val requestBody =
-                json.toRequestBody(mediaType)
+                jsonRequest.toRequestBody(mediaType)
 
             val request =
                 Request.Builder()
@@ -260,7 +260,7 @@ class DecisionEngineClient(
             Log.d("DecisionEngine", "URL: ${request.url}")
             Log.d("DecisionEngine", "Method: ${request.method}")
             Log.d("DecisionEngine", "API Key present: ${apiKey.isNotBlank()}")
-            Log.d("DecisionEngine", "Request body: $json")
+            Log.d("DecisionEngine", "Request body: $jsonRequest")
 
             try {
                 Log.d("DecisionEngine", "Sending request...")
@@ -308,7 +308,7 @@ class DecisionEngineClient(
                     Log.d("DecisionEngine", "Response body: $responseBody")
 
                     val apiResponse =
-                        Json.decodeFromString<ApiResponse<DecisionAnalysisResponse>>(responseBody)
+                        json.decodeFromString<ApiResponse<DecisionAnalysisResponse>>(responseBody)
 
                     Log.d("DecisionEngine", "Response parsed successfully")
                     Log.d("DecisionEngine", "========== ANALYZE SUCCESS ==========")
@@ -320,7 +320,7 @@ class DecisionEngineClient(
                 Log.e("DecisionEngine", "Network request failed", e)
                 Log.e("DecisionEngine", "Exception type: ${e::class.java.name}")
                 Log.e("DecisionEngine", "Exception message: ${e.message}")
-                Log.e("DecisionEngine", "Request body was: $json")
+                Log.e("DecisionEngine", "Request body was: $jsonRequest")
                 Log.d("DecisionEngine", "========== ANALYZE FAILED ==========")
                 e.printStackTrace()
                 null

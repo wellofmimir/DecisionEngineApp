@@ -179,7 +179,12 @@ fun PaywallScreen(
         WaitingScreen(
             modifier = modifier
                 .fillMaxHeight(),
-            text = "Analyzing your decision...\n" + "This usually takes just a few seconds."
+            texts = listOf(
+                "Analyzing your decision...\n" + "This usually takes just a few seconds.",
+                "Weighing the important factors...\n" + "This won't take long.",
+                "Working through your decision...\n" + "Almost there.",
+                "Finding the key factors in your decision...\n" + "Just a moment."
+            )
         )
 
         return

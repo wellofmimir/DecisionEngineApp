@@ -29,8 +29,6 @@ import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.NewDecisionView
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
-import com.molokosoft.decisionengine.commonclasses.ProductTypes
-import com.molokosoft.decisionengine.commonuielements.screens.WaitingScreen
 import com.molokosoft.decisionengine.decisionhistoryscreen.DecisionHistoryScreen
 import com.molokosoft.decisionengine.decisionhistoryscreen.viewmodel.DecisionHistoryViewModel
 import com.molokosoft.decisionengine.homescreen.viewmodel.HomeScreenViewModel

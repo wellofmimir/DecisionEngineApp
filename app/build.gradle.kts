@@ -14,8 +14,8 @@ android {
         applicationId = "com.molokosoft.decisionengine"
         minSdk = 26
         targetSdk = 36
-        versionCode = 586
-        versionName = "1.85"
+        versionCode = 588
+        versionName = "1.87"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -71,6 +71,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation("androidx.compose.material:material-icons-extended:<version>")
 
     // Lifecycle / ViewModel
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")

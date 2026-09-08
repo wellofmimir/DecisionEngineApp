@@ -36,6 +36,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.molokosoft.decisionengine.R
+import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 import kotlinx.coroutines.delay
 
@@ -97,7 +98,17 @@ fun SplashScreen(
                         color = Color.Black
                     )
                 ) {
-                    append("DecisionEngine")
+                    append("Decision")
+                }
+
+                withStyle(
+                    style = SpanStyle(
+                        fontSize = typography.titleLarge.fontSize * 1.5f,
+                        fontWeight = FontWeight.SemiBold,
+                        color = DecisionBlue
+                    )
+                ) {
+                    append("Engine")
                 }
             },
             textAlign = TextAlign.Center,

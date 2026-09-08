@@ -11,7 +11,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -28,19 +33,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CheckboxDefaults
-import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.style.TextDecoration
 
 import com.molokosoft.decisionengine.R
 import com.molokosoft.decisionengine.newdecisionscreen.dialogs.DecisionInputInfoDialog
@@ -56,21 +55,30 @@ fun EnterDecisionNameScreen(
     showDecisionInfoDialog: Boolean,
     onBackClicked: () -> Unit,
     onNextClicked: (name: String, yesOrNoDecision: Boolean) -> Unit
-){
-    val typography =
-        LocalAppTypography.current
+) {
+    val typography = LocalAppTypography.current
 
-    val focusManager =
-        LocalFocusManager.current
+    val focusManager = LocalFocusManager.current
 
-    val keyboardController =
-        LocalSoftwareKeyboardController.current
+    var decisionText by remember {
+        mutableStateOf(currentDecisionText)
+    }
 
-    var decisionText by remember { mutableStateOf(currentDecisionText) }
-    var checked by remember { mutableStateOf(yesOrNoDecision) }
-    var inputTextFieldFocused by remember { mutableStateOf(false) }
-    var showInfoDialog by remember { mutableStateOf(showDecisionInfoDialog) }
-    var isReadyToContinue by remember { mutableStateOf(!showDecisionInfoDialog) }
+    var checked by remember {
+        mutableStateOf(yesOrNoDecision)
+    }
+
+    var inputTextFieldFocused by remember {
+        mutableStateOf(false)
+    }
+
+    var showInfoDialog by remember {
+        mutableStateOf(showDecisionInfoDialog)
+    }
+
+    var isReadyToContinue by remember {
+        mutableStateOf(!showDecisionInfoDialog)
+    }
 
     Column(
         modifier = modifier
@@ -80,14 +88,17 @@ fun EnterDecisionNameScreen(
             .fillMaxWidth(),
         verticalArrangement = Arrangement.Top,
         horizontalAlignment = Alignment.CenterHorizontally
-    ){
+    ) {
+
         Spacer(
             modifier = Modifier
                 .height(64.dp)
         )
 
         Image(
-            painter = painterResource(id = R.drawable.decisionenginelogonew),
+            painter = painterResource(
+                id = R.drawable.decisionenginelogonew
+            ),
             contentDescription = null,
             modifier = Modifier
                 .fillMaxWidth(0.5f)
@@ -168,10 +179,7 @@ fun EnterDecisionNameScreen(
                     shape = RoundedCornerShape(12.dp)
                 )
                 .onFocusChanged { focusState ->
-                    if (focusState.isFocused && !inputTextFieldFocused) {
-                        inputTextFieldFocused = true
-                        keyboardController?.hide()
-                    }
+                    inputTextFieldFocused = focusState.isFocused
                 }
         )
 
@@ -197,7 +205,11 @@ fun EnterDecisionNameScreen(
             Text(
                 text = "This is a yes-or-no decision",
                 textAlign = TextAlign.Center,
-                color = Color.Black
+                color = Color.Black,
+                modifier = Modifier
+                    .clickable {
+                        checked = !checked
+                    }
             )
         }
 
@@ -224,13 +236,16 @@ fun EnterDecisionNameScreen(
                     color = DecisionBlue,
                     shape = RoundedCornerShape(64.dp)
                 )
-                .clickable() {
+                .clickable {
                     if (isReadyToContinue) {
-                        onNextClicked(decisionText, checked)
+                        onNextClicked(
+                            decisionText,
+                            checked
+                        )
                     }
                 },
             contentAlignment = Alignment.Center
-        ){
+        ) {
             Text(
                 text = "Next",
                 textAlign = TextAlign.Center,
@@ -250,7 +265,7 @@ fun EnterDecisionNameScreen(
             fontSize = typography.titleSmall.fontSize,
             textDecoration = TextDecoration.Underline,
             modifier = Modifier
-                .clickable() {
+                .clickable {
                     onBackClicked()
                 }
         )

@@ -12,18 +12,28 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentCopy
+
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+
 import androidx.compose.runtime.Composable
+
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+
 import com.molokosoft.decisionengine.R
 import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.LocalAppTypography
@@ -34,8 +44,11 @@ fun RestoreKeyDialog(
     modifier: Modifier = Modifier,
     onDismissRequest: () -> Unit
 ) {
-    val typography = LocalAppTypography.current
-    val verticalScroll = rememberScrollState()
+    val typography =
+        LocalAppTypography.current
+
+    val verticalScroll =
+        rememberScrollState()
 
     Dialog(
         onDismissRequest = onDismissRequest
@@ -89,9 +102,24 @@ fun RestoreKeyDialog(
                 text = restoreKey.ifBlank { "-" }
             )
 
+            val clipboard =
+                LocalClipboardManager.current
+
+            IconButton(
+                onClick = {
+                    if (restoreKey.isNotBlank())
+                        clipboard.setText(AnnotatedString(restoreKey.ifBlank { restoreKey }))
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ContentCopy,
+                    contentDescription = "Copy"
+                )
+            }
+
             Spacer(
                 modifier = Modifier
-                    .height(16.dp)
+                    .height(12.dp)
             )
 
             SubSection(
@@ -131,7 +159,8 @@ private fun SubSection(
     title: String,
     text: String
 ) {
-    val typography = LocalAppTypography.current
+    val typography =
+        LocalAppTypography.current
 
     Text(
         text = title,
@@ -162,10 +191,5 @@ private fun SubSection(
         fontWeight = FontWeight.Light,
         modifier = Modifier
             .padding(horizontal = 12.dp)
-    )
-
-    Spacer(
-        modifier = Modifier
-            .height(16.dp)
     )
 }

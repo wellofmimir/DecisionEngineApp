@@ -56,7 +56,14 @@ fun ChooseComparisonCriteriaScreen(
 ){
     criterionAndDescription.ifEmpty {
         WaitingScreen(
-            text = "Thinking of useful criteria...\n" + "This usually takes just a few seconds."
+            texts = listOf(
+                "Thinking of useful criteria...\n" + "This usually takes just a few seconds.",
+                "Coming up with criteria for your decision...\n" + "Please wait a short moment.",
+                "Reasoning about criteria...\n" + "Just a moment and we're done.",
+                "Building a useful set of criteria...\n" + "Thanks for your patience.",
+                "Preparing criteria tailored to your decision...\n" + "Almost ready.",
+                "Finding the most useful criteria...\n" + "This won't take long.",
+            )
         )
 
         return

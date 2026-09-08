@@ -137,7 +137,17 @@ fun WelcomeScreen(
                         color = Color.Black
                     )
                 ) {
-                    append("DecisionEngine")
+                    append("Decision")
+                }
+
+                withStyle(
+                    style = SpanStyle(
+                        fontSize = typography.titleLarge.fontSize * 1.5f,
+                        fontWeight = FontWeight.SemiBold,
+                        color = DecisionBlue
+                    )
+                ) {
+                    append("Engine")
                 }
             },
             textAlign = TextAlign.Center,
