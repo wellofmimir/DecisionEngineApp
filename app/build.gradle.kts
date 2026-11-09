@@ -14,8 +14,8 @@ android {
         applicationId = "com.molokosoft.decisionengine"
         minSdk = 26
         targetSdk = 36
-        versionCode = 588
-        versionName = "1.87"
+        versionCode = 601
+        versionName = "1.89"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -31,7 +31,7 @@ android {
             buildConfigField(
                 "String",
                 "BASE_URL",
-                "\"https://api.meinedomain.de\""
+                "\"https://decision-engine-app.com/api/\""
             )
         }
 

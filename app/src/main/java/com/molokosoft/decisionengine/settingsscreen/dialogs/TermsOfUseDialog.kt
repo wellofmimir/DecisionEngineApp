@@ -33,8 +33,11 @@ fun TermsOfUseDialog(
     modifier: Modifier = Modifier,
     onDismissRequest: () -> Unit
 ) {
-    val typography = LocalAppTypography.current
-    val verticalScroll = rememberScrollState()
+    val typography =
+        LocalAppTypography.current
+
+    val verticalScroll =
+        rememberScrollState()
 
     Dialog(
         onDismissRequest = onDismissRequest

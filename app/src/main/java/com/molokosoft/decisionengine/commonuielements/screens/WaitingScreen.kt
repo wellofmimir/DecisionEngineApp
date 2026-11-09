@@ -40,7 +40,7 @@ fun WaitingScreen(
 
     LaunchedEffect(Unit) {
         while (true) {
-            delay(4500)
+            delay(3000)
             text = texts.filter {
                 it != text
             }.random()

@@ -441,7 +441,7 @@ class NewDecisionViewModel(
                 it.criteria.isEmpty()
             }?.name
     }
-
+    
     suspend fun startAnalysis() {
         Log.d("NewDecisionViewModel", "Analysis get's started.")
 

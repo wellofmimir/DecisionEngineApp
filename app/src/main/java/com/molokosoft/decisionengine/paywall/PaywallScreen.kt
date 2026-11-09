@@ -52,7 +52,7 @@ fun PaywallScreen(
     showOnlyOffer: Boolean = false,
     showRestorage: Boolean = false
 ){
-    val notificationPermissionLauncher = rememberLauncherForActivityResult (
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) {}
 
@@ -183,7 +183,8 @@ fun PaywallScreen(
                 "Analyzing your decision...\n" + "This usually takes just a few seconds.",
                 "Weighing the important factors...\n" + "This won't take long.",
                 "Working through your decision...\n" + "Almost there.",
-                "Finding the key factors in your decision...\n" + "Just a moment."
+                "Finding the key factors in your decision...\n" + "Just a moment.",
+                "Walking through your input...\n" + "Just a heartbeat and we're done."
             )
         )
 
