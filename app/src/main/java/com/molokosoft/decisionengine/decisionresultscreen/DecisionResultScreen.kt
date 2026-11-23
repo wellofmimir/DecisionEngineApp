@@ -51,8 +51,9 @@ fun DecisionResultScreen(
         RecommendedDecision -> RecommendedChoiceScreen(
             modifier = modifier,
             optionAnalyses = optionAnalyses,
+            onContinueButtonText = "See Option Breakdown",
             onContinueClicked = {
-                currentScreen = currentScreen.next()
+                currentScreen = OptionComparison
             }
         )
 
@@ -66,15 +67,17 @@ fun DecisionResultScreen(
             }
         )
 
-        OptionComparison -> OptionComparisonScreen(
-            modifier = modifier,
-            optionAnalyses = optionAnalyses,
-            onContinueClicked = {
-                currentScreen = currentScreen.next()
-            },
-            onBackClicked = {
-            },
-            onContinueButtonText = "See Reversibility"
+        OptionComparison ->
+            OptionComparisonScreen(
+                modifier = modifier,
+                optionAnalyses = optionAnalyses,
+                onContinueClicked = {
+                    onContinueClicked()
+                },
+                onBackClicked = {
+                    currentScreen = RecommendedDecision
+                },
+                onContinueButtonText = "Finish"
         )
 
         ReversibilityAnalysis -> ReversibilityAnalysisScreen(

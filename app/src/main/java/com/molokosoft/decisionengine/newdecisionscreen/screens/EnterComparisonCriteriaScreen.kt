@@ -194,7 +194,7 @@ fun EnterComparisonCriteriaScreen(
                         onNextClicked()
                 },
             contentAlignment = Alignment.Center
-        ){
+        ) {
             Text(
                 text = "Next",
                 textAlign = TextAlign.Center,

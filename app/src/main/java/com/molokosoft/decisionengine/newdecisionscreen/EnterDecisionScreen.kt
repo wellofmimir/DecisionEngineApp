@@ -3,6 +3,7 @@ package com.molokosoft.decisionengine.newdecisionscreen
 
 import android.util.Log
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Modifier
 
 import androidx.compose.runtime.remember
@@ -30,10 +31,14 @@ import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Criterion
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Option
 import com.molokosoft.decisionengine.commonuielements.dialogs.ErrorDialog
 import com.molokosoft.decisionengine.commonuielements.screens.WaitingScreen
+import com.molokosoft.decisionengine.decisionresultscreen.DecisionResultScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.ForbiddenInputDataScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.NoMoreUsagesScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.NotAllowedScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.AnalysisErrorScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.ArrangeScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.MultipleChoiceScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.SliderScreen
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.ErrorCodes
 import kotlinx.coroutines.launch
 
@@ -43,6 +48,13 @@ sealed class DecisionScreen {
     data object EnterDecisionCriteria : DecisionScreen()
     data object ChooseDecisionCriteria : DecisionScreen()
     data object RateComparisonCriteria : DecisionScreen()
+
+    data object MultipleChoiceScreen : DecisionScreen()
+
+    data object ArrangeScreen : DecisionScreen()
+
+    data object SliderScreen : DecisionScreen()
+
     data object NotAllowedScreen : DecisionScreen()
     data object ForbiddenInputScreen : DecisionScreen()
 
@@ -71,10 +83,18 @@ fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
         DecisionScreen.NoMoreUsagesScreen -> DecisionScreen.EnterDecisionName
         DecisionScreen.WaitingForAnalysisScreen -> DecisionScreen.EnterDecisionName
         DecisionScreen.AnalysisErrorScreen -> DecisionScreen.EnterDecisionName
+
+        DecisionScreen.MultipleChoiceScreen -> DecisionScreen.MultipleChoiceScreen
+        DecisionScreen.ArrangeScreen -> DecisionScreen.ArrangeScreen
+        DecisionScreen.SliderScreen -> DecisionScreen.SliderScreen
     }
 
 fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
     when (this) {
+        DecisionScreen.MultipleChoiceScreen -> DecisionScreen.MultipleChoiceScreen
+        DecisionScreen.ArrangeScreen -> DecisionScreen.ArrangeScreen
+        DecisionScreen.SliderScreen -> DecisionScreen.SliderScreen
+
         DecisionScreen.EnterDecisionOptions -> DecisionScreen.EnterDecisionName
         DecisionScreen.EnterDecisionCriteria -> DecisionScreen.ChooseDecisionCriteria
         DecisionScreen.RateComparisonCriteria -> DecisionScreen.EnterDecisionName
@@ -117,7 +137,7 @@ fun EnterDecisionScreen(
             value = if (showNoMoreUsagesScreen)
                 DecisionScreen.NoMoreUsagesScreen
             else
-                DecisionScreen.EnterDecisionName
+                DecisionScreen.SliderScreen
         )
     }
 
@@ -199,6 +219,42 @@ fun EnterDecisionScreen(
 
                 currentScreen = currentScreen.next(yesOrNoDecision)
             }
+        )
+
+        DecisionScreen.SliderScreen -> SliderScreen(
+            modifier = modifier
+                .fillMaxHeight(),
+            question = "How important is it that the university's location and surrounding lifestyle feel naturally compatible with the life you want?",
+            onNextClicked = {},
+            onBackClicked = {}
+        )
+
+        DecisionScreen.ArrangeScreen -> ArrangeScreen(
+            modifier = modifier
+                .fillMaxHeight(),
+            question = "Rank these foundations of your university decision from most to least important.",
+            options = listOf(
+                "An academic experience that fits me",
+                "A financially sustainable choice.",
+                "Strong preparation for life after graduation.",
+                "A campus where I feel I belong."
+            ),
+            onNextClicked = {},
+            onBackClicked = {}
+        )
+
+        DecisionScreen.MultipleChoiceScreen -> MultipleChoiceScreen(
+            modifier = modifier
+                .fillMaxHeight(),
+            question = "During your first month at university, which experience would most reassure you that you chose the right place?",
+            options = listOf(
+                "I am already meeting people who make me feel included.",
+                "The surrounding environment feels energizing and suits my lifestyle.",
+                "I know exactly where to find helpful guidance and support.",
+                "I get good grades an am well read into my classes."
+            ),
+            onBackClicked = {},
+            onNextClicked = {}
         )
 
         DecisionScreen.EnterDecisionOptions -> EnterDecisionOptionsScreen(

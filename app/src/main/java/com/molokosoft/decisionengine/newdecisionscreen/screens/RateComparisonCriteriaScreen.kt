@@ -296,7 +296,7 @@ fun RateComparisonCriteriaScreen(
     criterionAndDescription: List<Pair<String, String>>,
     onBackClicked: () -> Unit,
     onNextClicked: (criteriaToRating: List<Pair<String, Float>>) -> Unit
-){
+) {
     val typography =
         LocalAppTypography.current
 

@@ -162,16 +162,7 @@ fun WelcomeScreen(
         )
 
         Text(
-            text = "Your second brain for",
-            textAlign = TextAlign.Center,
-            fontSize = typography.titleMedium.fontSize,
-            color = Color.Black,
-            modifier = Modifier
-                .alpha(welcomeAlpha)
-        )
-
-        Text(
-            text = "important decisions.",
+            text = "No more overthinking.",
             textAlign = TextAlign.Center,
             fontSize = typography.titleMedium.fontSize,
             color = Color.Black,

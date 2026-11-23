@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -80,10 +81,28 @@ fun OfferTilesScreen(
         )
 
         Text(
-            text = "DecisionEngine",
-            textAlign = TextAlign.Center,
-            fontSize = typography.titleLarge.fontSize * 1.5f,
-            color = Color.Black
+            text = buildAnnotatedString {
+                withStyle(
+                    style = SpanStyle(
+                        fontSize = typography.titleLarge.fontSize * 1.5f,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black
+                    )
+                ) {
+                    append("Decision")
+                }
+
+                withStyle(
+                    style = SpanStyle(
+                        fontSize = typography.titleLarge.fontSize * 1.5f,
+                        fontWeight = FontWeight.SemiBold,
+                        color = DecisionBlue
+                    )
+                ) {
+                    append("Engine")
+                }
+            },
+            textAlign = TextAlign.Center
         )
 
         Spacer(
@@ -104,7 +123,8 @@ fun OfferTilesScreen(
 
                 withStyle(
                     style = SpanStyle(
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = DecisionBlue
                     )
                 ) {
                     append("focus on action.")

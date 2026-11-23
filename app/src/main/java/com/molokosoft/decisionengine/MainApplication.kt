@@ -199,10 +199,7 @@ fun MainApplication(
                     decisionAnalysisResult = decisionDraft.decisionAnalysisResult,
                     optionAnalyses = decisionDraft.optionAnalyses,
                     onContinueClicked = {
-                        Log.d("DecisionEngine", "resetDraft() in onContinueClicked() DecisionResultScreen")
-
-                        newDecisionViewModel.resetDraft()
-                        navigationItem = NavigationItem.HOME
+                        navigationItem = NavigationItem.PAYWALL
                     }
                 )
             }
@@ -248,8 +245,7 @@ fun MainApplication(
                     },
                     onRestore = {
 
-                    },
-                    showOnlyOffer = true
+                    }
                 )
             }
         }

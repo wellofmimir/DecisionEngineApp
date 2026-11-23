@@ -363,10 +363,8 @@ class NewDecisionViewModel(
     suspend fun finishOnboarding() {
         Log.d("NewDecisionViewModel", "Is Onboarding Finished: $isOnboarding" )
 
-        if (isOnboarding) {
-            _showWaitingForAnalysisScreen.value = true
-            startAnalysis()
-        }
+        if (isOnboarding)
+            calculateDecisionMatrix()
 
         isOnboarding = false
     }
@@ -441,9 +439,9 @@ class NewDecisionViewModel(
                 it.criteria.isEmpty()
             }?.name
     }
-    
-    suspend fun startAnalysis() {
-        Log.d("NewDecisionViewModel", "Analysis get's started.")
+
+    suspend fun calculateDecisionMatrix() {
+        Log.d("NewDecisionViewModel", "DecisionMatrix: Calculation starts now.")
 
         _draft.update {
             it.copy(
@@ -451,6 +449,10 @@ class NewDecisionViewModel(
                     factorAnalysisRepository.analyzeOptions(it.options)
             )
         }
+    }
+
+    suspend fun startAnalysis() {
+        Log.d("NewDecisionViewModel", "Analysis get's started.")
 
         val analysisResult =
             factorAnalysisRepository.getAiAnalysis(_draft.value.optionAnalyses)

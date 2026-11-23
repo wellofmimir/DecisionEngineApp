@@ -53,6 +53,7 @@ fun OfferTilesScreen(
     onContinueClicked: (offerType: ProductTypes) -> Unit,
     onBackClicked: () -> Unit,
     onRestore: () -> Unit,
+    onDeclineClicked: () -> Unit,
     showBackButton: Boolean = false,
     showRestorageButton: Boolean = false
 ){
@@ -86,10 +87,28 @@ fun OfferTilesScreen(
         )
 
         Text(
-            text = "DecisionEngine",
-            textAlign = TextAlign.Center,
-            fontSize = typography.titleLarge.fontSize * 1.5f,
-            color = Color.Black
+            text = buildAnnotatedString {
+                withStyle(
+                    style = SpanStyle(
+                        fontSize = typography.titleLarge.fontSize * 1.5f,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.Black
+                    )
+                ) {
+                    append("Decision")
+                }
+
+                withStyle(
+                    style = SpanStyle(
+                        fontSize = typography.titleLarge.fontSize * 1.5f,
+                        fontWeight = FontWeight.SemiBold,
+                        color = DecisionBlue
+                    )
+                ) {
+                    append("Engine")
+                }
+            },
+            textAlign = TextAlign.Center
         )
 
         Spacer(
@@ -110,7 +129,8 @@ fun OfferTilesScreen(
 
                 withStyle(
                     style = SpanStyle(
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = DecisionBlue
                     )
                 ) {
                     append("focus on action.")
@@ -154,6 +174,28 @@ fun OfferTilesScreen(
                     .clickable {
                         onContinueClicked(ProductTypes.Usages15)
                     }
+            )
+
+            Spacer(
+                modifier = Modifier
+                    .height(16.dp)
+            )
+
+            Text(
+                text = "No, Thanks",
+                textAlign = TextAlign.Center,
+                color = Color.Black,
+                fontSize = typography.titleSmall.fontSize,
+                textDecoration = TextDecoration.Underline,
+                modifier = Modifier
+                    .clickable {
+                        onDeclineClicked()
+                    }
+            )
+
+            Spacer(
+                modifier = Modifier
+                    .height(16.dp)
             )
         }
 

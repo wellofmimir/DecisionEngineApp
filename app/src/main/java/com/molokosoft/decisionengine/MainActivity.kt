@@ -264,7 +264,10 @@ class MainActivity : ComponentActivity() {
                             appState = Welcome
                         },
                         onContinueClicked = { errorType, productType  ->
-                            appState = appState.next()
+                            lifecycleScope.launch {
+                                newDecisionViewModel.finishOnboarding()
+                                appState = MainApp
+                            }
                         }
                     )
 
@@ -272,28 +275,6 @@ class MainActivity : ComponentActivity() {
                         newDecisionViewModel = newDecisionViewModel,
                         onContinueClicked = { productType, eMail ->
 
-                            newDecisionViewModel.startBillingProcess(
-                                productType = productType,
-                                activity = this,
-                                apiKey = securePreferences.apiKey().ifBlank {
-                                    null
-                                },
-                                onSuccess = {
-                                    lifecycleScope.launch {
-                                        newDecisionViewModel.finishOnboarding()
-                                        appState = MainApp
-
-                                        if (eMail != null)
-                                            newDecisionViewModel.saveEMail(eMail)
-                                    }
-                                },
-                                onFailure = {
-                                    errorMessage =
-                                        "Billing error." to "Billing error. We couldn't process your purchase. Please try again later."
-
-                                    hasError = true
-                                }
-                            )
                         },
                         onBackClicked = {
 

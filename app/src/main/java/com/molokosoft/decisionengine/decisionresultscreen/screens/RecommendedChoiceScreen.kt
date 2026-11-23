@@ -41,6 +41,7 @@ import com.molokosoft.decisionengine.theme.Orange
 fun RecommendedChoiceScreen(
     modifier: Modifier = Modifier,
     optionAnalyses: List<OptionAnalysis>,
+    onContinueButtonText: String,
     onContinueClicked: () -> Unit
 ) {
     val typography = LocalAppTypography.current
@@ -157,7 +158,7 @@ fun RecommendedChoiceScreen(
             contentAlignment = Alignment.Center
         ) {
             Text(
-                text = "Why is this the best option?",
+                text = onContinueButtonText,
                 textAlign = TextAlign.Center,
                 color = Color.White
             )

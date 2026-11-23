@@ -77,7 +77,10 @@ fun PaywallScreen(
         Paywall.Features -> FeaturesScreen(
             modifier = modifier,
             onContinueClicked = {
-                currentScreen = currentScreen.next()
+                currentScreen = Paywall.OfferTiles
+            },
+            onDeclineClicked = {
+                onBackClicked()
             }
         )
 
@@ -114,6 +117,9 @@ fun PaywallScreen(
             onBackClicked = onBackClicked,
             onRestore = {
                 onRestore()
+            },
+            onDeclineClicked = {
+                onBackClicked()
             },
             showBackButton = showOnlyOffer,
             showRestorageButton = showRestorage

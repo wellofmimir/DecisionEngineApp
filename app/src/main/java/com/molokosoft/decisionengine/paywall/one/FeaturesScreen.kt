@@ -14,36 +14,144 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 
 import com.molokosoft.decisionengine.R
 import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.LocalAppTypography
-import com.molokosoft.decisionengine.paywall.common.FeatureCard
+import com.molokosoft.decisionengine.theme.SoftMint
+import com.molokosoft.decisionengine.theme.SoftLavender
+import com.molokosoft.decisionengine.theme.SoftOrange
+
+@Composable
+fun FeatureTile(
+    modifier: Modifier = Modifier,
+    imageResource: Int,
+    title: String,
+    text: String,
+    textColor: Color,
+    backgroundColor: Color,
+    onClicked: () -> Unit
+) {
+    Column(
+        modifier = modifier
+            .aspectRatio(1f)
+            .background(
+                shape = RoundedCornerShape(12.dp),
+                color = backgroundColor
+            )
+            .border(
+                width = 1.dp,
+                color = DecisionBlue,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(8.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = title,
+            textAlign = TextAlign.Center,
+            fontSize = LocalAppTypography.current.bodyMedium.fontSize * 1.25f,
+            fontWeight = FontWeight.SemiBold,
+            color = textColor
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(8.dp)
+        )
+
+        Image(
+            painter = painterResource(id = imageResource),
+            contentDescription = null,
+            modifier = Modifier
+                .fillMaxWidth(0.25f)
+                .aspectRatio(1f)
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(8.dp)
+        )
+
+        Text(
+            text = text,
+            textAlign = TextAlign.Center,
+            fontSize = LocalAppTypography.current.bodyMedium.fontSize,
+            fontWeight = FontWeight.SemiBold,
+            color = textColor
+        )
+
+        Spacer(
+            modifier = Modifier
+                .weight(1f)
+        )
+
+        Spacer(
+            modifier = Modifier
+                .height(8.dp)
+        )
+
+        val shape =
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(0.75f)
+                .height(36.dp)
+                .background(
+                    color = DecisionBlue,
+                    shape = RoundedCornerShape(12.dp)
+                )
+                .border(
+                    width = 1.dp,
+                    color = Color.Black,
+                    shape = RoundedCornerShape(12.dp)
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "Tap to reveal",
+                textAlign = TextAlign.Center,
+                fontSize = LocalAppTypography.current.bodyMedium.fontSize,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White
+            )
+        }
+
+        Spacer(
+            modifier = Modifier
+                .height(8.dp)
+        )
+    }
+}
 
 @Composable
 fun FeaturesScreen(
     modifier: Modifier = Modifier,
-    onContinueClicked: () -> Unit
+    onContinueClicked: () -> Unit,
+    onDeclineClicked: () -> Unit
 ){
     val typography = LocalAppTypography.current
 
     Column(
         modifier = modifier
             .background(
+                shape = RoundedCornerShape(12.dp),
                 color = Color.White
             )
             .fillMaxWidth(),
@@ -52,15 +160,14 @@ fun FeaturesScreen(
     ){
         Spacer(
             modifier = Modifier
-                .height(64.dp)
+                .height(32.dp)
         )
 
         Image(
             painter = painterResource(id = R.drawable.decisionenginelogonew),
             contentDescription = null,
             modifier = Modifier
-                .padding(top = 8.dp)
-                .fillMaxWidth(0.5f)
+                .fillMaxWidth(0.25f)
                 .aspectRatio(1f)
         )
 
@@ -70,14 +177,19 @@ fun FeaturesScreen(
         )
 
         Text(
-            text = "Your analysis is",
-            textAlign = TextAlign.Center,
-            fontSize = typography.titleLarge.fontSize,
-            color = Color.Black
-        )
+            text = buildAnnotatedString {
+                append("There's More to Your\n")
 
-        Text(
-            text = "ready.",
+                withStyle(
+                    style = SpanStyle(
+                        color = DecisionBlue,
+                        fontSize = typography.titleLarge.fontSize,
+                        fontWeight = FontWeight.Bold
+                    )
+                ) {
+                    append("Decision.")
+                }
+            },
             textAlign = TextAlign.Center,
             fontSize = typography.titleLarge.fontSize,
             color = Color.Black
@@ -85,14 +197,16 @@ fun FeaturesScreen(
 
         Spacer(
             modifier = Modifier
-                .height(16.dp)
+                .height(8.dp)
         )
 
         Text(
-            text = "Unlock your personal decision report.",
+            text = "Tap each card to uncover what your results might reveal.",
             textAlign = TextAlign.Center,
-            fontSize = typography.titleMedium.fontSize,
-            color = Color.Black
+            fontSize = typography.titleSmall.fontSize * 1.1f,
+            color = Color.Black,
+            modifier = Modifier
+                .padding(horizontal = 2.dp)
         )
 
         Spacer(
@@ -100,89 +214,84 @@ fun FeaturesScreen(
                 .height(16.dp)
         )
 
-        val features = listOf(
-            FeatureCard(
-                imageResource = R.drawable.eye_foreground,
-                text = "Turn uncertainty into clarity."
-            ),
-
-            FeatureCard(
-                imageResource = R.drawable.diagnosis_foreground,
-                text = "Advanced AI driven insights."
-            ),
-
-            FeatureCard(
-                imageResource = R.drawable.analysis_foreground,
-                text = "Get a clear roadmap to success."
-            ),
-
-            FeatureCard(
-                imageResource = R.drawable.upwards_trend_file_foreground,
-                text = "Less overthinking. More action."
-            )
-        )
-
-        features.forEach {
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 2.dp)
+                .fillMaxWidth()
+                .aspectRatio(1f),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
             Row(
                 modifier = Modifier
-                    .height(64.dp)
-                    .fillMaxWidth(0.9f)
-                    .shadow(
-                        elevation = 2.dp,
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                    .background(
-                        color = DecisionBlueLight,
-                        shape = RoundedCornerShape(4.dp)
-                    )
-                    .border(
-                        width = 1.dp,
-                        color = DecisionBlueLight,
-                        shape = RoundedCornerShape(4.dp)
-                    ),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ){
-                Spacer(
+                    .weight(1f)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                FeatureTile(
                     modifier = Modifier
-                        .width(16.dp)
+                        .weight(1f),
+                    imageResource = R.drawable.diagnosis_foreground,
+                    title = "Hidden Biases",
+                    text = "What might be influencing you?",
+                    textColor = Color.Black,
+                    backgroundColor = DecisionBlueLight,
+                    onClicked = {
+
+                    }
                 )
 
-                Image(
-                    painter = painterResource(id = it.imageResource),
-                    contentDescription = null,
+                FeatureTile(
                     modifier = Modifier
-                        .size(48.dp, 48.dp)
-                )
+                        .weight(1f),
+                    imageResource = R.drawable.eye_foreground,
+                    title = "Hidden Factors",
+                    text = "What are you overlooking?",
+                    textColor = Color.Black,
+                    backgroundColor = SoftMint,
+                    onClicked = {
 
-                Text(
-                    text = it.text,
-                    textAlign = TextAlign.Center,
-                    color = Color.Black,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                )
-
-                Spacer(
-                    modifier = Modifier
-                        .width(8.dp)
+                    }
                 )
             }
 
-            Spacer(
+            Row(
                 modifier = Modifier
-                    .height(4.dp)
-            )
+                    .weight(1f)
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
+                FeatureTile(
+                    modifier = Modifier
+                        .weight(1f),
+                    imageResource = R.drawable.analysis_foreground,
+                    title = "Your Results",
+                    text = "What do your scores really mean?",
+                    textColor = Color.Black,
+                    backgroundColor = SoftLavender,
+                    onClicked = {
+
+                    }
+                )
+
+                FeatureTile(
+                    modifier = Modifier
+                        .weight(1f),
+                    imageResource = R.drawable.upwards_trend_file_foreground,
+                    title = "Your Next Steps",
+                    text = "Where should you go from here?",
+                    textColor = Color.Black,
+                    backgroundColor = SoftOrange,
+                    onClicked = {
+
+                    }
+                )
+            }
         }
 
         Spacer(
             modifier = Modifier
                 .weight(1f)
-        )
-
-        Spacer(
-            modifier = Modifier
-                .height(32.dp)
         )
 
         Box(
@@ -204,28 +313,10 @@ fun FeaturesScreen(
             contentAlignment = Alignment.Center
         ){
             Text(
-                text = "See our offer",
+                text = "Unlock Your Insights",
                 textAlign = TextAlign.Center,
                 color = Color.White
             )
         }
-
-        Spacer(
-            modifier = Modifier
-                .height(16.dp)
-        )
-
-        Text(
-            text = "",
-            textAlign = TextAlign.Center,
-            color = Color.Black,
-            fontSize = typography.titleSmall.fontSize,
-            textDecoration = TextDecoration.Underline
-        )
-
-        Spacer(
-            modifier = Modifier
-                .height(16.dp)
-        )
     }
 }
