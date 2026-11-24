@@ -41,6 +41,7 @@ import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.MultipleChoi
 import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.SliderScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.TextAnswerScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.YesNoScreen
+import com.molokosoft.decisionengine.commonuielements.screens.WaitingScreenWithRotatingLogo
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.ErrorCodes
 import kotlinx.coroutines.launch
 
@@ -50,6 +51,8 @@ sealed class DecisionScreen {
     data object EnterDecisionCriteria : DecisionScreen()
     data object ChooseDecisionCriteria : DecisionScreen()
     data object RateComparisonCriteria : DecisionScreen()
+
+    data object QuizGeneratingScreen : DecisionScreen()
 
     data object TextAnswerScreen : DecisionScreen()
 
@@ -91,6 +94,7 @@ fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
         DecisionScreen.AnalysisErrorScreen -> DecisionScreen.EnterDecisionName
 
         DecisionScreen.MultipleChoiceScreen -> DecisionScreen.MultipleChoiceScreen
+        DecisionScreen.QuizGeneratingScreen -> DecisionScreen.QuizGeneratingScreen
         DecisionScreen.TextAnswerScreen -> DecisionScreen.EnterDecisionName
         DecisionScreen.YesNoScreen -> DecisionScreen.YesNoScreen
         DecisionScreen.ArrangeScreen -> DecisionScreen.ArrangeScreen
@@ -100,6 +104,7 @@ fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
 fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
     when (this) {
         DecisionScreen.MultipleChoiceScreen -> DecisionScreen.MultipleChoiceScreen
+        DecisionScreen.QuizGeneratingScreen -> DecisionScreen.QuizGeneratingScreen
         DecisionScreen.TextAnswerScreen -> DecisionScreen.TextAnswerScreen
         DecisionScreen.YesNoScreen -> DecisionScreen.YesNoScreen
         DecisionScreen.ArrangeScreen -> DecisionScreen.ArrangeScreen
@@ -147,8 +152,13 @@ fun EnterDecisionScreen(
             value = if (showNoMoreUsagesScreen)
                 DecisionScreen.NoMoreUsagesScreen
             else
-                DecisionScreen.TextAnswerScreen
+                DecisionScreen.EnterDecisionName
         )
+    }
+
+    LaunchedEffect(Unit) {
+        newDecisionViewModel.generateQuiz()
+        return@LaunchedEffect
     }
 
     var enterOptionDialogOpen by remember { mutableStateOf(false) }
@@ -204,6 +214,17 @@ fun EnterDecisionScreen(
         newDecisionViewModel.getNextOption()
 
     when (currentScreen) {
+        DecisionScreen.QuizGeneratingScreen -> WaitingScreenWithRotatingLogo(
+            modifier = modifier
+                .fillMaxHeight(),
+            texts = listOf(
+                "Finding questions that fit you...",
+                "Matching questions to your situation...",
+                "Looking for questions about what matters to you...",
+                "Putting together a quiz just for you..."
+            )
+        )
+
         DecisionScreen.TextAnswerScreen -> TextAnswerScreen(
             modifier = modifier
                 .fillMaxHeight(),

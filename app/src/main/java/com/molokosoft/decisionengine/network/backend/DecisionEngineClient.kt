@@ -26,17 +26,25 @@ import com.molokosoft.decisionengine.network.backend.model.responses.decision.Cr
 import com.molokosoft.decisionengine.network.backend.model.responses.decision.SafetyClassificationResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.health.HealthResponse
 import com.molokosoft.decisionengine.network.backend.model.responses.quote.QuoteResponse
+import com.molokosoft.decisionengine.network.backend.model.requests.quiz.QuizGenerationRequest
+import com.molokosoft.decisionengine.network.backend.model.responses.quiz.QuizResponse
 import okio.IOException
 import org.json.JSONObject
+import java.util.concurrent.TimeUnit
 
 val baseUrl = if (BuildConfig.DEBUG)
-    "https://decision-engine-app.com/"
+    "http://127.0.0.1:45003/"
 else
     "https://decision-engine-app.com/"
 
 class DecisionEngineClient(
     private val client: OkHttpClient
 ) {
+    private val quizClient = client.newBuilder()
+        .readTimeout(180, TimeUnit.SECONDS)
+        .callTimeout(180, TimeUnit.SECONDS)
+        .build()
+
     private var apiKey: String = ""
 
     fun setApiKey(key: String) {
@@ -530,6 +538,54 @@ class DecisionEngineClient(
             } catch (e: Exception) {
                 Log.e("DecisionEngine", "Network error", e)
                 e.printStackTrace()
+                null
+            }
+        }
+
+    suspend fun generateQuiz(quizGenerationRequest: QuizGenerationRequest): QuizResponse? =
+        withContext(Dispatchers.IO) {
+            val mediaType =
+                "application/json; charset=utf-8".toMediaType()
+
+            val requestBody =
+                Json.encodeToString(quizGenerationRequest)
+                    .toRequestBody(mediaType)
+
+            val request =
+                Request.Builder()
+                    .addHeader("X-Installation-ID", installationId)
+                    .addHeader("Authorization", "Bearer $apiKey")
+                    .post(requestBody)
+                    .url("$baseUrl/api/v1/quiz/generate")
+                    .build()
+
+            try {
+                quizClient.newCall(request).execute().use { response ->
+                    val responseBody =
+                        response.body?.string().orEmpty()
+
+                    if (!response.isSuccessful) {
+                        Log.e(
+                            "DecisionEngine",
+                            "Quiz request failed: HTTP ${response.code} ${response.message}"
+                        )
+
+                        return@withContext null
+                    }
+
+                    val json = Json {
+                        ignoreUnknownKeys = true
+                    }
+
+                    val apiResponse =
+                        json.decodeFromString<ApiResponse<QuizResponse>>(responseBody)
+
+                    apiResponse.data
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e("DecisionEngine", "Could not generate quiz", e)
                 null
             }
         }

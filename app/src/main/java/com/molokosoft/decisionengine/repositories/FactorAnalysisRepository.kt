@@ -15,10 +15,15 @@ import android.util.Log
 import com.molokosoft.decisionengine.network.backend.model.dto.security.dto.PromptReconnaissanceResult
 import com.molokosoft.decisionengine.network.backend.model.dto.security.requests.PromptReconnaissanceRequest
 import com.molokosoft.decisionengine.network.backend.model.requests.decision.SafetyClassificationRequest
+import com.molokosoft.decisionengine.network.backend.model.requests.quiz.QuizDecisionRequest
+import com.molokosoft.decisionengine.network.backend.model.requests.quiz.QuizGenerationRequest
+import com.molokosoft.decisionengine.network.backend.model.requests.quiz.QuizOptionRequest
+import com.molokosoft.decisionengine.network.backend.model.responses.quiz.QuizResponse
 import kotlinx.coroutines.delay
 import io.ktor.client.plugins.ClientRequestException
 import io.ktor.client.plugins.ServerResponseException
 import java.io.IOException
+import java.util.UUID
 
 fun Option.calculateWeightedScore(): Double {
     val totalImportance = criteria.sumOf { it.importance }
@@ -165,6 +170,23 @@ class FactorAnalysisRepository(
     suspend fun getCriteriaSuggestions(decisionTitle: String): List<CriterionSuggestion> {
         val response = decisionEngineClient.getCriteriaSuggestions(decisionTitle)
         return response?.criteria ?: emptyList()
+    }
+
+    suspend fun generateQuiz(decisionTitle: String, options: List<Option>): QuizResponse? {
+        val request = QuizGenerationRequest(
+            decision = QuizDecisionRequest(
+                id = "decision_${UUID.randomUUID()}",
+                title = decisionTitle
+            ),
+            options = options.map { option ->
+                QuizOptionRequest(
+                    id = "option_${UUID.randomUUID()}",
+                    name = option.name
+                )
+            }
+        )
+
+        return decisionEngineClient.generateQuiz(request)
     }
 
     suspend fun safetyClassification(decisionTitle: String): SafetyClassification {

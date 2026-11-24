@@ -66,7 +66,7 @@ fun MainApplication(
                 if (showNoMoreUsagesScreen)
                     NavigationItem.NEW_DECISION
                 else if (decisionDraft.optionAnalyses.isEmpty() || showMotivationalQuote)
-                    NavigationItem.NEW_DECISION
+                    NavigationItem.HOME
                 else
                     NavigationItem.SEE_DECISION
         )

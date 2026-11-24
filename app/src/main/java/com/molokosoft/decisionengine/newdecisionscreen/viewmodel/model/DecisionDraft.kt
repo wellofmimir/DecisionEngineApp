@@ -5,6 +5,7 @@ import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.CriterionSuggestion
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
 import com.molokosoft.decisionengine.network.backend.model.dto.security.dto.PromptReconnaissanceResult
+import com.molokosoft.decisionengine.network.backend.model.responses.quiz.QuizResponse
 
 fun DecisionDraft.decisionAnalysisResultFailed(): Boolean {
     return title.isNotBlank() &&
@@ -24,5 +25,6 @@ data class DecisionDraft(
     val decisionAnalysisResult: DecisionAnalysisResult? = null,
     val safetyClassification: SafetyClassification? = null,
     val promptReconnaissanceResult: PromptReconnaissanceResult? = null,
+    val quiz: QuizResponse? = null,
     val errorMessage: String? = null
 )

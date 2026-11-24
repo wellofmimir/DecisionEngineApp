@@ -527,6 +527,48 @@ class NewDecisionViewModel(
         }
     }
 
+    suspend fun generateQuiz() {
+        val mockTitle = "Which university should I attend?"
+
+        val mockOptions = listOf(
+            Option(
+                name = "University of California, Los Angeles (UCLA)",
+                reversibility = 5
+            ),
+            Option(
+                name = "Arizona State University (ASU)",
+                reversibility = 5
+            ),
+            Option(
+                name = "University of Oregon",
+                reversibility = 5
+            ),
+            Option(
+                name = "New York University (NYU)",
+                reversibility = 5
+            )
+        )
+
+        _draft.update {
+            it.copy(
+                title = mockTitle,
+                options = mockOptions,
+                quiz = null
+            )
+        }
+
+        val currentDraft = _draft.value
+
+        val quizResponse = factorAnalysisRepository.generateQuiz(
+            decisionTitle = currentDraft.title,
+            options = currentDraft.options
+        )
+
+        _draft.update {
+            it.copy(quiz = quizResponse)
+        }
+    }
+
     private suspend fun saveDecision() {
         val fullDraft =
             _draft.value
