@@ -39,6 +39,8 @@ import com.molokosoft.decisionengine.newdecisionscreen.screens.AnalysisErrorScre
 import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.ArrangeScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.MultipleChoiceScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.SliderScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.TextAnswerScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.YesNoScreen
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.ErrorCodes
 import kotlinx.coroutines.launch
 
@@ -48,6 +50,10 @@ sealed class DecisionScreen {
     data object EnterDecisionCriteria : DecisionScreen()
     data object ChooseDecisionCriteria : DecisionScreen()
     data object RateComparisonCriteria : DecisionScreen()
+
+    data object TextAnswerScreen : DecisionScreen()
+
+    data object YesNoScreen : DecisionScreen()
 
     data object MultipleChoiceScreen : DecisionScreen()
 
@@ -85,6 +91,8 @@ fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
         DecisionScreen.AnalysisErrorScreen -> DecisionScreen.EnterDecisionName
 
         DecisionScreen.MultipleChoiceScreen -> DecisionScreen.MultipleChoiceScreen
+        DecisionScreen.TextAnswerScreen -> DecisionScreen.EnterDecisionName
+        DecisionScreen.YesNoScreen -> DecisionScreen.YesNoScreen
         DecisionScreen.ArrangeScreen -> DecisionScreen.ArrangeScreen
         DecisionScreen.SliderScreen -> DecisionScreen.SliderScreen
     }
@@ -92,6 +100,8 @@ fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
 fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
     when (this) {
         DecisionScreen.MultipleChoiceScreen -> DecisionScreen.MultipleChoiceScreen
+        DecisionScreen.TextAnswerScreen -> DecisionScreen.TextAnswerScreen
+        DecisionScreen.YesNoScreen -> DecisionScreen.YesNoScreen
         DecisionScreen.ArrangeScreen -> DecisionScreen.ArrangeScreen
         DecisionScreen.SliderScreen -> DecisionScreen.SliderScreen
 
@@ -137,7 +147,7 @@ fun EnterDecisionScreen(
             value = if (showNoMoreUsagesScreen)
                 DecisionScreen.NoMoreUsagesScreen
             else
-                DecisionScreen.SliderScreen
+                DecisionScreen.TextAnswerScreen
         )
     }
 
@@ -194,6 +204,32 @@ fun EnterDecisionScreen(
         newDecisionViewModel.getNextOption()
 
     when (currentScreen) {
+        DecisionScreen.TextAnswerScreen -> TextAnswerScreen(
+            modifier = modifier
+                .fillMaxHeight(),
+            question = "What decision would you like help with?",
+            onNextClicked = {
+                currentScreen = DecisionScreen.EnterDecisionName
+            },
+            onBackClicked = {
+                newDecisionViewModel.resetDraft()
+                onBackClicked()
+            }
+        )
+
+        DecisionScreen.YesNoScreen -> YesNoScreen(
+            modifier = modifier
+                .fillMaxHeight(),
+            question = "Is this the right decision for you?",
+            onNextClicked = {
+                currentScreen = DecisionScreen.EnterDecisionName
+            },
+            onBackClicked = {
+                newDecisionViewModel.resetDraft()
+                onBackClicked()
+            }
+        )
+
         DecisionScreen.EnterDecisionName -> EnterDecisionNameScreen(
             modifier = modifier
                 .fillMaxHeight(),
