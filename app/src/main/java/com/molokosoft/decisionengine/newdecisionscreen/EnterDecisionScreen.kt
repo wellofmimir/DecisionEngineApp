@@ -41,8 +41,15 @@ import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.MultipleChoi
 import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.SliderScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.TextAnswerScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.YesNoScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.QuizStartScreen
 import com.molokosoft.decisionengine.commonuielements.screens.WaitingScreenWithRotatingLogo
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.QuizGenerationState
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.ErrorCodes
+import com.molokosoft.decisionengine.network.backend.model.dto.quiz.ArrangeQuizQuestion
+import com.molokosoft.decisionengine.network.backend.model.dto.quiz.MultipleChoiceQuizQuestion
+import com.molokosoft.decisionengine.network.backend.model.dto.quiz.SliderQuizQuestion
+import com.molokosoft.decisionengine.network.backend.model.dto.quiz.TextInputQuizQuestion
+import com.molokosoft.decisionengine.network.backend.model.dto.quiz.YesNoQuizQuestion
 import kotlinx.coroutines.launch
 
 sealed class DecisionScreen {
@@ -146,15 +153,25 @@ fun EnterDecisionScreen(
     val optionInfoDialogSeen by newDecisionViewModel.optionInfoDialogSeen.collectAsStateWithLifecycle()
     val importanceInfoDialogSeen by newDecisionViewModel.importanceInfoDialogSeen.collectAsStateWithLifecycle()
     val ratingInfoDialogSeen by newDecisionViewModel.ratingInfoDialogSeen.collectAsStateWithLifecycle()
+    val quizGenerationState by newDecisionViewModel.quizGenerationState.collectAsStateWithLifecycle()
 
     var currentScreen by remember {
         mutableStateOf(
             value = if (showNoMoreUsagesScreen)
                 DecisionScreen.NoMoreUsagesScreen
             else
-                DecisionScreen.EnterDecisionName
+                DecisionScreen.QuizGeneratingScreen
         )
     }
+
+    val displayedScreen =
+        if (currentScreen == DecisionScreen.QuizGeneratingScreen &&
+            quizGenerationState is QuizGenerationState.Completed
+        ) {
+            DecisionScreen.EnterDecisionName
+        } else {
+            currentScreen
+        }
 
     LaunchedEffect(Unit) {
         newDecisionViewModel.generateQuiz()
@@ -213,17 +230,95 @@ fun EnterDecisionScreen(
     val nextOptionName =
         newDecisionViewModel.getNextOption()
 
-    when (currentScreen) {
-        DecisionScreen.QuizGeneratingScreen -> WaitingScreenWithRotatingLogo(
-            modifier = modifier
-                .fillMaxHeight(),
-            texts = listOf(
-                "Finding questions that fit you...",
-                "Matching questions to your situation...",
-                "Looking for questions about what matters to you...",
-                "Putting together a quiz just for you..."
+    when (displayedScreen) {
+        DecisionScreen.QuizGeneratingScreen -> when (val state = quizGenerationState) {
+            QuizGenerationState.Generating -> WaitingScreenWithRotatingLogo(
+                modifier = modifier
+                    .fillMaxHeight(),
+                texts = listOf(
+                    "Finding questions that fit you...",
+                    "Matching questions to your situation...",
+                    "Looking for questions about what matters to you...",
+                    "Putting together a quiz just for you..."
+                )
             )
-        )
+
+            is QuizGenerationState.Ready -> QuizStartScreen(
+                modifier = modifier
+                    .fillMaxHeight(),
+                title = state.response.result.title,
+                subtitle = state.response.result.description,
+                onStartClicked = {
+                    newDecisionViewModel.startQuiz()
+                }
+            )
+
+            is QuizGenerationState.Question -> when (val question = state.question) {
+                is YesNoQuizQuestion -> YesNoScreen(
+                    modifier = modifier
+                        .fillMaxHeight(),
+                    question = question.question,
+                    onNextClicked = {
+                        newDecisionViewModel.advanceQuiz()
+                    },
+                    onBackClicked = {
+                        newDecisionViewModel.returnToQuizStartScreen()
+                    }
+                )
+
+                is TextInputQuizQuestion -> TextAnswerScreen(
+                    modifier = modifier
+                        .fillMaxHeight(),
+                    question = question.question,
+                    onNextClicked = {
+                        newDecisionViewModel.advanceQuiz()
+                    },
+                    onBackClicked = {
+                        newDecisionViewModel.returnToQuizStartScreen()
+                    }
+                )
+
+                is MultipleChoiceQuizQuestion -> MultipleChoiceScreen(
+                    modifier = modifier
+                        .fillMaxHeight(),
+                    question = question.question,
+                    options = question.config.answers.map { it.label },
+                    onNextClicked = {
+                        newDecisionViewModel.advanceQuiz()
+                    },
+                    onBackClicked = {
+                        newDecisionViewModel.returnToQuizStartScreen()
+                    }
+                )
+
+                is ArrangeQuizQuestion -> ArrangeScreen(
+                    modifier = modifier
+                        .fillMaxHeight(),
+                    question = question.question,
+                    options = question.config.items.map { it.label },
+                    onNextClicked = {
+                        newDecisionViewModel.advanceQuiz()
+                    },
+                    onBackClicked = {
+                        newDecisionViewModel.returnToQuizStartScreen()
+                    }
+                )
+
+                is SliderQuizQuestion -> SliderScreen(
+                    modifier = modifier
+                        .fillMaxHeight(),
+                    question = question.question,
+                    onNextClicked = {
+                        newDecisionViewModel.advanceQuiz()
+                    },
+                    onBackClicked = {
+                        newDecisionViewModel.returnToQuizStartScreen()
+                    }
+                )
+            }
+
+            QuizGenerationState.Completed -> Unit
+        }
 
         DecisionScreen.TextAnswerScreen -> TextAnswerScreen(
             modifier = modifier

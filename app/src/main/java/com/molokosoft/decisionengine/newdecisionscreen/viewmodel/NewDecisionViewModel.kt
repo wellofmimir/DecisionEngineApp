@@ -28,8 +28,10 @@ import com.molokosoft.decisionengine.billing.model.BillingProduct
 import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
 import com.molokosoft.decisionengine.network.backend.DecisionEngineClient
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
+import com.molokosoft.decisionengine.network.backend.model.dto.quiz.QuizQuestion
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
 import com.molokosoft.decisionengine.network.backend.model.dto.security.dto.PromptReconnaissanceResult
+import com.molokosoft.decisionengine.network.backend.model.responses.quiz.QuizResponse
 import com.molokosoft.decisionengine.repositories.AiAnalysisResult
 import com.molokosoft.decisionengine.repositories.DecisionRepository
 import com.molokosoft.decisionengine.repositories.model.OptionAnalysis
@@ -37,9 +39,17 @@ import com.molokosoft.decisionengine.repositories.model.CriterionAnalysis
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.stateIn
 import kotlin.String
+
+sealed interface QuizGenerationState {
+    data object Generating : QuizGenerationState
+    data class Ready(val response: QuizResponse) : QuizGenerationState
+    data class Question(val question: QuizQuestion) : QuizGenerationState
+    data object Completed : QuizGenerationState
+}
 
 class NewDecisionViewModel(
     private val factorAnalysisRepository: FactorAnalysisRepository,
@@ -54,6 +64,25 @@ class NewDecisionViewModel(
 
     val draft =
         _draft.asStateFlow()
+
+    private val _quizQuestionIndex = MutableStateFlow<Int?>(null)
+
+    val quizGenerationState: StateFlow<QuizGenerationState> =
+        combine(draft, _quizQuestionIndex) { currentDraft, quizQuestionIndex ->
+            currentDraft.quiz?.let { quiz ->
+                when {
+                    quizQuestionIndex == null -> QuizGenerationState.Ready(quiz)
+                    quizQuestionIndex < quiz.result.questions.size ->
+                        QuizGenerationState.Question(quiz.result.questions[quizQuestionIndex])
+                    else -> QuizGenerationState.Completed
+                }
+            } ?: QuizGenerationState.Generating
+
+        }.stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                QuizGenerationState.Generating
+            )
 
     private val _subscriptionProducts =
         MutableStateFlow(emptyList<SubscriptionProduct>())
@@ -154,11 +183,26 @@ class NewDecisionViewModel(
     fun resetDraft() {
         viewModelScope.launch {
             _draft.value = DecisionDraft()
+            _quizQuestionIndex.value = null
             _analysisDone.value = false
             _showWaitingForAnalysisScreen.value = false
             _showNoMoreUsagesScreen.value = false
             _showAnalysisErrorScreen.value = false
         }
+    }
+
+    fun startQuiz() {
+        _quizQuestionIndex.value = 0
+    }
+
+    fun advanceQuiz() {
+        _quizQuestionIndex.update { currentIndex ->
+            currentIndex?.plus(1)
+        }
+    }
+
+    fun returnToQuizStartScreen() {
+        _quizQuestionIndex.value = null
     }
 
     suspend fun isInputHarmfulOrAPrompt(content: String): Boolean =
@@ -528,23 +572,25 @@ class NewDecisionViewModel(
     }
 
     suspend fun generateQuiz() {
-        val mockTitle = "Which university should I attend?"
+        _quizQuestionIndex.value = null
+
+        val mockTitle = "Which vehicle should I acquire?"
 
         val mockOptions = listOf(
             Option(
-                name = "University of California, Los Angeles (UCLA)",
+                name = "Nissan Pulsar",
                 reversibility = 5
             ),
             Option(
-                name = "Arizona State University (ASU)",
+                name = "Toyota Corolla",
                 reversibility = 5
             ),
             Option(
-                name = "University of Oregon",
+                name = "Mitsubishi Space Star",
                 reversibility = 5
             ),
             Option(
-                name = "New York University (NYU)",
+                name = "Opel Corsa",
                 reversibility = 5
             )
         )
