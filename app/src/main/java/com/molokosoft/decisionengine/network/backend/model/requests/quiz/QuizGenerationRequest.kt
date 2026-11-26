@@ -4,8 +4,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class QuizGenerationRequest(
-    val decision: QuizDecisionRequest,
-    val options: List<QuizOptionRequest>
+    val decision: QuizDecisionRequest
 )
 
 @Serializable

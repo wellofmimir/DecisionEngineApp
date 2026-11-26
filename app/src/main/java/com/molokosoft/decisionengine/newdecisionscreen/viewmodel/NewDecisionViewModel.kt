@@ -29,6 +29,7 @@ import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
 import com.molokosoft.decisionengine.network.backend.DecisionEngineClient
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
 import com.molokosoft.decisionengine.network.backend.model.dto.quiz.QuizQuestion
+import com.molokosoft.decisionengine.network.backend.model.dto.quiz.QuizCriterion
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
 import com.molokosoft.decisionengine.network.backend.model.dto.security.dto.PromptReconnaissanceResult
 import com.molokosoft.decisionengine.network.backend.model.responses.quiz.QuizResponse
@@ -51,6 +52,11 @@ sealed interface QuizGenerationState {
     data object Completed : QuizGenerationState
 }
 
+data class QuizEvaluationData(
+    val criteria: List<QuizCriterion>,
+    val personalityDescription: String
+)
+
 class NewDecisionViewModel(
     private val factorAnalysisRepository: FactorAnalysisRepository,
     private val userDataRepository: UserDataRepository,
@@ -64,6 +70,26 @@ class NewDecisionViewModel(
 
     val draft =
         _draft.asStateFlow()
+
+    private val personalityDescription =
+        "Your answers suggest that you like to understand what matters to you before making a choice. You tend to compare options by looking at how well they fit your priorities."
+
+    val quizEvaluationData: StateFlow<QuizEvaluationData> =
+        draft
+            .map { currentDraft ->
+                QuizEvaluationData(
+                    criteria = currentDraft.quiz?.result?.criteria.orEmpty(),
+                    personalityDescription = personalityDescription
+                )
+            }
+            .stateIn(
+                viewModelScope,
+                SharingStarted.WhileSubscribed(5000),
+                QuizEvaluationData(
+                    criteria = emptyList(),
+                    personalityDescription = personalityDescription
+                )
+            )
 
     private val _quizQuestionIndex = MutableStateFlow<Int?>(null)
 
@@ -571,43 +597,14 @@ class NewDecisionViewModel(
         }
     }
 
-    suspend fun generateQuiz() {
+    suspend fun generateQuiz(decisionTitle: String) {
         _quizQuestionIndex.value = null
-
-        val mockTitle = "Which vehicle should I acquire?"
-
-        val mockOptions = listOf(
-            Option(
-                name = "Nissan Pulsar",
-                reversibility = 5
-            ),
-            Option(
-                name = "Toyota Corolla",
-                reversibility = 5
-            ),
-            Option(
-                name = "Mitsubishi Space Star",
-                reversibility = 5
-            ),
-            Option(
-                name = "Opel Corsa",
-                reversibility = 5
-            )
-        )
-
         _draft.update {
-            it.copy(
-                title = mockTitle,
-                options = mockOptions,
-                quiz = null
-            )
+            it.copy(quiz = null)
         }
 
-        val currentDraft = _draft.value
-
         val quizResponse = factorAnalysisRepository.generateQuiz(
-            decisionTitle = currentDraft.title,
-            options = currentDraft.options
+            decisionTitle = decisionTitle
         )
 
         _draft.update {

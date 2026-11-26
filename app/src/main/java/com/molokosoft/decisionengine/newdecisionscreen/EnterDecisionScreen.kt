@@ -42,6 +42,7 @@ import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.SliderScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.TextAnswerScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.YesNoScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.QuizStartScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.QuizEvaluationScreen as QuizEvaluationComposable
 import com.molokosoft.decisionengine.commonuielements.screens.WaitingScreenWithRotatingLogo
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.QuizGenerationState
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.ErrorCodes
@@ -60,6 +61,7 @@ sealed class DecisionScreen {
     data object RateComparisonCriteria : DecisionScreen()
 
     data object QuizGeneratingScreen : DecisionScreen()
+    data object QuizEvaluationScreen : DecisionScreen()
 
     data object TextAnswerScreen : DecisionScreen()
 
@@ -90,7 +92,7 @@ fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
                 DecisionScreen.EnterDecisionOptions
         }
 
-        DecisionScreen.EnterDecisionOptions -> DecisionScreen.ChooseDecisionCriteria
+        DecisionScreen.EnterDecisionOptions -> DecisionScreen.QuizGeneratingScreen
         DecisionScreen.ChooseDecisionCriteria -> DecisionScreen.EnterDecisionCriteria
         DecisionScreen.EnterDecisionCriteria -> DecisionScreen.RateComparisonCriteria
         DecisionScreen.RateComparisonCriteria -> DecisionScreen.EnterDecisionName
@@ -102,6 +104,7 @@ fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
 
         DecisionScreen.MultipleChoiceScreen -> DecisionScreen.MultipleChoiceScreen
         DecisionScreen.QuizGeneratingScreen -> DecisionScreen.QuizGeneratingScreen
+        DecisionScreen.QuizEvaluationScreen -> DecisionScreen.ChooseDecisionCriteria
         DecisionScreen.TextAnswerScreen -> DecisionScreen.EnterDecisionName
         DecisionScreen.YesNoScreen -> DecisionScreen.YesNoScreen
         DecisionScreen.ArrangeScreen -> DecisionScreen.ArrangeScreen
@@ -112,6 +115,7 @@ fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
     when (this) {
         DecisionScreen.MultipleChoiceScreen -> DecisionScreen.MultipleChoiceScreen
         DecisionScreen.QuizGeneratingScreen -> DecisionScreen.QuizGeneratingScreen
+        DecisionScreen.QuizEvaluationScreen -> DecisionScreen.QuizGeneratingScreen
         DecisionScreen.TextAnswerScreen -> DecisionScreen.TextAnswerScreen
         DecisionScreen.YesNoScreen -> DecisionScreen.YesNoScreen
         DecisionScreen.ArrangeScreen -> DecisionScreen.ArrangeScreen
@@ -154,13 +158,14 @@ fun EnterDecisionScreen(
     val importanceInfoDialogSeen by newDecisionViewModel.importanceInfoDialogSeen.collectAsStateWithLifecycle()
     val ratingInfoDialogSeen by newDecisionViewModel.ratingInfoDialogSeen.collectAsStateWithLifecycle()
     val quizGenerationState by newDecisionViewModel.quizGenerationState.collectAsStateWithLifecycle()
+    val quizEvaluationData by newDecisionViewModel.quizEvaluationData.collectAsStateWithLifecycle()
 
     var currentScreen by remember {
         mutableStateOf(
             value = if (showNoMoreUsagesScreen)
                 DecisionScreen.NoMoreUsagesScreen
             else
-                DecisionScreen.QuizGeneratingScreen
+                DecisionScreen.EnterDecisionName
         )
     }
 
@@ -168,15 +173,10 @@ fun EnterDecisionScreen(
         if (currentScreen == DecisionScreen.QuizGeneratingScreen &&
             quizGenerationState is QuizGenerationState.Completed
         ) {
-            DecisionScreen.EnterDecisionName
+            DecisionScreen.QuizEvaluationScreen
         } else {
             currentScreen
         }
-
-    LaunchedEffect(Unit) {
-        newDecisionViewModel.generateQuiz()
-        return@LaunchedEffect
-    }
 
     var enterOptionDialogOpen by remember { mutableStateOf(false) }
     var enterCriterionDialogOpen by remember { mutableStateOf(false) }
@@ -320,6 +320,27 @@ fun EnterDecisionScreen(
             QuizGenerationState.Completed -> Unit
         }
 
+        DecisionScreen.QuizEvaluationScreen -> QuizEvaluationComposable(
+            modifier = modifier.fillMaxHeight(),
+            criteria = quizEvaluationData.criteria,
+            personalityDescription = quizEvaluationData.personalityDescription,
+            onContinue = { criteria ->
+                criteria.forEach { criterion ->
+                    newDecisionViewModel.setCriteria(
+                        Criterion(
+                            name = criterion.name.trim(),
+                            importance = criterion.initialWeight.coerceIn(1, 10)
+                        )
+                    )
+                }
+                currentScreen = DecisionScreen.ChooseDecisionCriteria
+            },
+            onBackClicked = {
+                newDecisionViewModel.returnToQuizStartScreen()
+                currentScreen = DecisionScreen.QuizGeneratingScreen
+            }
+        )
+
         DecisionScreen.TextAnswerScreen -> TextAnswerScreen(
             modifier = modifier
                 .fillMaxHeight(),
@@ -370,6 +391,11 @@ fun EnterDecisionScreen(
                 newDecisionViewModel.setDecisionInfoDialogSeen()
 
                 currentScreen = currentScreen.next(yesOrNoDecision)
+                if (!yesOrNoDecision) {
+                    scope.launch {
+                        newDecisionViewModel.generateQuiz(name)
+                    }
+                }
             }
         )
 

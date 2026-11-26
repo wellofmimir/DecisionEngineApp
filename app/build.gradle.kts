@@ -1,3 +1,5 @@
+import org.gradle.api.tasks.Exec
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -57,6 +59,18 @@ android {
         compose = true
         buildConfig = true
     }
+}
+
+val adbExecutable = androidComponents.sdkComponents.adb
+val reverseDebugBackendPort = tasks.register<Exec>("reverseDebugBackendPort") {
+    group = "installation"
+    description = "Forwards the local backend port to connected Android devices."
+    executable = adbExecutable.get().asFile.absolutePath
+    args("reverse", "tcp:45003", "tcp:45003")
+}
+
+tasks.matching { it.name == "installDebug" }.configureEach {
+    dependsOn(reverseDebugBackendPort)
 }
 
 dependencies {
