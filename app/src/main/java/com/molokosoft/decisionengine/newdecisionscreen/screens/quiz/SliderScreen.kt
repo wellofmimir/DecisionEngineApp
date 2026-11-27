@@ -52,6 +52,11 @@ fun SliderTile(
     text: String,
     score: Float,
     onValueChange: (score: Float) -> Unit,
+    minValue: Int = 1,
+    maxValue: Int = 10,
+    step: Int = 1,
+    minLabel: String = "Not Important",
+    maxLabel: String = "Very Important",
     modifier: Modifier = Modifier,
 ) {
     val typography =
@@ -92,10 +97,17 @@ fun SliderTile(
                     .fillMaxWidth(),
                 value = score,
                 onValueChange = { value ->
-                    onValueChange(value.roundToInt().toFloat())
+                    val snappedValue = if (step > 0) {
+                        minValue + ((value - minValue) / step).roundToInt() * step
+                    } else {
+                        value.roundToInt()
+                    }
+                    onValueChange(snappedValue.toFloat())
                 },
-                valueRange = 1f..10f,
-                steps = 8,
+                valueRange = minValue.toFloat()..maxValue.toFloat(),
+                steps = if (step > 0) {
+                    ((maxValue - minValue) / step - 1).coerceAtLeast(0)
+                } else 0,
                 colors = SliderDefaults.colors(
                     thumbColor = Color.Black,
                     activeTrackColor = DecisionBlue,
@@ -123,7 +135,7 @@ fun SliderTile(
                                 fontSize = typography.titleSmall.fontSize * 1.25f
                             )
                         ) {
-                            append("1")
+                            append(minValue.toString())
                         }
 
                         append("\n")
@@ -134,7 +146,7 @@ fun SliderTile(
                                 color = Color.DarkGray
                             )
                         ) {
-                            append("Not Important")
+                            append(minLabel)
                         }
                     },
                     textAlign = TextAlign.Start,
@@ -159,7 +171,7 @@ fun SliderTile(
                                 fontSize = typography.titleSmall.fontSize * 1.25f
                             )
                         ) {
-                            append("10")
+                            append(maxValue.toString())
                         }
 
                         append("\n")
@@ -170,7 +182,7 @@ fun SliderTile(
                                 color = Color.DarkGray
                             )
                         ) {
-                            append("Very Important")
+                            append(maxLabel)
                         }
                     },
                     textAlign = TextAlign.End,
@@ -192,12 +204,23 @@ fun SliderTile(
 @Composable
 fun SliderScreen(
     question: String,
-    onNextClicked: () -> Unit,
+    minValue: Int = 1,
+    maxValue: Int = 10,
+    step: Int = 1,
+    minLabel: String = "Not Important",
+    maxLabel: String = "Very Important",
+    onNextClicked: (value: Int) -> Unit,
     onBackClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val typography = LocalAppTypography.current
-    var score by remember { mutableFloatStateOf(5f) }
+    var score by remember(minValue, maxValue, step) {
+        mutableFloatStateOf(
+            (minValue + (((maxValue - minValue) / 2f / step.coerceAtLeast(1)).roundToInt() * step.coerceAtLeast(1)))
+                .coerceIn(minValue, maxValue)
+                .toFloat()
+        )
+    }
 
     Column(
         modifier = modifier
@@ -245,7 +268,12 @@ fun SliderScreen(
             score = score,
             onValueChange = { it ->
                 score = it
-            }
+            },
+            minValue = minValue,
+            maxValue = maxValue,
+            step = step,
+            minLabel = minLabel,
+            maxLabel = maxLabel
         )
 
         Spacer(
@@ -272,7 +300,7 @@ fun SliderScreen(
                     shape = RoundedCornerShape(64.dp)
                 )
                 .clickable {
-                    onNextClicked()
+                    onNextClicked(score.roundToInt())
                 },
             contentAlignment = Alignment.Center
         ) {

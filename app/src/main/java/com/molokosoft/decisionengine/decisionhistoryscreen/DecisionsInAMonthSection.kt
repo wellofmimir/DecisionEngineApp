@@ -15,45 +15,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import com.molokosoft.decisionengine.R
-import com.molokosoft.decisionengine.commonclasses.DecisionCategory
 import com.molokosoft.decisionengine.commonclasses.getDecisionCategory
 import com.molokosoft.decisionengine.commonuielements.buttons.DecisionButton
+import com.molokosoft.decisionengine.commonuielements.getColorToLogo
+import com.molokosoft.decisionengine.commonuielements.getLogo
 import java.time.YearMonth
 
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.LocalAppTypography
 import com.molokosoft.decisionengine.database.relation.DecisionCompleteRelation
-
-fun getLogo(decisionCategory: DecisionCategory): Int {
-    return when (decisionCategory) {
-        DecisionCategory.CAREER -> R.drawable.career_foreground
-        DecisionCategory.FINANCE -> R.drawable.dollar_foreground
-        DecisionCategory.RELATIONSHIPS -> R.drawable.relationship_foreground
-        DecisionCategory.HOME -> R.drawable.home_foreground
-        DecisionCategory.HEALTH -> R.drawable.health_foreground
-        DecisionCategory.SHOPPING -> R.drawable.shopping_cart_foreground
-        DecisionCategory.TRAVEL -> R.drawable.airplane_foreground
-        DecisionCategory.EDUCATION -> R.drawable.education_foreground
-        DecisionCategory.LIFESTYLE -> R.drawable.lifestyle_foreground
-        DecisionCategory.OTHER -> R.drawable.analysis_foreground
-    }
-}
-
-fun getColorToLogo(decisionCategory: DecisionCategory): Color {
-    return when (decisionCategory) {
-        DecisionCategory.CAREER -> Color(0xFF1976D2)        // Blau
-        DecisionCategory.FINANCE -> Color(0xFF2E7D32)       // Grün
-        DecisionCategory.RELATIONSHIPS -> Color(0xFFE91E63) // Pink
-        DecisionCategory.HOME -> Color(0xFF8D6E63)          // Braun
-        DecisionCategory.HEALTH -> Color(0xFFD32F2F)        // Rot
-        DecisionCategory.SHOPPING -> Color(0xFFFF9800)      // Orange
-        DecisionCategory.TRAVEL -> Color(0xFF00ACC1)        // Türkis
-        DecisionCategory.EDUCATION -> Color(0xFF5E35B1)     // Violett
-        DecisionCategory.LIFESTYLE -> Color(0xFFFFC107)     // Amber
-        DecisionCategory.OTHER -> Color(0xFF757575)         // Grau
-    }
-}
 
 @Composable
 fun DecisionsInAMonthSection(

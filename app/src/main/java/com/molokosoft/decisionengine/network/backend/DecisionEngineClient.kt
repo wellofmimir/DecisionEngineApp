@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit
 val baseUrl = if (BuildConfig.DEBUG)
     "http://127.0.0.1:45003/"
 else
-    "https://decision-engine-app.com/"
+    "http://127.0.0.1:45003/"
 
 class DecisionEngineClient(
     private val client: OkHttpClient

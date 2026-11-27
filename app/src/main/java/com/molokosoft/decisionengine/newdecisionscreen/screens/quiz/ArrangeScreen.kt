@@ -109,7 +109,7 @@ fun ArrangeTile(
 fun ArrangeScreen(
     question: String,
     options: List<String>,
-    onNextClicked: () -> Unit,
+    onNextClicked: (rankedItems: List<String>) -> Unit,
     onBackClicked: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -311,7 +311,7 @@ fun ArrangeScreen(
                     shape = RoundedCornerShape(64.dp)
                 )
                 .clickable {
-                    onNextClicked()
+                    onNextClicked(arrangedOptions.toList())
                 },
             contentAlignment = Alignment.Center
         ) {

@@ -24,8 +24,12 @@ import com.molokosoft.decisionengine.newdecisionscreen.dialogs.EnterCriterionDia
 import com.molokosoft.decisionengine.newdecisionscreen.screens.EnterComparisonCriteriaScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.EnterDecisionNameScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.EnterDecisionOptionsScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.ChooseCommonDecisionScreen
+import com.molokosoft.decisionengine.newdecisionscreen.screens.CommonDecision
+import com.molokosoft.decisionengine.newdecisionscreen.screens.ExplainCommonDecisionScreen
 import com.molokosoft.decisionengine.newdecisionscreen.screens.RateComparisonCriteriaScreen
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.NewDecisionViewModel
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.QuizAnswer
 import com.molokosoft.decisionengine.newdecisionscreen.screens.ChooseComparisonCriteriaScreen
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Criterion
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Option
@@ -46,14 +50,16 @@ import com.molokosoft.decisionengine.newdecisionscreen.screens.quiz.QuizEvaluati
 import com.molokosoft.decisionengine.commonuielements.screens.WaitingScreenWithRotatingLogo
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.QuizGenerationState
 import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.ErrorCodes
-import com.molokosoft.decisionengine.network.backend.model.dto.quiz.ArrangeQuizQuestion
-import com.molokosoft.decisionengine.network.backend.model.dto.quiz.MultipleChoiceQuizQuestion
-import com.molokosoft.decisionengine.network.backend.model.dto.quiz.SliderQuizQuestion
-import com.molokosoft.decisionengine.network.backend.model.dto.quiz.TextInputQuizQuestion
-import com.molokosoft.decisionengine.network.backend.model.dto.quiz.YesNoQuizQuestion
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.ArrangeQuizQuestion
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.MultipleChoiceQuizQuestion
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.SliderQuizQuestion
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.TextInputQuizQuestion
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.YesNoQuizQuestion
 import kotlinx.coroutines.launch
 
 sealed class DecisionScreen {
+    data object ChooseCommonDecision : DecisionScreen()
+    data object ExplainCommonDecision : DecisionScreen()
     data object EnterDecisionName : DecisionScreen()
     data object EnterDecisionOptions : DecisionScreen()
     data object EnterDecisionCriteria : DecisionScreen()
@@ -85,6 +91,8 @@ sealed class DecisionScreen {
 
 fun DecisionScreen.next(yesOrNoDecision: Boolean = false): DecisionScreen =
     when (this) {
+        DecisionScreen.ChooseCommonDecision -> DecisionScreen.EnterDecisionName
+        DecisionScreen.ExplainCommonDecision -> DecisionScreen.EnterDecisionOptions
         DecisionScreen.EnterDecisionName -> {
             if (yesOrNoDecision)
                 DecisionScreen.ChooseDecisionCriteria
@@ -122,6 +130,8 @@ fun DecisionScreen.previous(yesOrNoDecision: Boolean = false): DecisionScreen =
         DecisionScreen.SliderScreen -> DecisionScreen.SliderScreen
 
         DecisionScreen.EnterDecisionOptions -> DecisionScreen.EnterDecisionName
+        DecisionScreen.ChooseCommonDecision -> DecisionScreen.ChooseCommonDecision
+        DecisionScreen.ExplainCommonDecision -> DecisionScreen.ChooseCommonDecision
         DecisionScreen.EnterDecisionCriteria -> DecisionScreen.ChooseDecisionCriteria
         DecisionScreen.RateComparisonCriteria -> DecisionScreen.EnterDecisionName
         DecisionScreen.EnterDecisionName -> DecisionScreen.EnterDecisionName
@@ -165,7 +175,7 @@ fun EnterDecisionScreen(
             value = if (showNoMoreUsagesScreen)
                 DecisionScreen.NoMoreUsagesScreen
             else
-                DecisionScreen.EnterDecisionName
+                DecisionScreen.ChooseCommonDecision
         )
     }
 
@@ -179,6 +189,7 @@ fun EnterDecisionScreen(
         }
 
     var enterOptionDialogOpen by remember { mutableStateOf(false) }
+    var selectedCommonDecision by remember { mutableStateOf<CommonDecision?>(null) }
     var enterCriterionDialogOpen by remember { mutableStateOf(false) }
     var errorMessageDialogOpen by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("" to "") }
@@ -231,6 +242,43 @@ fun EnterDecisionScreen(
         newDecisionViewModel.getNextOption()
 
     when (displayedScreen) {
+        DecisionScreen.ChooseCommonDecision -> ChooseCommonDecisionScreen(
+            modifier = modifier.fillMaxHeight(),
+            onDecisionSelected = { decision ->
+                selectedCommonDecision = decision
+                currentScreen = DecisionScreen.ExplainCommonDecision
+            },
+            onOwnDecisionClicked = {
+                selectedCommonDecision = null
+                currentScreen = DecisionScreen.EnterDecisionName
+            }
+        )
+
+        DecisionScreen.ExplainCommonDecision -> {
+            val decision = selectedCommonDecision
+
+            if (decision != null) {
+                ExplainCommonDecisionScreen(
+                    modifier = modifier.fillMaxHeight(),
+                    decisionTitle = decision.title,
+                    explanation = decision.explanation,
+                    exampleOptions = decision.exampleOptions,
+                    onStartClicked = {
+                        newDecisionViewModel.setTitle(decision.title)
+                        newDecisionViewModel.setDecisionType(false)
+                        currentScreen = DecisionScreen.EnterDecisionOptions
+                        scope.launch {
+                            newDecisionViewModel.generateQuiz(decision.title)
+                        }
+                    },
+                    onBackClicked = {
+                        selectedCommonDecision = null
+                        currentScreen = DecisionScreen.ChooseCommonDecision
+                    }
+                )
+            } else Unit
+        }
+
         DecisionScreen.QuizGeneratingScreen -> when (val state = quizGenerationState) {
             QuizGenerationState.Generating -> WaitingScreenWithRotatingLogo(
                 modifier = modifier
@@ -259,7 +307,7 @@ fun EnterDecisionScreen(
                         .fillMaxHeight(),
                     question = question.question,
                     onNextClicked = {
-                        newDecisionViewModel.advanceQuiz()
+                        newDecisionViewModel.advanceQuiz(QuizAnswer.YesNo(it))
                     },
                     onBackClicked = {
                         newDecisionViewModel.returnToQuizStartScreen()
@@ -271,7 +319,7 @@ fun EnterDecisionScreen(
                         .fillMaxHeight(),
                     question = question.question,
                     onNextClicked = {
-                        newDecisionViewModel.advanceQuiz()
+                        newDecisionViewModel.advanceQuiz(QuizAnswer.TextInput(it))
                     },
                     onBackClicked = {
                         newDecisionViewModel.returnToQuizStartScreen()
@@ -283,8 +331,12 @@ fun EnterDecisionScreen(
                         .fillMaxHeight(),
                     question = question.question,
                     options = question.config.answers.map { it.label },
-                    onNextClicked = {
-                        newDecisionViewModel.advanceQuiz()
+                    onNextClicked = { selectedIndex ->
+                        question.config.answers.getOrNull(selectedIndex)?.let { answer ->
+                            newDecisionViewModel.advanceQuiz(
+                                QuizAnswer.MultipleChoice(answer.id, answer.label)
+                            )
+                        }
                     },
                     onBackClicked = {
                         newDecisionViewModel.returnToQuizStartScreen()
@@ -296,8 +348,8 @@ fun EnterDecisionScreen(
                         .fillMaxHeight(),
                     question = question.question,
                     options = question.config.items.map { it.label },
-                    onNextClicked = {
-                        newDecisionViewModel.advanceQuiz()
+                    onNextClicked = { rankedItems ->
+                        newDecisionViewModel.advanceQuiz(QuizAnswer.Arrange(rankedItems))
                     },
                     onBackClicked = {
                         newDecisionViewModel.returnToQuizStartScreen()
@@ -308,8 +360,13 @@ fun EnterDecisionScreen(
                     modifier = modifier
                         .fillMaxHeight(),
                     question = question.question,
-                    onNextClicked = {
-                        newDecisionViewModel.advanceQuiz()
+                    minValue = question.config.min,
+                    maxValue = question.config.max,
+                    step = question.config.step,
+                    minLabel = question.config.minLabel,
+                    maxLabel = question.config.maxLabel,
+                    onNextClicked = { value ->
+                        newDecisionViewModel.advanceQuiz(QuizAnswer.Slider(value))
                     },
                     onBackClicked = {
                         newDecisionViewModel.returnToQuizStartScreen()
@@ -324,6 +381,7 @@ fun EnterDecisionScreen(
             modifier = modifier.fillMaxHeight(),
             criteria = quizEvaluationData.criteria,
             personalityDescription = quizEvaluationData.personalityDescription,
+            onImportanceChanged = newDecisionViewModel::updateQuizCriterionImportance,
             onContinue = { criteria ->
                 criteria.forEach { criterion ->
                     newDecisionViewModel.setCriteria(
@@ -389,6 +447,7 @@ fun EnterDecisionScreen(
                 newDecisionViewModel.setTitle(name)
                 newDecisionViewModel.setDecisionType(yesOrNoDecision)
                 newDecisionViewModel.setDecisionInfoDialogSeen()
+                selectedCommonDecision = null
 
                 currentScreen = currentScreen.next(yesOrNoDecision)
                 if (!yesOrNoDecision) {
@@ -450,7 +509,11 @@ fun EnterDecisionScreen(
                 Log.d("DecisionEngine", "resetDraft() in onBackClicked() in EnterDecisionOptionsScreen")
 
                 newDecisionViewModel.resetDraft()
-                currentScreen = currentScreen.previous(yesOrNoDecision)
+                currentScreen = if (selectedCommonDecision != null) {
+                    DecisionScreen.ExplainCommonDecision
+                } else {
+                    currentScreen.previous(yesOrNoDecision)
+                }
             },
             onNextClicked = {
                 if (optionNames.isEmpty() || optionNames.size == 1) {

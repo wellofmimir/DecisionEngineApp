@@ -1,6 +1,6 @@
 package com.molokosoft.decisionengine.network.backend.model.responses.quiz
 
-import com.molokosoft.decisionengine.network.backend.model.dto.quiz.Quiz
+import com.molokosoft.decisionengine.newdecisionscreen.viewmodel.model.Quiz
 import kotlinx.serialization.Serializable
 
 @Serializable

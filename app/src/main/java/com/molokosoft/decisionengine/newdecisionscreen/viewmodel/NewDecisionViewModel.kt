@@ -28,8 +28,6 @@ import com.molokosoft.decisionengine.billing.model.BillingProduct
 import com.molokosoft.decisionengine.billing.model.SubscriptionProduct
 import com.molokosoft.decisionengine.network.backend.DecisionEngineClient
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.DecisionAnalysisResult
-import com.molokosoft.decisionengine.network.backend.model.dto.quiz.QuizQuestion
-import com.molokosoft.decisionengine.network.backend.model.dto.quiz.QuizCriterion
 import com.molokosoft.decisionengine.network.backend.model.dto.decision.SafetyClassification
 import com.molokosoft.decisionengine.network.backend.model.dto.security.dto.PromptReconnaissanceResult
 import com.molokosoft.decisionengine.network.backend.model.responses.quiz.QuizResponse
@@ -57,6 +55,14 @@ data class QuizEvaluationData(
     val personalityDescription: String
 )
 
+sealed interface QuizAnswer {
+    data class YesNo(val value: Boolean) : QuizAnswer
+    data class Slider(val value: Int) : QuizAnswer
+    data class MultipleChoice(val answerId: String, val answerLabel: String) : QuizAnswer
+    data class Arrange(val itemLabelsInOrder: List<String>) : QuizAnswer
+    data class TextInput(val value: String) : QuizAnswer
+}
+
 class NewDecisionViewModel(
     private val factorAnalysisRepository: FactorAnalysisRepository,
     private val userDataRepository: UserDataRepository,
@@ -71,14 +77,16 @@ class NewDecisionViewModel(
     val draft =
         _draft.asStateFlow()
 
+    private val _quizAnswers = MutableStateFlow<Map<String, QuizAnswer>>(emptyMap())
+    private val _calculatedQuizCriteria = MutableStateFlow<List<QuizCriterion>?>(null)
+
     private val personalityDescription =
         "Your answers suggest that you like to understand what matters to you before making a choice. You tend to compare options by looking at how well they fit your priorities."
 
     val quizEvaluationData: StateFlow<QuizEvaluationData> =
-        draft
-            .map { currentDraft ->
+        combine(draft, _calculatedQuizCriteria) { currentDraft, calculatedCriteria ->
                 QuizEvaluationData(
-                    criteria = currentDraft.quiz?.result?.criteria.orEmpty(),
+                    criteria = calculatedCriteria ?: currentDraft.quiz?.result?.criteria.orEmpty(),
                     personalityDescription = personalityDescription
                 )
             }
@@ -210,6 +218,8 @@ class NewDecisionViewModel(
         viewModelScope.launch {
             _draft.value = DecisionDraft()
             _quizQuestionIndex.value = null
+            _quizAnswers.value = emptyMap()
+            _calculatedQuizCriteria.value = null
             _analysisDone.value = false
             _showWaitingForAnalysisScreen.value = false
             _showNoMoreUsagesScreen.value = false
@@ -218,12 +228,25 @@ class NewDecisionViewModel(
     }
 
     fun startQuiz() {
+        _quizAnswers.value = emptyMap()
+        _calculatedQuizCriteria.value = null
         _quizQuestionIndex.value = 0
     }
 
-    fun advanceQuiz() {
-        _quizQuestionIndex.update { currentIndex ->
-            currentIndex?.plus(1)
+    fun advanceQuiz(answer: QuizAnswer? = null) {
+        val currentIndex = _quizQuestionIndex.value ?: return
+        val quiz = _draft.value.quiz?.result ?: return
+        val question = quiz.questions.getOrNull(currentIndex) ?: return
+
+        if (answer != null) {
+            _quizAnswers.update { it + (question.id to answer) }
+        }
+
+        val nextIndex = currentIndex + 1
+        _quizQuestionIndex.value = nextIndex
+
+        if (nextIndex >= quiz.questions.size) {
+            calculateQuizResults()
         }
     }
 
@@ -599,6 +622,9 @@ class NewDecisionViewModel(
 
     suspend fun generateQuiz(decisionTitle: String) {
         _quizQuestionIndex.value = null
+        _quizAnswers.value = emptyMap()
+        _calculatedQuizCriteria.value = null
+
         _draft.update {
             it.copy(quiz = null)
         }
@@ -609,6 +635,109 @@ class NewDecisionViewModel(
 
         _draft.update {
             it.copy(quiz = quizResponse)
+        }
+    }
+
+    fun calculateQuizResults(): List<QuizCriterion> {
+        val quiz = _draft.value.quiz?.result ?: return emptyList()
+        val weights = quiz.criteria.associate { it.id to it.initialWeight }.toMutableMap()
+
+        fun addDelta(criterionId: String, delta: Int) {
+            weights[criterionId] = (weights[criterionId] ?: 0) + delta
+        }
+
+        quiz.questions.forEach { question ->
+            val answer = _quizAnswers.value[question.id] ?: return@forEach
+
+            when {
+                question is YesNoQuizQuestion && answer is QuizAnswer.YesNo -> {
+                    question.criteria.forEach { criterion ->
+                        val expectedAnswer = if (answer.value) YesNoAnswer.YES else YesNoAnswer.NO
+                        criterion.impactRules.firstOrNull { it.answer == expectedAnswer }
+                            ?.let { addDelta(criterion.criterionId, it.delta) }
+                    }
+                }
+
+                question is SliderQuizQuestion && answer is QuizAnswer.Slider -> {
+                    question.criteria.forEach { criterion ->
+                        criterion.impactRules.firstOrNull {
+                            answer.value in it.condition.min..it.condition.max
+                        }?.let { addDelta(criterion.criterionId, it.delta) }
+                    }
+                }
+
+                question is MultipleChoiceQuizQuestion && answer is QuizAnswer.MultipleChoice -> {
+                    question.criteria.forEach { criterion ->
+                        criterion.impactRules.firstOrNull {
+                            it.answer == answer.answerId || it.answer == answer.answerLabel
+                        }?.let { addDelta(criterion.criterionId, it.delta) }
+                    }
+                }
+
+                question is ArrangeQuizQuestion && answer is QuizAnswer.Arrange -> {
+                    question.criteria.forEach { criterion ->
+                        val item = question.config.items.firstOrNull {
+                            it.criterionId == criterion.criterionId && it.label in answer.itemLabelsInOrder
+                        }
+                        val rank = answer.itemLabelsInOrder.indexOf(item?.label) + 1
+                        if (rank > 0) {
+                            criterion.impactRules.firstOrNull { it.rank == rank }
+                                ?.let { addDelta(criterion.criterionId, it.delta) }
+                        }
+                    }
+                }
+
+                question is TextInputQuizQuestion && answer is QuizAnswer.TextInput -> {
+                    question.criteria.forEach { criterion ->
+                        val rules = criterion.impactRules
+                        val positiveMatches = rules.positiveSignals.count {
+                            answer.value.contains(it, ignoreCase = true)
+                        }
+                        val negativeMatches = rules.negativeSignals.count {
+                            answer.value.contains(it, ignoreCase = true)
+                        }
+                        val delta = (positiveMatches - negativeMatches)
+                            .coerceIn(rules.allowedDelta.min, rules.allowedDelta.max)
+                        addDelta(criterion.criterionId, delta)
+                    }
+                }
+            }
+        }
+
+        return quiz.criteria.map { criterion ->
+            criterion.copy(initialWeight = (weights[criterion.id] ?: criterion.initialWeight).coerceIn(1, 10))
+        }.also { _calculatedQuizCriteria.value = it }
+    }
+
+    fun updateQuizCriterionImportance(criterionId: String, importance: Int) {
+        val updatedImportance = importance.coerceIn(1, 10)
+        _calculatedQuizCriteria.update { criteria ->
+            criteria?.map { criterion ->
+                if (criterion.id == criterionId) criterion.copy(initialWeight = updatedImportance)
+                else criterion
+            }
+        }
+
+        _draft.update { currentDraft ->
+            val quizResponse = currentDraft.quiz ?: return@update currentDraft
+            val updatedQuizCriteria = quizResponse.result.criteria.map { criterion ->
+                if (criterion.id == criterionId) criterion.copy(initialWeight = updatedImportance)
+                else criterion
+            }
+            val updatedDraftCriteria = currentDraft.criteria.map { criterion ->
+                if (updatedQuizCriteria.any { it.id == criterionId && it.name == criterion.name }) {
+                    criterion.copy(importance = updatedImportance)
+                } else {
+                    criterion
+                }
+            }
+
+            currentDraft.copy(
+                criteria = updatedDraftCriteria,
+                quiz = quizResponse.copy(
+                    result = quizResponse.result.copy(criteria = updatedQuizCriteria)
+                )
+            )
         }
     }
 

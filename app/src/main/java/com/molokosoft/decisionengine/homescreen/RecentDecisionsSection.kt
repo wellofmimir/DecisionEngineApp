@@ -19,9 +19,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.molokosoft.decisionengine.commonclasses.getDecisionCategory
 import com.molokosoft.decisionengine.commonuielements.buttons.DecisionButton
+import com.molokosoft.decisionengine.commonuielements.getColorToLogo
+import com.molokosoft.decisionengine.commonuielements.getLogo
 import com.molokosoft.decisionengine.database.relation.DecisionCompleteRelation
-import com.molokosoft.decisionengine.decisionhistoryscreen.getColorToLogo
-import com.molokosoft.decisionengine.decisionhistoryscreen.getLogo
 import com.molokosoft.decisionengine.theme.DecisionBlue
 import com.molokosoft.decisionengine.theme.DecisionBlueLight
 import com.molokosoft.decisionengine.theme.LocalAppTypography

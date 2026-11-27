@@ -68,6 +68,7 @@ fun QuizStartScreen(
                 .padding(horizontal = 24.dp),
             textAlign = TextAlign.Center,
             fontSize = typography.titleLarge.fontSize,
+            lineHeight = typography.titleLarge.fontSize * 1.2f,
             color = Color.Black
         )
 
